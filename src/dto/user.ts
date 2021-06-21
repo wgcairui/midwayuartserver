@@ -87,6 +87,49 @@ export class macPid extends mac {
     pid: number
 }
 
+@Rule(macPid)
+export class terminalResults extends macPid {
+    @Rule(RuleType.string().required())
+    name: string
+
+    @Rule(RuleType.string().required())
+    datetime: string
+
+    getStart() {
+        return new Date(this.datetime + ' 0:0:0').getTime()
+    }
+
+    getEnd() {
+        return new Date(this.datetime + ' 23:59:59').getTime()
+    }
+}
+
+/**
+ * 挂载设备
+ */
+export class mountDev {
+    @Rule(RuleType.string().required())
+    Type: string
+
+    @Rule(RuleType.string().required())
+    mountDev: string
+
+    @Rule(RuleType.string().required())
+    protocol: string
+
+    @Rule(RuleType.number().required())
+    pid: number
+}
+
+/**
+ * 添加挂载设备
+ */
+@Rule(mac)
+export class addMountDev extends mac {
+    @Rule(mountDev)
+    mountDev: Uart.TerminalMountDevs
+}
+
 /**
  * 修改用户设备别名
  */
@@ -97,4 +140,34 @@ export class modifiTerminalName extends Api {
 
     @Rule(RuleType.string().required())
     name: string
+}
+
+/**
+ * smsCode
+ */
+@Rule(Api)
+export class smsCode extends Api {
+    @Rule(RuleType.number().required())
+    code: number
+}
+
+/**
+ * 
+ */
+@Rule(Api)
+export class alarmTels extends Api {
+    @Rule(RuleType.array().items(RuleType.string()))
+    tels: string[]
+
+    @Rule(RuleType.array().items(RuleType.string()))
+    mails: string[]
+}
+
+/**
+ * 协议
+ */
+@Rule(Api)
+export class protocol extends Api {
+    @Rule(RuleType.string().required())
+    protocol: string
 }

@@ -33,3 +33,10 @@ export type filter<T> = Partial<Record<keyof f, 0 | 1>> & Partial<Record<keyof T
 export const ObjectId = Types.ObjectId
 
 export type MongoTypesId = Types.ObjectId
+
+export interface SmsResult {
+  "Message": string
+  "RequestId": string
+  "BizId": string
+  "Code": string
+}

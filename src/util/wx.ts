@@ -1,6 +1,7 @@
-import { Provide, Scope, ScopeEnum, Init, Inject } from "@midwayjs/decorator"
+import { Provide, Scope, ScopeEnum, Init } from "@midwayjs/decorator"
+import { getModelForClass } from "@midwayjs/typegoose"
 import { wxApp, wxOpen, wxPublic } from "@cairui/wx-sdk"
-import { UserService } from "./user"
+import { SecretApp } from "../entity/user"
 
 /**
  * 微信开发套件
@@ -8,9 +9,6 @@ import { UserService } from "./user"
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class Wx {
-
-    @Inject()
-    private UserService: UserService
 
     /**
      * 公众号
@@ -27,16 +25,22 @@ export class Wx {
 
     @Init()
     async init() {
+
         this.initMp()
         this.initOp()
         this.initWp()
+    }
+
+    private async getKey(type: 'wxopen' | "wxmp" | 'wxmpValidaton' | 'wxwp') {
+        const model = getModelForClass(SecretApp)
+        return await model.findOne({ type }).lean()
     }
 
     /**
      * 初始化公众号
      */
     async initMp() {
-        const mpSecret = await this.UserService.getUserSecret("wxmp")
+        const mpSecret = await this.getKey("wxmp")
         if (mpSecret) {
             this.MP = new wxPublic(mpSecret.appid, mpSecret.secret)
         }
@@ -46,7 +50,7 @@ export class Wx {
      * 初始化小程序对象
      */
     async initWp() {
-        const wpSecret = await this.UserService.getUserSecret("wxwp")
+        const wpSecret = await this.getKey("wxwp")
         if (wpSecret) {
             this.WP = new wxApp(wpSecret.appid, wpSecret.secret)
         }
@@ -57,7 +61,7 @@ export class Wx {
      */
 
     async initOp() {
-        const opSecret = await this.UserService.getUserSecret('wxopen')
+        const opSecret = await this.getKey('wxopen')
         if (opSecret) {
             this.OP = new wxOpen(opSecret.appid, opSecret.secret)
         }

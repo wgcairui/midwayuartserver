@@ -2,7 +2,7 @@ import { Provide } from "@midwayjs/decorator"
 import { getModelForClass } from "@midwayjs/typegoose"
 import { AnyParamConstructor } from "@typegoose/typegoose/lib/types"
 import { Terminal } from "../entity/node"
-import { DevType } from "../entity/protocol"
+import { DevConstant, DevType } from "../entity/protocol"
 
 @Provide()
 
@@ -44,5 +44,24 @@ export class Device {
     async getDevTypes(Type: string) {
         const model = getModelForClass(DevType)
         return await model.find({ Type }).lean()
+    }
+
+    /**
+   * 获取单个协议告警配置
+   * @param protocol 
+   */
+    async getAlarmProtocol(protocol: string) {
+        const model = this.getModel(DevConstant)
+        const setup = await model.findOne({ Protocol: protocol }).lean() as unknown as Uart.ProtocolConstantThreshold
+        const obj: Uart.ProtocolConstantThreshold = {
+            Protocol: protocol,
+            ProtocolType: setup.ProtocolType,
+            ShowTag: setup?.ShowTag || [],
+            Threshold: setup?.Threshold || [],
+            AlarmStat: setup?.AlarmStat || [],
+            Constant: setup?.Constant || {} as any,
+            OprateInstruct: setup?.OprateInstruct || []
+        }
+        return obj
     }
 }

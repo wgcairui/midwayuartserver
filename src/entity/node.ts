@@ -192,7 +192,7 @@ export class TerminalClientResult {
     @prop({ ref: () => result })
     public result: Ref<result>[]
 
-    @prop({ index: true })
+    @prop({ index: true, type: Number })
     public timeStamp: number
 
     @prop({ index: true })
@@ -220,7 +220,7 @@ export class TerminalClientResult {
  */
 @modelOptions({ schemaOptions: { collection: 'client.resultsingles' } })
 export class TerminalClientResultSingle {
-    @prop({ ref: () => result })
+    @prop({ type: () => result })
     public result: Ref<result>[]
 
 
@@ -257,8 +257,8 @@ export class RegisterTerminal {
     public mountNode!: string
 }
 
-
 class mountDev {
+
     @prop()
     public Type!: string
 
@@ -272,7 +272,7 @@ class mountDev {
     public pid!: number
 
     @prop({ default: false })
-    public online: boolean
+    public online?: boolean
 }
 
 /**
@@ -334,7 +334,7 @@ export class Terminal {
     @prop()
     public mountNode!: string
 
-    @prop({ ref: () => mountDev })
+    @prop({ type: () => mountDev, _id: false })
     public mountDevs: Ref<mountDev>[]
 }
 

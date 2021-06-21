@@ -20,7 +20,7 @@ export class DevType {
     @prop()
     public DevModel!: string
 
-    @prop({ ref: () => Devprotocol })
+    @prop({ type: () => Devprotocol })
     public Protocols: Ref<Devprotocol>[]
 }
 
@@ -86,7 +86,7 @@ class instruct {
     public resize: string
 
     // 分割结果 [["power","1-5"，1]]代表第一和第五个字符是结果，倍率为1不修改结果，否则结果×倍率
-    @prop({ ref: () => formResize })
+    @prop({ type: () => formResize })
     public formResize: Ref<formResize>[]
 }
 
@@ -104,7 +104,7 @@ export class Protocols {
     @prop({ enum: ["ups", "air", "em", "th", "io"] })
     public ProtocolType!: string
 
-    @prop({ ref: () => instruct })
+    @prop({ type: () => instruct })
     public instruct: Ref<instruct>[]
 }
 
@@ -155,45 +155,45 @@ class Constant {
 
     //th
 
-    @prop()
+    @prop({ type: String })
     public Temperature: string
 
-    @prop()
+    @prop({ type: String })
     public Humidity: string
     // ups
 
 
-    @prop()
+    @prop({ type: String })
     public UpsStat: string[]
 
-    @prop()
+    @prop({ type: String })
     public BettyStat: string[]
 
-    @prop()
+    @prop({ type: String })
     public InputStat: string[]
 
-    @prop()
+    @prop({ type: String })
     public OutStat: string[]
     // EM
 
-    @prop()
+    @prop({ type: String })
     public battery: string
 
-    @prop()
+    @prop({ type: String })
     public voltage: string[]
 
-    @prop()
+    @prop({ type: String })
     public current: string[]
 
-    @prop()
+    @prop({ type: String })
     public factor: string[]
     // IO
 
-    @prop()
+    @prop({ type: String })
     public di: string[]
 
-    @prop()
-    public do: [String]
+    @prop({ type: String })
+    public do: string[]
 }
 
 /**
@@ -243,7 +243,7 @@ class AlarmStat {
     @prop()
     public unit: string
 
-    @prop()
+    @prop({ type: String })
     public alarmStat: string[]
 }
 
@@ -258,19 +258,19 @@ export class DevConstant {
     @prop()
     public ProtocolType: string
 
-    @prop()
+    @prop({ type: Constant })
     public Constant: Ref<Constant>
 
-    @prop({ ref: () => Threshold })
+    @prop({ type: () => Threshold, _id: false })
     public Threshold: Ref<Threshold>[]
 
-    @prop({ ref: () => AlarmStat })
+    @prop({ type: () => AlarmStat, _id: false })
     public AlarmStat: Ref<AlarmStat>[]
 
-    @prop()
+    @prop({ type: String })
     public ShowTag: string[]
 
-    @prop({ ref: () => OprateInstruct })
+    @prop({ type: () => OprateInstruct, _id: false })
     public OprateInstruct: Ref<OprateInstruct>[]
 }
 
@@ -297,6 +297,6 @@ export class DevArgumentAlias {
     @prop()
     public protocol: string
 
-    @prop({ ref: () => alias })
+    @prop({ type: () => alias })
     public alias: Ref<alias>[]
 }

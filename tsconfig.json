@@ -5,7 +5,8 @@
     "module": "commonjs",
     "lib": [
       "es2018",
-      "ESNext.AsyncIterable"
+      "ESNext.AsyncIterable",
+      "ES2019.Array"
     ],
     "moduleResolution": "node",
     "experimentalDecorators": true,

@@ -2,6 +2,7 @@ import { Provide } from "@midwayjs/decorator";
 import * as jsonwebtoken from "jsonwebtoken";
 import * as CryptoJS from "crypto-js";
 import * as bcrypt from "bcryptjs";
+import { crc16modbus } from "crc";
 const saltRounds = 10;
 
 /**
@@ -126,4 +127,18 @@ export class Util {
             });
         });
     };
+
+    /**
+   * 生成modbus16校验码
+   * @param address pid
+   * @param instruct 指令
+   */
+    Crc16modbus(address: number, instruct: string): string {
+        const body = address.toString(16).padStart(2, "0") + instruct;
+        const crc = crc16modbus(Buffer.from(body, "hex"))
+            .toString(16)
+            .padStart(4, "0");
+        const [a, b, c, d] = [...crc];
+        return body + c + d + a + b;
+    }
 }

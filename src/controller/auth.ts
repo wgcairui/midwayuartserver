@@ -4,7 +4,7 @@ import { UserService } from '../service/user';
 import { login, loginHash, wxlogin } from "../dto/user"
 import { Util } from "../util/util"
 import { RedisService } from "../service/redis"
-import { Wx } from "../service/wx"
+import { Wx } from "../util/wx"
 import { AES, enc } from "crypto-js"
 @Provide()
 @Controller('/api/auth', { middleware: ['tokenParse'] })

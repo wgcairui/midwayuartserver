@@ -4,8 +4,10 @@ import { BeAnObject } from '@typegoose/typegoose/lib/types';
 import { Users, UserBindDevice, UserAggregation, SecretApp, UserAlarmSetup } from "../entity/user"
 import { UartTerminalDataTransfinite, UserLogin } from "../entity/log"
 import { Device } from "./device"
+import { Sms } from "../util/sms"
+import { Wx } from "../util/wx"
 import { filter, MongoTypesId } from '../interface';
-import { Terminal } from '../entity/node';
+import { Terminal, TerminalClientResult, TerminalClientResultSingle } from '../entity/node';
 
 @Provide()
 export class UserService {
@@ -29,6 +31,42 @@ export class UserService {
   @Inject()
   Device: Device
 
+  @Inject()
+  Sms: Sms
+
+  @Inject()
+  Wx: Wx
+
+
+  /**
+   * 发送验证码到用户
+   * @param user 
+   */
+  async sendValidation(user: string) {
+    const users = await this.getUser(user, { tel: 1, mail: 1, wxId: 1 })
+    if (users.tel) {
+      const r = await this.Sms.SendValidation(users.tel)
+      return {
+        code: r.data.Code === 'OK' ? 200 : 0,
+        data: r.code,
+        msg: `手机号:${users.tel.slice(0, 3)}***${users.tel.slice(7)}`
+      }
+    } else if (users.mail) {
+
+    } else if (users.wxId) {
+
+    } else {
+      return {
+        code: 0,
+        msg: 'user is undefine '
+      }
+    }
+  }
+
+  /**
+   * 获取所有用户信息
+   * @returns 
+   */
   getUsers() {
     return this.userModel.find().lean()
   }
@@ -181,4 +219,129 @@ export class UserService {
       return await model.updateOne({ DevMac: mac }, { $pull: { mountDevs: { pid } } }).lean()
     }
   }
+
+  /**
+   *   添加用户终端挂载设备
+   * @param user 
+   * @param mac 
+   * @param param2 
+   * @returns 
+   */
+  async addTerminalMountDev(user: string, mac: string, { Type, mountDev, protocol, pid }: Uart.TerminalMountDevs) {
+    const isBind = await this.userbindModel.findOne({ user, UTs: mac })
+    if (!isBind) {
+      return null
+    } else {
+      const model = getModelForClass(Terminal)
+      return await model.updateOne({ DevMac: mac }, {
+        $addToSet: {
+          mountDevs: {
+            Type,
+            mountDev,
+            protocol,
+            pid
+          }
+        }
+      }).lean()
+    }
+  }
+
+  /**
+   * 获取用户告警配置
+   * @param user 
+   * @param filter 
+   * @returns 
+   */
+  async getUserAlarmSetup(user: string, filter: filter<Uart.userSetup> = { _id: 0 }) {
+    return await this.userAlarmSetupModel.findOne({ user }, filter).lean()
+  }
+
+  /**
+   * 修改用户告警配置联系方式
+   * @param user 
+   * @param tels 联系电话
+   * @param mails 联系邮箱
+   * @returns 
+   */
+  async modifyUserAlarmSetupTel(user: string, tels: string[], mails: string[]) {
+    return await this.userAlarmSetupModel.updateOne({ user }, { $set: { tels, mails } }).lean()
+  }
+
+  /**
+   * 修改用户信息
+   * @param user 
+   * @param data 
+   * @returns 
+   */
+  async modifyUserInfo(user: string, data: Partial<Uart.UserInfo>) {
+    return await this.userModel.updateOne({ user }, { $set: { ...data as any } }).lean()
+  }
+
+  /**
+   * 获取公众号二维码
+   * @param user 
+   * @returns 
+   */
+  mpTicket(user: string) {
+    return this.Wx.MP?.getTicket(user)
+  }
+
+  /**
+   * 获取小程序二维码
+   * @param user 
+   * @returns 
+   */
+  wpTicket(user: string) {
+    return this.Wx.WP?.getTicket(user)
+  }
+
+  /**
+   * 获取用户单个协议告警配置
+   * @param user 
+   * @param protocol 
+   */
+  async getUserAlarmProtocol(user: string, protocol: string) {
+    const data = await this.userAlarmSetupModel.findOne({ user, "ProtocolSetup.Protocol": protocol }, { "ProtocolSetup.$": 1 }).lean()
+    const setup = data.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null
+    const obj: Pick<Uart.ProtocolConstantThreshold, "Protocol" | "AlarmStat" | "ShowTag" | "Threshold"> = {
+      Protocol: protocol,
+      ShowTag: setup?.ShowTag || [],
+      Threshold: setup?.Threshold || [],
+      AlarmStat: setup?.AlarmStat || []
+    }
+    return obj
+  }
+
+  /**
+   * 获取用户设备运行数据
+   * @param user 
+   * @param mac 
+   * @param pid 
+   */
+  async getTerminalData(user: string, mac: string, pid: number) {
+    const isBind = await this.userbindModel.findOne({ user, UTs: mac })
+    if (!isBind) {
+      return null
+    } else {
+      const model = getModelForClass(TerminalClientResultSingle)
+      return await model.findOne({ mac, pid }).lean()
+    }
+  }
+
+  /**
+   * 获取用户设备运行数据
+   * @param user 
+   * @param mac 
+   * @param pid 
+   */
+  async getTerminalDatas(user: string, mac: string, pid: number, name: string, start: number, end: number) {
+    const isBind = await this.userbindModel.findOne({ user, UTs: mac })
+    if (!isBind) {
+      return null
+    } else {
+      const model = getModelForClass(TerminalClientResult)
+      return await model.find({ mac, pid, "result.name": name, timeStamp: { $gte: start, $lte: end } }, { "result.$": 1, timeStamp: 1, _id: 0 }).lean()
+    }
+  }
+
 }

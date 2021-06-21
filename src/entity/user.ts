@@ -269,7 +269,7 @@ export class UserAlarmSetup {
     @prop({ type: [String], default: [] })
     mails: string[]
 
-    @prop({ ref: () => DevConstant })
+    @prop({ type: DevConstant, _id: false })
     ProtocolSetup: Ref<DevConstant>[]
 }
 
