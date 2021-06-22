@@ -298,5 +298,5 @@ export class DevArgumentAlias {
     public protocol: string
 
     @prop({ type: () => alias })
-    public alias: Ref<alias>[]
+    public alias: alias[]
 }

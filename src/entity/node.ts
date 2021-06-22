@@ -190,7 +190,7 @@ class result {
 @modelOptions({ schemaOptions: { collection: "client.resultcolltions" } })
 export class TerminalClientResult {
     @prop({ ref: () => result })
-    public result: Ref<result>[]
+    public result: result[]
 
     @prop({ index: true, type: Number })
     public timeStamp: number
@@ -221,7 +221,7 @@ export class TerminalClientResult {
 @modelOptions({ schemaOptions: { collection: 'client.resultsingles' } })
 export class TerminalClientResultSingle {
     @prop({ type: () => result })
-    public result: Ref<result>[]
+    public result: result[]
 
 
     @prop({ index: true })

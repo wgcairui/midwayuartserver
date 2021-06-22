@@ -3,7 +3,7 @@ import { Context } from "@midwayjs/koa"
 import { UserService } from "../service/user"
 import { Device } from "../service/device"
 import { RedisService } from "../service/redis"
-import { date, Api, mongoId, modifiTerminalName, mac, macPid, addMountDev, smsCode, alarmTels, protocol, terminalResults } from "../dto/user"
+import { date, Api, mongoId, modifiTerminalName, mac, macPid, addMountDev, smsCode, alarmTels, protocol, terminalResults, InstructSet, setUserSetupProtocol, setAlias, id, setAggs } from "../dto/user"
 import { Sms } from "../decorator/smsValidation"
 import * as lodash from "lodash"
 
@@ -380,6 +380,165 @@ export class ApiControll {
                 code: 0,
                 msg: 'error nodata'
             }
+        }
+    }
+
+    /**
+   * 重置设备超时状态
+   * @param mac 
+   * @param pid 
+   */
+    @Post("/refreshDevTimeOut")
+    @Validate()
+    async refreshDevTimeOut(@Body(ALL) data: macPid) {
+        return {
+            code: 200,
+            data: await this.UserService.refreshDevTimeOut(data.mac, data.pid),
+            msg: 'success'
+        }
+    }
+
+    /**
+   * 固定发送设备操作指令
+   * @param query 
+   * @param item 
+   * @returns 
+   */
+    @Post("/SendProcotolInstructSet")
+    @Validate()
+    async SendProcotolInstructSet(@Body(ALL) data: InstructSet) {
+        const d = await this.UserService.SendProcotolInstructSet(data.token.user, data.query, data.item)
+        if (d) {
+            return {
+                code: 200,
+                data: d
+            }
+        } else {
+            return {
+                code: 0,
+                data: {
+                    ok: 0,
+                    msg: 'mac is undefine'
+                } as Uart.ApolloMongoResult
+            }
+        }
+    }
+
+    /**
+     * 获取指定协议
+     * @param protocol 
+     * @returns 
+     */
+    @Post("/getProtocol")
+    @Validate()
+    async getProtocol(@Body(ALL) data: protocol) {
+        return {
+            code: 200,
+            data: await this.Device.getProtocol(data.protocol)
+        }
+    }
+
+    /**
+   * 设置用户自定义设置(协议配置)
+   * @param user 
+   * @param Protocol 协议
+   * @param type 操作类型
+   * @param arg 参数
+   * @returns 
+   */
+    @Post("/setUserSetupProtocol")
+    @Validate()
+    async setUserSetupProtocol(@Body(ALL) data: setUserSetupProtocol) {
+        return {
+            code: 200,
+            data: await this.UserService.setUserSetupProtocol(data.token.user, data.protocol, data.type, data.arg)
+        }
+    }
+
+    /**
+     * 设备设备别名
+     * @param mac 
+     * @param pid 
+     * @param protocol 
+     * @param name 
+     * @param alias 
+     * @returns 
+     */
+    @Post("/setAlias")
+    @Validate()
+    async setAlias(@Body(ALL) { mac, pid, protocol, name, alias }: setAlias) {
+        return {
+            code: 200,
+            data: await this.Device.setAlias(mac, pid, protocol, name, alias)
+        }
+    }
+
+    /**
+   * 获取终端信息
+   * @param user 
+   * @param mac 
+   * @returns 
+   */
+    @Post("/getTerminal")
+    @Validate()
+    async getTerminal(@Body(ALL) data: mac) {
+        return {
+            code: 200,
+            data: await this.UserService.getTerminal(data.token.user, data.mac)
+        }
+    }
+
+    /**
+   *  获取用户布局配置
+   * @param user 
+   * @param id 
+   */
+    @Post("/getUserLayout")
+    @Validate()
+    async getUserLayout(@Body(ALL) data: id) {
+        return {
+            code: 200,
+            data: await this.UserService.getUserLayout(data.token.user, data.id)
+        }
+    }
+
+    /**
+   *  获取用户聚合设备
+   * @param user 
+   * @param id 
+   */
+    @Post("/getAggregation")
+    @Validate()
+    async getAggregation(@Body(ALL) data: id) {
+        const agg = await this.UserService.getAggregation(data.token.user, data.id) as unknown as Uart.Aggregation
+        const layout = await this.UserService.getUserLayout(data.token.user, data.id)
+
+        const nMap = new Map(layout.Layout.map(el => [el.bind.mac + el.bind.pid, el.bind.name]))
+
+        for (const i of agg.aggregations) {
+            const name = nMap.get(i.DevMac + i.pid)
+            const r = await this.UserService.getTerminalDataName(data.token.user, i.DevMac, i.pid, name)
+            i.result = r
+        }
+        return {
+            code: 200,
+            data: agg
+        }
+    }
+
+    /**
+   * 设置用户布局配置
+   * @param id 
+   * @param type 
+   * @param bg 
+   * @param Layout 
+   */
+    @Post("/setUserLayout")
+    @Validate()
+    async setUserLayout(@Body(ALL) data: setAggs) {
+        return {
+            code: 200,
+            data: await this.UserService.setUserLayout(data.token.user, data.id, data.type, data.bg, data.Layout)
         }
     }
 

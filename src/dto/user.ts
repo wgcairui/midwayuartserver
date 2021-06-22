@@ -36,6 +36,13 @@ export class Api {
     token: token
 }
 
+
+@Rule(Api)
+export class id extends Api {
+    @Rule(RuleType.string().token())
+    id: string
+}
+
 /**
  * 日期参数
  */
@@ -170,4 +177,94 @@ export class alarmTels extends Api {
 export class protocol extends Api {
     @Rule(RuleType.string().required())
     protocol: string
+}
+
+class instructQuery {
+    @Rule(RuleType.string().required())
+    DevMac: string
+
+    @Rule(RuleType.number().required())
+    pid: number
+
+    @Rule(RuleType.string().required())
+    mountDev: string
+
+    @Rule(RuleType.string().required())
+    protocol: string
+}
+
+// 协议操作指令
+class OprateInstruct {
+    @Rule(RuleType.allow())
+    name: string
+
+    @Rule(RuleType.string().required())
+    value: string
+
+    @Rule(RuleType.allow())
+    bl: string
+
+    @Rule(RuleType.allow())
+    val?: number
+
+    @Rule(RuleType.allow())
+    readme?: string
+
+    @Rule(RuleType.allow())
+    tag?: string
+}
+
+/**
+ * 操作指令
+ */
+@Rule(Api)
+export class InstructSet extends Api {
+    @Rule(instructQuery)
+    query: Uart.instructQueryArg
+
+    @Rule(OprateInstruct)
+    item: Uart.OprateInstruct
+}
+
+/**
+ * 设置协议参数
+ */
+@Rule(protocol)
+export class setUserSetupProtocol extends protocol {
+    @Rule(RuleType.string())
+    type: Uart.ConstantThresholdType
+
+    @Rule(RuleType.allow())
+    arg: any
+}
+
+/**
+ * 设置协议参数别名
+ */
+@Rule(macPid)
+export class setAlias extends macPid {
+    @Rule(RuleType.string())
+    protocol: string
+
+    @Rule(RuleType.string())
+    name: string
+
+    @Rule(RuleType.string())
+    alias: string
+}
+
+/**
+ * 设置聚合设备
+ */
+@Rule(id)
+export class setAggs extends id {
+    @Rule(RuleType.string())
+    type: string
+
+    @Rule(RuleType.string())
+    bg: string
+
+
+    @Rule(RuleType.array().allow())
+    Layout: Uart.AggregationLayoutNode[]
 }

@@ -1,13 +1,16 @@
 import { Provide, Init, Inject } from '@midwayjs/decorator';
 import { getModelForClass, ReturnModelType, } from "@midwayjs/typegoose"
 import { BeAnObject } from '@typegoose/typegoose/lib/types';
-import { Users, UserBindDevice, UserAggregation, SecretApp, UserAlarmSetup } from "../entity/user"
+import { Users, UserBindDevice, UserAggregation, SecretApp, UserAlarmSetup, UserLayout } from "../entity/user"
 import { UartTerminalDataTransfinite, UserLogin } from "../entity/log"
 import { Device } from "./device"
 import { Sms } from "../util/sms"
 import { Wx } from "../util/wx"
+import { Util } from "../util/util"
 import { filter, MongoTypesId } from '../interface';
 import { Terminal, TerminalClientResult, TerminalClientResultSingle } from '../entity/node';
+import * as lodash from "lodash"
+
 
 @Provide()
 export class UserService {
@@ -17,6 +20,7 @@ export class UserService {
   private useraggregModel: ReturnModelType<typeof UserAggregation, BeAnObject>;
   private userAlarmSetupModel: ReturnModelType<typeof UserAlarmSetup, BeAnObject>;
   private AlarmModel: ReturnModelType<typeof UartTerminalDataTransfinite, BeAnObject>;
+  private layoutModel: ReturnModelType<typeof UserLayout, BeAnObject>;
 
   @Init()
   async init() {
@@ -26,6 +30,7 @@ export class UserService {
     this.useraggregModel = getModelForClass(UserAggregation)
     this.userAlarmSetupModel = getModelForClass(UserAlarmSetup)
     this.AlarmModel = getModelForClass(UartTerminalDataTransfinite)
+    this.layoutModel = getModelForClass(UserLayout)
   }
 
   @Inject()
@@ -36,6 +41,20 @@ export class UserService {
 
   @Inject()
   Wx: Wx
+
+  @Inject()
+  Util: Util
+
+  /**
+   * 检查是否是用户绑定mac
+   * @param user 
+   * @param mac 
+   * @returns 
+   */
+  async isBindMac(user: string, mac: string) {
+    const r = await this.userbindModel.findOne({ user, UTs: mac }, { _id: 1 })
+    return r ? true : false
+  }
 
 
   /**
@@ -187,6 +206,7 @@ export class UserService {
    * @param mac 
    */
   async addUserTerminal(user: string, mac: string) {
+    // 检查mac是否已经被绑定
     const isBind = await this.userbindModel.findOne({ UTs: mac })
     if (isBind) {
       return null
@@ -211,7 +231,7 @@ export class UserService {
    * @param pid 
    */
   async delTerminalMountDev(user: string, mac: string, pid: number) {
-    const isBind = await this.userbindModel.findOne({ user, UTs: mac })
+    const isBind = await this.isBindMac(user, mac)
     if (!isBind) {
       return null
     } else {
@@ -228,7 +248,7 @@ export class UserService {
    * @returns 
    */
   async addTerminalMountDev(user: string, mac: string, { Type, mountDev, protocol, pid }: Uart.TerminalMountDevs) {
-    const isBind = await this.userbindModel.findOne({ user, UTs: mac })
+    const isBind = await this.isBindMac(user, mac)
     if (!isBind) {
       return null
     } else {
@@ -318,13 +338,30 @@ export class UserService {
    * @param mac 
    * @param pid 
    */
-  async getTerminalData(user: string, mac: string, pid: number) {
-    const isBind = await this.userbindModel.findOne({ user, UTs: mac })
+  async getTerminalData(user: string, mac: string, pid: number, filter: filter<Uart.queryResultSave> = { _id: 0 }) {
+    const isBind = await this.isBindMac(user, mac)
     if (!isBind) {
       return null
     } else {
       const model = getModelForClass(TerminalClientResultSingle)
-      return await model.findOne({ mac, pid }).lean()
+      return await model.findOne({ mac, pid }, filter).lean()
+    }
+  }
+
+  /**
+   * 获取用户设备运行数据
+   * @param user 
+   * @param mac 
+   * @param pid 
+   */
+  async getTerminalDataName(user: string, mac: string, pid: number, name: string) {
+    const isBind = await this.isBindMac(user, mac)
+    if (!isBind) {
+      return null
+    } else {
+      const model = getModelForClass(TerminalClientResultSingle)
+      const r = await model.findOne({ mac, pid, "result.name": name }, { "result.$": 1, _id: 0 }).lean()
+      return r?.result || []
     }
   }
 
@@ -335,13 +372,195 @@ export class UserService {
    * @param pid 
    */
   async getTerminalDatas(user: string, mac: string, pid: number, name: string, start: number, end: number) {
-    const isBind = await this.userbindModel.findOne({ user, UTs: mac })
+    const isBind = await this.isBindMac(user, mac)
     if (!isBind) {
       return null
     } else {
       const model = getModelForClass(TerminalClientResult)
       return await model.find({ mac, pid, "result.name": name, timeStamp: { $gte: start, $lte: end } }, { "result.$": 1, timeStamp: 1, _id: 0 }).lean()
     }
+  }
+
+  /**
+   * 重置设备超时状态
+   * @param mac 
+   * @param pid 
+   */
+  async refreshDevTimeOut(mac: string, pid: number) {
+
+  }
+
+  /**
+   * 固定发送设备操作指令
+   * @param query 
+   * @param item 
+   * @returns 
+   */
+  async SendProcotolInstructSet(user: string, query: Uart.instructQueryArg, item: Uart.OprateInstruct) {
+    if (await this.isBindMac(user, query.DevMac)) {
+      const protocol = await this.Device.getProtocol(query.protocol)
+      // 携带事件名称，触发指令查询
+      const Query: Uart.instructQuery = {
+        protocol: query.protocol,
+        DevMac: query.DevMac,
+        pid: query.pid,
+        type: protocol.Type,
+        events: 'oprate' + Date.now() + query.DevMac,
+        content: item.value
+      }
+      // 检查操作指令是否含有自定义参数
+      if (/(%i)/.test(item.value)) {
+        // 如果识别字为%i%i,则把值转换为四个字节的hex字符串,否则转换为两个字节
+        if (/%i%i/.test(item.value)) {
+          const b = Buffer.allocUnsafe(2)
+          b.writeIntBE(this.Util.ParseCoefficient(item.bl, Number(item.val)), 0, 2)
+          Query.content = item.value.replace(/(%i%i)/, b.slice(0, 2).toString("hex"))
+        } else {
+          const val = this.Util.ParseCoefficient(item.bl, Number(item.val)).toString(16)
+          Query.content = item.value.replace(/(%i)/, val.length < 2 ? val.padStart(2, '0') : val)
+        }
+      }
+      //const result = await ctx.$Event.DTU_OprateInstruct(Query)
+      //return result
+      return true
+    } else {
+      return null
+    }
+  }
+
+  /**
+   * 设置用户自定义设置(协议配置)
+   * @param user 
+   * @param Protocol 协议
+   * @param type 操作类型
+   * @param arg 参数
+   * @returns 
+   */
+  async setUserSetupProtocol(user: string, Protocol: string, type: Uart.ConstantThresholdType, arg: any) {
+    // 获取用户告警配置
+    const setup = await this.getUserAlarmSetup(user, { user: 1, tels: 1, mails: 1, ProtocolSetup: 1 }) //await UserAlarmSetup.findOne({ user: ctx.user }).lean<Pick<Uart.userSetup, 'user' | 'mails' | 'tels' | 'ProtocolSetup'>>()!
+    // 如果没有初始配置则新建
+    if (!setup) {
+      await this.userAlarmSetupModel.create({ user, tels: [], mails: [], ProtocolSetup: [] })
+    }
+    // 如果如果没有ProtocolSetup属性或ProtocolSetup中没有此协议则加入
+    if (setup?.ProtocolSetup || setup.ProtocolSetup.findIndex(el => el.Protocol === Protocol) === -1) {
+      await this.userAlarmSetupModel.updateOne({ user }, { $push: { ProtocolSetup: { Protocol } as any } }, { upsert: true }).exec()
+    }
+    let result;
+    switch (type) {
+      case "Threshold":
+        {
+          const { type, data }: { type: 'del' | 'add', data: Uart.Threshold } = arg
+          if (type === 'del') {
+            result = await this.userAlarmSetupModel.updateOne({ user, "ProtocolSetup.Protocol": Protocol }, { $pull: { "ProtocolSetup.$.Threshold": { name: data.name } } })
+          } else {
+            const has = await this.userAlarmSetupModel.findOne({ user, ProtocolSetup: { $elemMatch: { "Protocol": Protocol, "Threshold.name": data.name } } })
+            if (has) {
+              // https://www.cnblogs.com/zhongchengyi/p/12162792.html
+              result = await this.userAlarmSetupModel.updateOne(
+                { user },
+                { $set: { "ProtocolSetup.$[i1].Threshold.$[i2]": data } },
+                {
+                  arrayFilters: [
+                    { "i1.Protocol": Protocol },
+                    { "i2.name": data.name }
+                  ]
+                }
+              )
+            } else {
+              result = await this.userAlarmSetupModel.updateOne(
+                { user, "ProtocolSetup.Protocol": Protocol },
+                { $push: { "ProtocolSetup.$.Threshold": data } },
+                { upsert: true }
+              )
+            }
+
+          }
+        }
+        break
+      case "ShowTag":
+        {
+          result = await this.userAlarmSetupModel.updateOne(
+            { user, "ProtocolSetup.Protocol": Protocol },
+            { $set: { "ProtocolSetup.$.ShowTag": lodash.compact(arg as string[]) } },
+            { upsert: true }
+          )
+        }
+        break
+      case "AlarmStat":
+        {
+          const { name, alarmStat } = arg
+          // 检查系统中是否含有name的配置
+          const has = await this.userAlarmSetupModel.findOne({ user, ProtocolSetup: { $elemMatch: { "Protocol": Protocol, "AlarmStat.name": name } } })
+          if (has) {
+            // https://www.cnblogs.com/zhongchengyi/p/12162792.html
+            result = await this.userAlarmSetupModel.updateOne(
+              { user },
+              { $set: { "ProtocolSetup.$[i1].AlarmStat.$[i2].alarmStat": alarmStat } },
+              {
+                arrayFilters: [
+                  { "i1.Protocol": Protocol },
+                  { "i2.name": name }
+                ]
+              }
+            )
+          } else {
+            result = await this.userAlarmSetupModel.updateOne(
+              { user, "ProtocolSetup.Protocol": Protocol },
+              { $push: { "ProtocolSetup.$.AlarmStat": { name, alarmStat } } },
+              { upsert: true }
+            )
+          }
+        }
+        break
+    }
+    return result;
+  }
+
+  /**
+   * 获取终端信息
+   * @param user 
+   * @param mac 
+   * @returns 
+   */
+  async getTerminal(user: string, mac: string) {
+    if (await this.isBindMac(user, mac)) {
+      return await this.Device.getTerminal(mac)
+    } else {
+      return null
+    }
+  }
+
+  Aggregation
+
+  /**
+   *  获取用户布局配置
+   * @param user 
+   * @param id 
+   */
+  async getUserLayout(user: string, id: string) {
+    return await this.layoutModel.findOne({ user, id }).lean()
+  }
+
+  /**
+   *  获取用户布聚合设备
+   * @param user 
+   * @param id 
+   */
+  async getAggregation(user: string, id: string) {
+    return await this.useraggregModel.findOne({ user, id }).lean()
+  }
+
+  /**
+   * 设置用户布局配置
+   * @param id 
+   * @param type 
+   * @param bg 
+   * @param Layout 
+   */
+ async setUserLayout(user:string,id: string, type: string, bg: string, Layout: Uart.AggregationLayoutNode[]){
+    return await this.layoutModel.updateOne({ id, user }, { $set: { type, bg, Layout} }, { upsert: true }).lean()
   }
 
 }

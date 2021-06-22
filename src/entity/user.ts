@@ -129,10 +129,10 @@ class bind {
 
 class Layout {
     @prop()
-    public x: string
+    public x: number
 
     @prop()
-    public y: string
+    public y: number
 
     @prop()
     public id: string
@@ -143,8 +143,8 @@ class Layout {
     @prop()
     public color: string
 
-    @prop()
-    public bind: Ref<bind>
+    @prop({ type: bind })
+    public bind: bind
 }
 /**
  * 用户布局设置
@@ -163,8 +163,8 @@ export class UserLayout {
     @prop()
     public bg: string
 
-    @prop({ ref: () => Layout })
-    public Layout: Ref<Layout>[]
+    @prop({ type: () => Layout })
+    public Layout: Layout[]
 }
 
 /**
@@ -270,7 +270,7 @@ export class UserAlarmSetup {
     mails: string[]
 
     @prop({ type: DevConstant, _id: false })
-    ProtocolSetup: Ref<DevConstant>[]
+    ProtocolSetup: DevConstant[]
 }
 
 /**
