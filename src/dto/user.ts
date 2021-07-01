@@ -268,3 +268,12 @@ export class setAggs extends id {
     @Rule(RuleType.array().allow())
     Layout: Uart.AggregationLayoutNode[]
 }
+
+@Rule(Api)
+export class addAgg extends Api {
+    @Rule(RuleType.string())
+    name: string
+
+    @Rule(RuleType.array().allow())
+    aggs: Uart.AggregationDev[]
+}

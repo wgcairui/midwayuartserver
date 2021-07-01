@@ -1,4 +1,4 @@
-import { Prop, modelOptions, prop, Ref } from "@typegoose/typegoose";
+import { Prop, modelOptions, prop } from "@typegoose/typegoose";
 
 /**
  * 友情链接
@@ -92,7 +92,7 @@ export class NodeRunInfo {
     @prop()
     public freemem: string
 
-    @prop()
+    @prop({ type: Number })
     public loadavg: number[]
 
     @prop()
@@ -111,11 +111,12 @@ export class NodeRunInfo {
     public SocketMaps: WebSocketTerminal[]
 }
 
+@modelOptions({ options: { allowMixed: 0 } })
 class buffer {
     @prop()
     public type: string
 
-    @prop()
+    @prop({ type: Number })
     public data: number[]
 }
 
@@ -123,14 +124,14 @@ class content {
     @prop()
     public content: string
 
-    @prop()
-    public buffe: Ref<buffer>
+    @prop({ type: buffer })
+    public buffe: buffer
 }
 
 /**
  * 终端设备上传数据=>原始数据
  */
-@modelOptions({ schemaOptions: { collection: 'client.result' } })
+@modelOptions({ schemaOptions: { collection: 'client.results' } })
 export class TerminalClientResults {
     @prop({ min: 0, max: 255, default: 0 })
     public pid: number
@@ -156,11 +157,11 @@ export class TerminalClientResults {
     @prop()
     public useTime: number
 
-    @prop({ ref: () => content })
-    public contents: Ref<content>[]
+    @prop({ type: () => content })
+    public contents: content[]
 
     @prop({ index: true, default: 0 })
-    public hasAlarm: number
+    public hasAlarm?: number
 }
 
 
@@ -174,14 +175,34 @@ class result {
     @prop()
     public parseValue: string
 
+    @prop({ default: false })
+    public alarm?: boolean
+
     @prop()
     public unit: string
 
     @prop({ default: false })
-    public alarm: boolean
+    public issimulate: boolean
+}
+
+class saveResult {
+    @prop({ index: true })
+    public name: string
+
+    @prop()
+    public value: string
+
+    @prop()
+    public parseValue: string
+
+    /* @prop({ default: false })
+    public alarm?: boolean
+
+    @prop()
+    public unit: string
 
     @prop({ default: false })
-    public issimulate: boolean
+    public issimulate: boolean */
 }
 
 /**
@@ -189,8 +210,8 @@ class result {
  */
 @modelOptions({ schemaOptions: { collection: "client.resultcolltions" } })
 export class TerminalClientResult {
-    @prop({ ref: () => result })
-    public result: result[]
+    @prop({ type: () => saveResult })
+    public result: saveResult[]
 
     @prop({ index: true, type: Number })
     public timeStamp: number
@@ -254,6 +275,9 @@ export class RegisterTerminal {
     public DevMac!: string
 
     @prop()
+    public bindDev?: string
+
+    @prop()
     public mountNode!: string
 }
 
@@ -273,6 +297,9 @@ class mountDev {
 
     @prop({ default: false })
     public online?: boolean
+
+    @prop()
+    public bindDev?: string;
 }
 
 /**
@@ -282,6 +309,9 @@ class mountDev {
 export class Terminal {
     @prop()
     public DevMac!: string
+
+    @prop()
+    public bindDev?: string
 
     @prop()
     public name!: string
@@ -334,7 +364,8 @@ export class Terminal {
     @prop()
     public mountNode!: string
 
-    @prop({ type: () => mountDev, _id: false })
-    public mountDevs: Ref<mountDev>[]
+
+    @prop({ type: mountDev, _id: false })
+    public mountDevs: mountDev[]
 }
 

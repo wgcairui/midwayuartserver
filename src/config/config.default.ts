@@ -1,7 +1,6 @@
 import { DefaultConfig } from "@midwayjs/typegoose"
 import { RedisOptions } from "ioredis"
 import { ServerRegistration } from 'apollo-server-koa';
-import { StoreConfig } from "cache-manager"
 import { GetMiddlewareOptions } from 'apollo-server-koa/dist/ApolloServer';
 
 export type ExtendedConfig = DefaultConfig & {
@@ -9,21 +8,12 @@ export type ExtendedConfig = DefaultConfig & {
 };
 
 export const mongoose: DefaultConfig = {
-    uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : 'localhost'}:27017/UartServer`,
+    uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : 'uart.ladishb.com'}:27017/UartServer`,
     options: {
         dbName: "UartServer",
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useCreateIndex:true
-    }
-}
-
-export const cache: StoreConfig = {
-    store: "memory",
-    ttl: 6000,
-    options: {
-        max: 1000,
-        ttl: 6000
     }
 }
 
@@ -33,7 +23,7 @@ export const apollo: ServerRegistration = {
 
 export const redis: RedisOptions = {
     port: 6379, // Redis port
-    host: process.env.NODE_Docker === 'docker' ? 'redis' : 'localhost',//"127.0.0.1", // Redis host
+    host: process.env.NODE_Docker === 'docker' ? 'redis' : 'uart.ladishb.com',//"127.0.0.1", // Redis host
     family: 4, // 4 (IPv4) or 6 (IPv6)
     password: "",
     db: 0

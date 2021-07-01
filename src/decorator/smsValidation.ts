@@ -17,7 +17,7 @@ export function Sms(): MethodDecorator {
             // 获取token
             const sms = await Cache.getClient().get(ctx.cookies.get("auth._token.local"))
             // 
-            if (ctx.request.body.token.user !== 'test2' && (!sms || sms !== 'true')) {
+            if (!['test2', 'root'].includes(ctx.request.body.token.user) && (!sms || sms !== 'true')) {
                 ctx.body = {
                     code: 201,
                     data: ctx.request.body,

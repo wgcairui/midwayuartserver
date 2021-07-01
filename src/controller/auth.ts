@@ -126,7 +126,7 @@ export class AuthController {
         user: info.unionid,
         name: info.nickname,
         avanter: info.headimgurl,
-        passwd: await this.Util.BcryptDo(info.unionid),
+        passwd: info.unionid,
         rgtype: "wx",
         userGroup: "user",
         openId: info.openid,

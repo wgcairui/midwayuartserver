@@ -3,7 +3,7 @@ import { Context } from "@midwayjs/koa"
 import { UserService } from "../service/user"
 import { Device } from "../service/device"
 import { RedisService } from "../service/redis"
-import { date, Api, mongoId, modifiTerminalName, mac, macPid, addMountDev, smsCode, alarmTels, protocol, terminalResults, InstructSet, setUserSetupProtocol, setAlias, id, setAggs } from "../dto/user"
+import { date, Api, mongoId, modifiTerminalName, mac, macPid, addMountDev, smsCode, alarmTels, protocol, terminalResults, InstructSet, setUserSetupProtocol, setAlias, id, setAggs, addAgg } from "../dto/user"
 import { Sms } from "../decorator/smsValidation"
 import * as lodash from "lodash"
 
@@ -22,6 +22,21 @@ export class ApiControll {
 
     @Inject()
     ctx: Context
+
+    /**
+   * 添加用户
+   * @param name 
+   * @param user 
+   * @param passwd 
+   * @param tel x
+   * @param mail 
+   * @param company 
+   * @returns 
+   */
+    @Post("/guest/addUser")
+    addUser(@Body() name: string, @Body() user: string, @Body() passwd: string, @Body() tel: string, @Body() mail: string, @Body() company: string) {
+        return this.UserService.addUser(name, user, passwd, tel, mail, company)
+    }
 
     /**
      * 获取用户绑定设备
@@ -196,9 +211,7 @@ export class ApiControll {
     async smsValidation(@Body(ALL) data: Api) {
         const sr = await this.UserService.sendValidation(data.token.user)
         if (sr.code) {
-            await this.RedisService.getClient().setex(data.token.user + 'sms', 6 * 60, sr.data)
-
-
+            await this.RedisService.setUserSmsCode(data.token.user, sr.code)
             return {
                 code: 200,
                 msg: sr.msg
@@ -218,7 +231,7 @@ export class ApiControll {
     @Post("/smsCodeValidation")
     @Validate()
     async smsCodeValidation(@Body(ALL) data: smsCode) {
-        const code = Number(await this.RedisService.getClient().get(data.token.user + 'sms'))
+        const code = Number(await this.RedisService.getUserSmsCode(data.token.user))
         if (code === data.code) {
             await this.RedisService.getClient().setex(this.ctx.cookies.get("auth._token.local"), 60 * 60 * 72, 'true')
         }
@@ -539,6 +552,93 @@ export class ApiControll {
         return {
             code: 200,
             data: await this.UserService.setUserLayout(data.token.user, data.id, data.type, data.bg, data.Layout)
+        }
+    }
+
+    /**
+   * 添加聚合设备
+   * @param name 
+   * @param aggs 
+   * @returns 
+   */
+    @Post("/addAggregation")
+    @Validate()
+    async addAggregation(@Body(ALL) data: addAgg) {
+        return this.UserService.addAggregation(data.token.user, data.name, data.aggs)
+    }
+
+    /**
+     * 删除聚合设备
+     * @param user 
+     * @param id 
+     * @returns 
+     */
+    @Post("/deleteAggregation")
+    async deleteAggregation(@Body(ALL) data: id) {
+        return {
+            code: 200,
+            data: await this.UserService.deleteAggregation(data.token.user, data.id)
+        }
+    }
+
+    /**
+     * 重置密码到发送验证码
+     * @param user 
+     * @returns 
+     */
+    @Post("/guest/resetPasswdValidation")
+    async resetPasswdValidation(@Body() user: string) {
+        const u = await this.UserService.getUser(user)
+        if (u) {
+            const { code, data, msg } = await this.UserService.sendValidation(u.user)
+            if (code === 200) {
+                await this.RedisService.setUserSmsCode(user, data)
+                return {
+                    code,
+                    msg
+                }
+            } else {
+                return {
+                    code,
+                    msg: '发送失败,请重试'
+                }
+            }
+        } else {
+            return {
+                code: 0,
+                msg: '无此账号'
+            }
+        }
+    }
+
+    /**
+     * 重置用户密码
+     * @param user 
+     * @param passwd 
+     * @param code 
+     * @returns 
+     */
+    @Post("/guest/resetUserPasswd")
+    async resetUserPasswd(@Body() user: string, @Body() passwd: string, @Body() code: string) {
+        const lcode = await this.RedisService.getUserSmsCode(user)
+        if (lcode) {
+            if (lcode === code) {
+                return {
+                    code: 200,
+                    data: await this.UserService.resetUserPasswd(user, passwd),
+                    msg: 'success'
+                }
+            } else {
+                return {
+                    code: 0,
+                    msg: '验证码错误,请重新操作'
+                }
+            }
+        } else {
+            return {
+                code: 0,
+                msg: '验证码已失效或未注册,请重新操作'
+            }
         }
     }
 

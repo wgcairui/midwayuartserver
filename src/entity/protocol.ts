@@ -21,7 +21,7 @@ export class DevType {
     public DevModel!: string
 
     @prop({ type: () => Devprotocol })
-    public Protocols: Ref<Devprotocol>[]
+    public Protocols: Devprotocol[]
 }
 
 
@@ -30,7 +30,7 @@ class formResize {
     public name: string
 
     @prop()
-    public enName: string
+    public enName?: string
 
     @prop()
     public regx: string
@@ -68,7 +68,7 @@ class instruct {
     public scriptEnd: string
 
     @prop({ enum: ["utf8", "hex", "float", "short", "int", 'bit2'] })
-    public resultType: string // 怎么格式化返回结果
+    public resultType: Uart.characterType // 怎么格式化返回结果
 
     @prop({ default: false })
     public shift: boolean // 结果是否需要去除头部符号
@@ -87,7 +87,7 @@ class instruct {
 
     // 分割结果 [["power","1-5"，1]]代表第一和第五个字符是结果，倍率为1不修改结果，否则结果×倍率
     @prop({ type: () => formResize })
-    public formResize: Ref<formResize>[]
+    public formResize: formResize[]
 }
 
 /**
@@ -105,7 +105,7 @@ export class Protocols {
     public ProtocolType!: string
 
     @prop({ type: () => instruct })
-    public instruct: Ref<instruct>[]
+    public instruct: instruct[]
 }
 
 

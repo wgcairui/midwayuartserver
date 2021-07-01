@@ -30,8 +30,11 @@ class Success {
 /**
  * v发送短信记录
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: "log.smssends" } })
+@modelOptions({ schemaOptions: { collection: "log.smssends" }, options: { allowMixed: 0 } })
 export class SmsSend {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
     @prop()
     public tels: string
 
@@ -63,8 +66,11 @@ class mailsendParams {
 /**
  * 邮件发送记录
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.mailsends' } })
+@modelOptions({ schemaOptions: { collection: 'log.mailsends' }, options: { allowMixed: 0 } })
 export class MailSend {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
     @prop()
     public mails: string[]
 
@@ -81,8 +87,11 @@ export class MailSend {
 /**
  * 设备参数超限记录
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.uartterminaldatatransfinites' } })
+@modelOptions({ schemaOptions: { collection: 'log.uartterminaldatatransfinites' } })
 export class UartTerminalDataTransfinite {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
     @prop()
     public parentId: string
 
@@ -102,9 +111,6 @@ export class UartTerminalDataTransfinite {
     public protocol: string
 
     @prop()
-    public timeStamp: number
-
-    @prop()
     public tag: string
 
     @prop()
@@ -117,8 +123,11 @@ export class UartTerminalDataTransfinite {
 /**
  * 记录用户的所有操作
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.userrequsts' } })
+@modelOptions({ schemaOptions: { collection: 'log.userrequsts' }, options: { allowMixed: 0 } })
 export class UserRequst {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
     @prop()
     public user: string
 
@@ -135,8 +144,11 @@ export class UserRequst {
 /**
  * 记录用户登陆注册相关
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.userlogins' } })
+@modelOptions({ schemaOptions: { collection: 'log.userlogins' } })
 export class UserLogin {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
     @prop()
     public user: string
 
@@ -153,8 +165,10 @@ export class UserLogin {
 /**
  * 节点事件
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.nodes' } })
+@modelOptions({ schemaOptions: { collection: 'log.nodes' } })
 export class Nodes {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
 
     @prop()
     public ID: string
@@ -172,8 +186,11 @@ export class Nodes {
 /**
  * 终端事件
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.terminals' } })
+@modelOptions({ schemaOptions: { collection: 'log.terminals' }, options: { allowMixed: 0 } })
 export class Terminals {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
     @prop()
     public NodeIP: string
 
@@ -189,7 +206,7 @@ export class Terminals {
     @prop()
     public msg: string
 
-    @prop({ type: Schema.Types.Mixed })
+    @prop({ type: Schema.Types.Mixed, })
     public query: any
 
     @prop({ type: Schema.Types.Mixed })
@@ -199,8 +216,11 @@ export class Terminals {
 /**
  * 数据清洗
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.datacleans' } })
+@modelOptions({ schemaOptions: { collection: 'log.datacleans' } })
 export class DataClean {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
 
     @prop()
     public NumUartterminaldatatransfinites: string
@@ -224,8 +244,11 @@ export class DataClean {
 /**
  * 流量每日使用量
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.usebytes' } })
+@modelOptions({ schemaOptions: { collection: 'log.usebytes' } })
 export class UseBytes {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
 
     @prop()
     public mac: string
@@ -240,8 +263,11 @@ export class UseBytes {
 /**
  * dtu繁忙状态变更记录
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.dtubusy' } })
+@modelOptions({ schemaOptions: { collection: 'log.dtubusy' } })
 export class DtuBusy {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
 
     @prop()
     public mac: string
@@ -251,16 +277,16 @@ export class DtuBusy {
 
     @prop()
     public n: number
-
-    @prop()
-    public timeStamp: number
 }
 
 /**
  * dtu发送指令记录
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.instructquerys' } })
+@modelOptions({ schemaOptions: { collection: 'log.instructquerys' }, options: { allowMixed: 0 } })
 export class InstructQuery {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
 
     @prop()
     public mac: string
@@ -277,10 +303,7 @@ export class InstructQuery {
     @prop()
     public pid: number
 
-    @prop()
-    public timeStamp: number
-
-    @prop()
+    @prop({ type: String })
     public content: string[]
 
     @prop()
@@ -290,8 +313,11 @@ export class InstructQuery {
 /**
  * 记录微信推送事件
  */
-@modelOptions({ schemaOptions: { timestamps: true, collection: 'log.wxevents' } })
+@modelOptions({ schemaOptions: { collection: 'log.wxevents' }, options: { allowMixed: 0 } })
 export class WXEvent {
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+
 
     @prop()
     /**

@@ -26,6 +26,7 @@ export interface f {
   createdAt: Date
   updatedAt: Date
   lastDate: Date
+  [x: string]: any
 }
 
 export type filter<T> = Partial<Record<keyof f, 0 | 1>> & Partial<Record<keyof T, 0 | 1>>
@@ -40,3 +41,27 @@ export interface SmsResult {
   "BizId": string
   "Code": string
 }
+
+export interface alarm {
+  /**
+   * 告警参数参数
+   */
+  argument: string
+  /**
+   * 标签
+   */
+  tag: 'ups' | 'Threshold' | 'AlarmStat'
+  /**
+   * 时间戳
+   */
+  timeStamp: number
+  /**
+   * 携带数据
+   */
+  data: Uart.queryResultArgument
+  /**
+   * 约束
+   */
+  contant?: Uart.Threshold | Uart.ConstantAlarmStat
+}
+

@@ -1,26 +1,29 @@
 import { Provide, Init, Inject } from '@midwayjs/decorator';
 import { getModelForClass, ReturnModelType, } from "@midwayjs/typegoose"
 import { BeAnObject } from '@typegoose/typegoose/lib/types';
-import { Users, UserBindDevice, UserAggregation, SecretApp, UserAlarmSetup, UserLayout } from "../entity/user"
+import { Users, UserBindDevice, UserAggregation, SecretApp, UserAlarmSetup, UserLayout, wxUser } from "../entity/user"
 import { UartTerminalDataTransfinite, UserLogin } from "../entity/log"
 import { Device } from "./device"
 import { Sms } from "../util/sms"
 import { Wx } from "../util/wx"
 import { Util } from "../util/util"
-import { filter, MongoTypesId } from '../interface';
+import { filter, MongoTypesId, ObjectId } from '../interface';
 import { Terminal, TerminalClientResult, TerminalClientResultSingle } from '../entity/node';
 import * as lodash from "lodash"
+import axios from "axios"
 
 
 @Provide()
 export class UserService {
-  private userModel: ReturnModelType<typeof Users, BeAnObject>
-  private loguserModel: ReturnModelType<typeof UserLogin, BeAnObject>;
-  private userbindModel: ReturnModelType<typeof UserBindDevice, BeAnObject>;
-  private useraggregModel: ReturnModelType<typeof UserAggregation, BeAnObject>;
-  private userAlarmSetupModel: ReturnModelType<typeof UserAlarmSetup, BeAnObject>;
-  private AlarmModel: ReturnModelType<typeof UartTerminalDataTransfinite, BeAnObject>;
-  private layoutModel: ReturnModelType<typeof UserLayout, BeAnObject>;
+  userModel: ReturnModelType<typeof Users, BeAnObject>
+  loguserModel: ReturnModelType<typeof UserLogin, BeAnObject>;
+  userbindModel: ReturnModelType<typeof UserBindDevice, BeAnObject>;
+  useraggregModel: ReturnModelType<typeof UserAggregation, BeAnObject>;
+  userAlarmSetupModel: ReturnModelType<typeof UserAlarmSetup, BeAnObject>;
+  AlarmModel: ReturnModelType<typeof UartTerminalDataTransfinite, BeAnObject>;
+  layoutModel: ReturnModelType<typeof UserLayout, BeAnObject>;
+  wxUserModel: ReturnModelType<typeof wxUser, BeAnObject>;
+  secretModel: ReturnModelType<typeof SecretApp, BeAnObject>;
 
   @Init()
   async init() {
@@ -31,6 +34,8 @@ export class UserService {
     this.userAlarmSetupModel = getModelForClass(UserAlarmSetup)
     this.AlarmModel = getModelForClass(UartTerminalDataTransfinite)
     this.layoutModel = getModelForClass(UserLayout)
+    this.wxUserModel = getModelForClass(wxUser)
+    this.secretModel = getModelForClass(SecretApp)
   }
 
   @Inject()
@@ -52,6 +57,7 @@ export class UserService {
    * @returns 
    */
   async isBindMac(user: string, mac: string) {
+    if (user === 'root') return true
     const r = await this.userbindModel.findOne({ user, UTs: mac }, { _id: 1 })
     return r ? true : false
   }
@@ -70,16 +76,55 @@ export class UserService {
         data: r.code,
         msg: `手机号:${users.tel.slice(0, 3)}***${users.tel.slice(7)}`
       }
-    } else if (users.mail) {
-
-    } else if (users.wxId) {
-
     } else {
       return {
         code: 0,
         msg: 'user is undefine '
       }
     }
+  }
+
+
+  /**
+   * 修改密码
+   * @param user 
+   * @param passwd 
+   */
+  async resetUserPasswd(user: string, passwd: string) {
+    return await this.userModel.updateOne({ user }, { $set: { passwd: await this.Util.BcryptDo(passwd) } }).lean()
+  }
+
+  /**
+   * 获取所以微信用户
+   * @returns 
+   */
+  getWxUsers() {
+    return this.wxUserModel.find().lean()
+  }
+
+  /**
+   * 更新微信用户信息
+   * @param users 
+   * @returns 
+   */
+  updateWxUser(users: Uart.WX.userInfoPublic) {
+    return this.wxUserModel.updateOne({ openid: users.openid }, { $set: { ...users } }, { upsert: true }).lean()
+  }
+
+  /**
+   * 获取指定微信用户
+   * @returns 
+   */
+  getWxUser(id: string) {
+    return this.wxUserModel.findOne({ $or: [{ openid: id }, { unionid: id }] }).lean()
+  }
+
+  /**
+   * 删除指定微信用户
+   * @returns 
+   */
+  delWxUser(id: string) {
+    return this.wxUserModel.deleteOne({ $or: [{ openid: id }, { unionid: id }] }).lean()
   }
 
   /**
@@ -91,13 +136,26 @@ export class UserService {
   }
 
   /**
-   * 使用用户名或邮箱获取用户信息
+   * 使用用户名或邮箱或id或uniId获取用户信息
    * @param user 
    * @param filter 刷选
    * @returns 
    */
   getUser(user: string, filter: filter<Uart.UserInfo> = { _id: 0 }) {
-    return this.userModel.findOne({ $or: [{ user }, { mail: user }, { userId: user }] }, filter).lean()
+    return this.userModel.findOne({ $or: [{ user }, { mail: user }, { userId: user }, { _id: ObjectId(user) }] }, filter).lean()
+  }
+
+  /**
+   * 初始化用户告警配置
+   * @param user 
+   */
+  async initUserAlarmSetup(user: string) {
+    const u = await this.getUser(user)
+    if (u) {
+      return await this.userAlarmSetupModel.create({ user: u.user, tels: (u?.tel && this.Util.RegexTel(u.tel)) ? [u.tel] : [], mails: (u?.mail && this.Util.RegexMail(u.mail)) ? [u.mail] : [], ProtocolSetup: [] })
+    } else {
+      return null
+    }
   }
 
   /**
@@ -106,8 +164,9 @@ export class UserService {
    * @returns 
    */
   async createUser(user: Partial<Uart.UserInfo>) {
+    user.passwd = await this.Util.BcryptDo(user.passwd)
     const u = await this.userModel.create(user as any)
-    await this.userAlarmSetupModel.create({ user: u.user, tels: (u?.tel) ? [u.tel] : [], mails: (u?.mail) ? [u.mail] : [], ProtocolSetup: [] })
+    await this.initUserAlarmSetup(u.user)
     await this.loguserModel.create({ user: u.user, type: '用户注册', address: user.address, msg: '' })
     return u
   }
@@ -118,7 +177,7 @@ export class UserService {
    */
   async updateUserLoginlog(user: string, address: string, msg: string = '') {
     return {
-      user: await this.userModel.update({ user }, { $set: { modifyTime: new Date(), address } }).lean(),
+      user: await this.userModel.updateOne({ user }, { $set: { modifyTime: new Date(), address } }).lean(),
       log: await this.loguserModel.create({ user, type: '用户登录', address, msg })
     }
   }
@@ -140,7 +199,8 @@ export class UserService {
   async getUserBindDevices(user: string) {
     const bind = await this.getUserBind(user)
     return {
-      UTs: await this.Device.getTerminal(bind.UTs || []),
+      bind,
+      UTs: await this.Device.getTerminal(bind?.UTs || []),
       ECs: [],
       AGG: await this.useraggregModel.find({ user }).lean()
     }
@@ -152,9 +212,20 @@ export class UserService {
    * @returns 
    */
   async getUserSecret(type: 'aliSms' | "mail" | "hf" | 'wxopen' | "wxmp" | 'wxmpValidaton' | 'wxwp') {
-    const model = getModelForClass(SecretApp)
-    return await model.findOne({ type }).lean()
+    return await this.secretModel.findOne({ type }).lean()
   }
+
+
+  /**
+     * set第三方密匙信息
+     * @param type 
+     * @returns 
+     */
+  async setUserSecret(type: 'aliSms' | "mail" | "hf" | 'wxopen' | "wxmp" | 'wxmpValidaton' | 'wxwp' & string, appid: string, secret: string) {
+    return await this.secretModel.updateOne({ type }, { $set: { appid, secret } }, { upsert: true }).lean()
+  }
+
+
 
   /**
    * 获取用户告警
@@ -267,6 +338,16 @@ export class UserService {
   }
 
   /**
+   * 获取all用户告警配置
+   * @param user 
+   * @param filter 
+   * @returns 
+   */
+  async getUserAlarmSetups(filter: filter<Uart.userSetup> = { _id: 0 }) {
+    return await this.userAlarmSetupModel.find({}, filter).lean()
+  }
+
+  /**
    * 获取用户告警配置
    * @param user 
    * @param filter 
@@ -274,6 +355,16 @@ export class UserService {
    */
   async getUserAlarmSetup(user: string, filter: filter<Uart.userSetup> = { _id: 0 }) {
     return await this.userAlarmSetupModel.findOne({ user }, filter).lean()
+  }
+
+
+  /**
+   * 删除用户告警配置
+   * @param user 
+   * @returns 
+   */
+  deleteUsersetup(user: string) {
+    return this.userAlarmSetupModel.deleteOne({ user }).lean()
   }
 
   /**
@@ -302,8 +393,9 @@ export class UserService {
    * @param user 
    * @returns 
    */
-  mpTicket(user: string) {
-    return this.Wx.MP?.getTicket(user)
+  async mpTicket(user: string) {
+    const { _id } = await this.getUser(user)
+    return this.Wx.MP?.getTicket(_id)
   }
 
   /**
@@ -311,8 +403,9 @@ export class UserService {
    * @param user 
    * @returns 
    */
-  wpTicket(user: string) {
-    return this.Wx.WP?.getTicket(user)
+  async wpTicket(user: string) {
+    const { _id } = await this.getUser(user)
+    return this.Wx.WP?.getTicket(_id)
   }
 
   /**
@@ -559,8 +652,119 @@ export class UserService {
    * @param bg 
    * @param Layout 
    */
- async setUserLayout(user:string,id: string, type: string, bg: string, Layout: Uart.AggregationLayoutNode[]){
-    return await this.layoutModel.updateOne({ id, user }, { $set: { type, bg, Layout} }, { upsert: true }).lean()
+  async setUserLayout(user: string, id: string, type: string, bg: string, Layout: Uart.AggregationLayoutNode[]) {
+    return await this.layoutModel.updateOne({ id, user }, { $set: { type, bg, Layout } }, { upsert: true }).lean()
+  }
+
+  /**
+   * 删除用户信息
+   * @param user 
+   * @returns 
+   */
+  async deleteUser(user: string) {
+    await this.layoutModel.deleteOne({ user })
+    await this.useraggregModel.deleteOne({ user })
+    await this.userbindModel.deleteOne({ user })
+    await this.deleteUsersetup(user)
+    return await this.userModel.deleteOne({ user })
+  }
+
+  /**
+   * 添加聚合设备
+   * @param name 
+   * @param aggs 
+   * @returns 
+   */
+  async addAggregation(user: string, name: string, aggs: Uart.AggregationDev[]) {
+    const aggObj: Uart.Aggregation = {
+      user,
+      id: '',
+      name,
+      aggregations: aggs,
+      devs: []
+    }
+    const { _id } = await this.useraggregModel.create(aggObj)
+    return await this.useraggregModel.updateOne({ name, user }, { $set: { id: _id } }).lean()
+  }
+
+  /**
+   * 删除聚合设备
+   * @param user 
+   * @param id 
+   * @returns 
+   */
+  async deleteAggregation(user: string, id: string) {
+    return await this.useraggregModel.deleteOne({ user, id }).lean()
+  }
+
+
+  /**
+   * 添加用户
+   * @param name 
+   * @param user 
+   * @param passwd 
+   * @param tel 
+   * @param mail 
+   * @param company 
+   * @returns 
+   */
+  async addUser(name: string, user: string, passwd: string, tel: string, mail: string, company: string) {
+    if (!user || !passwd) {
+      return {
+        code: 0,
+        msg: '账号和密码不能为空'
+      }
+    }
+    if (!tel || !this.Util.RegexTel(tel)) {
+      return {
+        code: 0,
+        msg: '手机号码格式不正确'
+      }
+    }
+    if (!mail || !this.Util.RegexMail(mail)) {
+      return {
+        code: 0,
+        msg: '邮箱格式不正确'
+      }
+    }
+    const u = await this.userModel.findOne({ $or: [{ user }, { mail }, { tel }] })
+    if (u) {
+      if (u.user === user) {
+        return {
+          code: 0,
+          msg: '账号已存在'
+        }
+      }
+      if (u.tel === tel) {
+        return {
+          code: 0,
+          msg: '手机号码已被注册'
+        }
+      }
+      if (u.mail === mail) {
+        return {
+          code: 0,
+          msg: '邮箱已被注册'
+        }
+      }
+    }
+    return {
+      code: 200,
+      data: await this.createUser({ user, name, passwd, tel, mail, company } as any)
+    }
+  }
+
+  /**
+   * 查询普通消息用户输入的关键字
+   * @param key 
+   */
+  async seach_user_keywords(key: string) {
+    const url = `https://www.ladishb.com/site/api/routlinks?key=${encodeURI(key)}`
+    const data = await axios.get(url).then(el => el.data).catch(() => []) as { rout: string, title: string }[]
+    return data.length === 0 ? '' : `匹配到如下链接\n
+    ${data.slice(0, 20).map(el => {
+      return `<a href="https://www.ladishb.com${el.rout}">${el.title.slice(0, 12).trim()}...</a>\n\n`
+    })}`.replace(/(\,|^ )/g, '')
   }
 
 }

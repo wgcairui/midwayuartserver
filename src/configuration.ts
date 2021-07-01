@@ -3,7 +3,6 @@ import { Application } from '@midwayjs/koa';
 import * as body from 'koa-body';
 import { ILifeCycle } from "@midwayjs/core"
 import * as typegoose from "@midwayjs/typegoose"
-import * as cache from "@midwayjs/cache"
 import * as task from '@midwayjs/task'
 import { join } from "path"
 
@@ -11,7 +10,6 @@ import { join } from "path"
   conflictCheck: true,
   imports: [
     typegoose,
-    cache,
     task
   ],
   importConfigs: [
