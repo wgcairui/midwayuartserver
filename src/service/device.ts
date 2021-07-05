@@ -41,7 +41,7 @@ export class Device {
         if (typeof macs === 'string') {
             return await model.findOne({ $or: [{ DevMac: macs }, { bindDev: macs }] }, filter).lean()
         } else {
-            return await model.find({ DevMac: { $in: macs } }, filter).lean() as any
+            return await model.find({ DevMac: { $in: macs as string[] } }, filter).lean() as any
         }
     }
 

@@ -289,7 +289,7 @@ export class RootControll {
         const users = await this.Device.addDevConstent(ProtocolType, Protocol, type, arg)
         return {
             code: 200,
-            data: await Promise.all(users.map(async el => (await this.RedisService.setUserSetup(el, Protocol))))
+            data: await Promise.all(users.map(async el => (await this.RedisService.setUserSetup(el, Protocol)))) as any
         }
     }
 
@@ -636,7 +636,7 @@ export class RootControll {
     getNodeInstructQuery() {
         return {
             code: 200,
-            data: [...this.SocketUart.cache.values()]
+            data: [...this.SocketUart.cache.values()] as unknown as Uart.TerminalMountDevsEX
         }
     }
 

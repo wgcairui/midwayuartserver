@@ -1,12 +1,6 @@
 import { DefaultConfig } from "@midwayjs/typegoose"
 import { RedisOptions } from "ioredis"
-import { ServerRegistration } from 'apollo-server-koa';
-import { GetMiddlewareOptions } from 'apollo-server-koa/dist/ApolloServer';
 import { tencetMapConfig } from "../interface";
-
-export type ExtendedConfig = DefaultConfig & {
-    apollo: GetMiddlewareOptions;
-};
 
 export const mongoose: DefaultConfig = {
     uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : 'uart.ladishb.com'}:27017/UartServer`,
@@ -18,9 +12,6 @@ export const mongoose: DefaultConfig = {
     }
 }
 
-export const apollo: ServerRegistration = {
-    path: "/graphql"
-} as any
 
 export const redis: RedisOptions = {
     port: 6379, // Redis port

@@ -1,24 +1,9 @@
 /**
  * @description User-Service parameters
  */
-export interface IUserOptions {
-  uid: number;
-}
-
-
-
-import type { UserRole } from "./util/constants";
 import { Types } from "mongoose"
 
 export type tokenUser = Pick<Uart.UserInfo, "user" | "userGroup">
-
-export interface IContext {
-  user: tokenUser
-  language: string
-  currentReqUser: {
-    role: UserRole;
-  };
-}
 
 export interface f {
   _id: string

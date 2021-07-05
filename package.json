@@ -17,13 +17,10 @@
     "@midwayjs/typegoose": "^2.11.0",
     "@midwayjs/ws": "^2.11.0",
     "@typegoose/typegoose": "^7.6.1",
-    "apollo-server-koa": "^2.25.1",
     "bcryptjs": "^2.4.3",
     "class-validator": "^0.13.1",
     "crc": "^3.8.0",
     "crypto-js": "^4.0.0",
-    "graphql": "^15.5.0",
-    "graphql-type-json": "^0.3.2",
     "ioredis": "^4.27.6",
     "jsonwebtoken": "^8.5.1",
     "koa-body": "^4.2.0",
@@ -69,6 +66,7 @@
     "lint:fix": "mwts fix",
     "ci": "npm run cov",
     "build": "midway-bin build -c",
+    "build:docker": "npm run build && sudo docker build -t midwayuartserver .",
     "check": "luckyeye"
   },
   "midway-bin-clean": [

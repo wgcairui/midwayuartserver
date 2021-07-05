@@ -511,7 +511,7 @@ export class UserService {
     } else {
       const model = getModelForClass(TerminalClientResultSingle)
       const r = await model.findOne({ mac, pid, "result.name": name }, { "result.$": 1, _id: 0 }).lean()
-      return r?.result || []
+      return (r?.result || []) as unknown as Uart.queryResultArgument[]
     }
   }
 

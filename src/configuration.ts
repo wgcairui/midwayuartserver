@@ -27,7 +27,5 @@ export class ContainerLifeCycle implements ILifeCycle {
         maxFileSize: (1024 * 1024 * 100) * 100
       }
     }));
-
-    //this.app.use(await this.app.generateMiddleware('GraphQLMiddleware'));
   }
 }
