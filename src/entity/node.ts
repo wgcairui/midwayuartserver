@@ -369,3 +369,15 @@ export class Terminal {
     public mountDevs: mountDev[]
 }
 
+
+/**
+ * 注册设备
+ */
+@modelOptions({ schemaOptions: { collection: 'dev.register' } })
+export class registerDev extends mountDev {
+    @prop({ unique: true, index: true, required: true, trim: true })
+    public id!: string
+
+    @prop({ default: Date.now() })
+    public timeStamp?: number
+}

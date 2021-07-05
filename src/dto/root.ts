@@ -35,3 +35,25 @@ export class IdDate extends date {
         return Types.ObjectId(this.id)
     }
 }
+
+export class mountDev {
+    @Rule(RuleType.string())
+    Type: string
+
+    @Rule(RuleType.string())
+    mountDev: string;
+
+    @Rule(RuleType.string())
+    protocol: string;
+
+    @Rule(RuleType.number())
+    pid: number;
+}
+
+export class registerDev {
+    @Rule(RuleType.array())
+    ids: string[]
+
+    @Rule(mountDev)
+    mountDev: Uart.TerminalMountDevs
+}

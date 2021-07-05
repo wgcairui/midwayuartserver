@@ -2,7 +2,7 @@ import { Provide } from "@midwayjs/decorator"
 import { getModelForClass } from "@midwayjs/typegoose"
 import { AnyParamConstructor } from "@typegoose/typegoose/lib/types"
 import { Types } from "mongoose"
-import { NodeClient, NodeRunInfo, RegisterTerminal, Terminal, TerminalClientResult, TerminalClientResults, TerminalClientResultSingle } from "../entity/node"
+import { NodeClient, NodeRunInfo, registerDev, RegisterTerminal, Terminal, TerminalClientResult, TerminalClientResults, TerminalClientResultSingle } from "../entity/node"
 import { DevArgumentAlias, DevConstant, DevType, Protocols } from "../entity/protocol"
 import { filter } from "../interface"
 import * as  _ from "lodash"
@@ -39,7 +39,7 @@ export class Device {
     async getTerminal<T extends string | string[]>(macs: T, filter: filter<Uart.Terminal> = { _id: 0 }): Promise<T extends string ? Terminal : Terminal[]> {
         const model = this.getModel(Terminal)
         if (typeof macs === 'string') {
-            return await model.findOne({ DevMac: macs }, filter).lean()
+            return await model.findOne({ $or: [{ DevMac: macs }, { bindDev: macs }] }, filter).lean()
         } else {
             return await model.find({ DevMac: { $in: macs } }, filter).lean() as any
         }
@@ -81,7 +81,7 @@ export class Device {
      */
     async getTerminalOnline(mac: string) {
         const model = this.getModel(Terminal)
-        const terminal = await model.findOne({ DevMac: mac }).lean()
+        const terminal = await model.findOne({ $or: [{ DevMac: mac }, { bindDev: mac }] }).lean()
         return (!terminal || !terminal.online) ? null : terminal
     }
 
@@ -180,7 +180,12 @@ export class Device {
      */
     async getNodes() {
         const model = this.getModel(NodeClient)
-        return await model.find({}).lean()
+        const tModel = this.getModel(Terminal)
+        const nodes = await model.find({}).lean()
+        for (const node of nodes) {
+            (node as any).count = await tModel.countDocuments({ mountNode: node.Name })
+        }
+        return nodes
     }
 
     /**
@@ -559,7 +564,32 @@ export class Device {
      * 获取设备单例数据
      * @returns 
      */
-    async ClientResultSingle() {
+    ClientResultSingle() {
         return this.getModel(TerminalClientResultSingle).find().lean()
+    }
+
+    /**
+     * 注册设备
+     * @param data 
+     */
+    addRegisterDev(doc: Uart.registerDev) {
+        return this.getModel(registerDev).create(doc)
+    }
+
+    /**
+     * 获取指定注册设备
+     * @param id 
+     * @returns 
+     */
+    getRegisterDev(id: string) {
+        return this.getModel(registerDev).findOne({ id }).lean()
+    }
+
+    /**
+     * 获取指定所有设备
+     * @returns 
+     */
+    getRegisterDevs() {
+        return this.getModel(registerDev).find().lean()
     }
 }

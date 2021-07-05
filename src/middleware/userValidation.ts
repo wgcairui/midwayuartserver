@@ -6,16 +6,18 @@ import { Util } from "../util/util";
 export class token implements IWebMiddleware {
     resolve() {
         return async (ctx: Context, next: IMidwayKoaNext) => {
-            const token = ctx.cookies.get("auth._token.local")
+            const token = ctx.cookies.get("auth._token.local") || ctx.header.token as string
             if (/^\/api\/guest\/.*/.test(ctx.path)) {
                 await next()
             } else {
                 if (token && token !== 'false') {
-                    const util = await ctx.requestContext.getAsync<Util>('util')
-                    const user = await util.Secret_JwtVerify<Uart.UserInfo>(token.split("%20")[1]);
+                    const util = await ctx.requestContext.getAsync(Util)
+
+                    const user = await util.Secret_JwtVerify<Uart.UserInfo>(token.replace("%20", '').trim());
                     ctx.request.body.token = {
                         user: user.user,
-                        userGroup: user.userGroup
+                        userGroup: user.userGroup,
+                        type: ctx.type || 'web'
                     }
                 } else
                     throw new Error('token null')

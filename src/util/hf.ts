@@ -16,7 +16,7 @@ interface hf_loginRequst extends hfRequst {
     }
 }
 
-interface hf_macInfo {
+interface hf_macInfo extends hfRequst {
     data: {
         content: {
             description: string
@@ -119,8 +119,7 @@ export class HF {
      */
     async macRemote(mac: string) {
         const macInfo = await this.macInfo(mac)
-        const remoteCode = macInfo.data.content[0].remoteCode
-        return `http://bridge.iotworkshop.com/ctrl/device/index.html?remote_code=${remoteCode}`
+        return macInfo.result === 0 ? '' : `http://bridge.iotworkshop.com/ctrl/device/index.html?remote_code=${macInfo.data.content[0].remoteCode}`
     }
 
     /**

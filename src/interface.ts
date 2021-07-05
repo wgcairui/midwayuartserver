@@ -65,3 +65,11 @@ export interface alarm {
   contant?: Uart.Threshold | Uart.ConstantAlarmStat
 }
 
+/**
+ * tencetd地图配置
+ */
+export interface tencetMapConfig {
+  key: string
+  apiUrl: string
+  SK: string
+}

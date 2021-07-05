@@ -31,13 +31,14 @@ export class Users {
     @prop({ minlength: 10, maxlength: 200 })
     public passwd!: string
 
-    @prop({ unique: true })
+    // https://www.jianshu.com/p/4dd08c935f00
+    @prop({ unique: true, sparse: true })
     public mail: string
 
     @prop()
     public company: string
 
-    @prop({ unique: true })
+    @prop({ unique: true, sparse: true })
     public tel: string
 
     @prop()

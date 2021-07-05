@@ -7,7 +7,7 @@ import { Wx } from "../util/wx"
 import { HF } from "../util/hf"
 import { Logs } from "../service/log"
 import { Application as SocketApp } from "@midwayjs/socketio"
-import { date, IdDate, macDate } from "../dto/root"
+import { date, IdDate, macDate, registerDev } from "../dto/root"
 import { SocketUart } from "../service/socketUart"
 
 @Provide()
@@ -90,11 +90,26 @@ export class RootControll {
     }
 
     /**
+   * 获取终端信息
+   * @param user 
+   * @param mac 
+   * @returns 
+   */
+    @Post("/getTerminal")
+    async getTerminal(@Body() mac: string) {
+        return {
+            code: 200,
+            data: await this.UserService.getTerminal("root", mac)
+        }
+    }
+
+    /**
      * 
      * @returns 获取所以节点
      */
     @Post("/Nodes")
     async Nodes() {
+
         return {
             code: 200,
             data: await this.Device.getNodes()
@@ -440,9 +455,10 @@ export class RootControll {
      */
     @Post("/iotRemoteUrl")
     async iotRemoteUrl(@Body() mac: string) {
+        const d = await this.HF.macRemote(mac)
         return {
-            code: 200,
-            data: await this.HF.macRemote(mac)
+            code: d ? 200 : 0,
+            data: d
         }
     }
 
@@ -809,6 +825,33 @@ export class RootControll {
         return {
             code: 200,
             data: await this.logs.logdataclean(data.getStart(), data.getEnd())
+        }
+    }
+
+    /**
+     * 注册设备
+     * @param data 
+     */
+    @Post("/addRegisterDev")
+    @Validate()
+    async addRegisterDev(@Body(ALL) data: registerDev) {
+        return {
+            code: 200,
+            data: await Promise.all(data.ids.map(id => {
+                return this.Device.addRegisterDev({ id, ...data.mountDev })
+            }))
+        }
+    }
+
+    /**
+     * 获取指定所有设备
+     * @returns 
+     */
+    @Post("/getRegisterDevs")
+    async getRegisterDevs() {
+        return {
+            code: 200,
+            data: await this.Device.getRegisterDevs()
         }
     }
 

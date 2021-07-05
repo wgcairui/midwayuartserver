@@ -3,8 +3,11 @@ import { Context } from "@midwayjs/koa"
 import { UserService } from "../service/user"
 import { Device } from "../service/device"
 import { RedisService } from "../service/redis"
-import { date, Api, mongoId, modifiTerminalName, mac, macPid, addMountDev, smsCode, alarmTels, protocol, terminalResults, InstructSet, setUserSetupProtocol, setAlias, id, setAggs, addAgg } from "../dto/user"
+import { TencetMap } from "../service/tencetMap"
+import { date, Api, mongoId, modifiTerminalName, mac, macPid, addMountDev, smsCode, alarmTels, protocol, terminalResults, InstructSet, setUserSetupProtocol, setAlias, id, setAggs, addAgg, updateAvanter, updateJw } from "../dto/user"
 import { Sms } from "../decorator/smsValidation"
+import { Util } from "../util/util"
+import { SocketUart } from "../service/socketUart"
 import * as lodash from "lodash"
 
 @Provide()
@@ -22,6 +25,16 @@ export class ApiControll {
 
     @Inject()
     ctx: Context
+
+
+    @Inject()
+    TencetMap: TencetMap
+
+    @Inject()
+    Util: Util
+
+    @Inject()
+    SocketUart: SocketUart
 
     /**
    * 添加用户
@@ -134,7 +147,7 @@ export class ApiControll {
         return {
             code: d ? 200 : 0,
             data: d,
-            msg: d ? "success" : 'mac is binding'
+            msg: d ? "success" : '设备已经被绑定'
         }
     }
 
@@ -420,11 +433,33 @@ export class ApiControll {
     @Post("/SendProcotolInstructSet")
     @Validate()
     async SendProcotolInstructSet(@Body(ALL) data: InstructSet) {
-        const d = await this.UserService.SendProcotolInstructSet(data.token.user, data.query, data.item)
-        if (d) {
+        const { token: { user }, query, item } = data
+        if (await this.UserService.isBindMac(user, query.DevMac)) {
+            const protocol = await this.Device.getProtocol(query.protocol)
+            // 携带事件名称，触发指令查询
+            const Query: Uart.instructQuery = {
+                protocol: query.protocol,
+                DevMac: query.DevMac,
+                pid: query.pid,
+                type: protocol.Type,
+                events: 'oprate' + Date.now() + query.DevMac,
+                content: item.value
+            }
+            // 检查操作指令是否含有自定义参数
+            if (/(%i)/.test(item.value)) {
+                // 如果识别字为%i%i,则把值转换为四个字节的hex字符串,否则转换为两个字节
+                if (/%i%i/.test(item.value)) {
+                    const b = Buffer.allocUnsafe(2)
+                    b.writeIntBE(this.Util.ParseCoefficient(item.bl, Number(item.val)), 0, 2)
+                    Query.content = item.value.replace(/(%i%i)/, b.slice(0, 2).toString("hex"))
+                } else {
+                    const val = this.Util.ParseCoefficient(item.bl, Number(item.val)).toString(16)
+                    Query.content = item.value.replace(/(%i)/, val.length < 2 ? val.padStart(2, '0') : val)
+                }
+            }
             return {
                 code: 200,
-                data: d
+                data: await this.SocketUart.InstructQuery(Query)
             }
         } else {
             return {
@@ -435,6 +470,7 @@ export class ApiControll {
                 } as Uart.ApolloMongoResult
             }
         }
+
     }
 
     /**
@@ -500,6 +536,18 @@ export class ApiControll {
             data: await this.UserService.getTerminal(data.token.user, data.mac)
         }
     }
+
+    /**
+     * 
+     * @returns 获取所以节点
+     */
+     @Post("/Nodes")
+     async Nodes() {
+         return {
+             code: 200,
+             data: await this.Device.getNodes()
+         }
+     }
 
     /**
    *  获取用户布局配置
@@ -642,5 +690,90 @@ export class ApiControll {
         }
     }
 
+
+    /**
+   * 更新用户头像和昵称
+   * @param nickName 昵称
+   * @param avanter 头像链接
+   */
+    @Validate()
+    @Post("/updateAvanter")
+    async updateAvanter(@Body(ALL) data: updateAvanter) {
+        return {
+            code: 200,
+            data: await this.UserService.modifyUserInfo(data.token.user, { avanter: data.avanter, name: data.nickName })
+        }
+    }
+
+    /**
+   * 用于解绑微信和透传账号的绑定关系
+   */
+    @Post("/unbindwx")
+    @Validate()
+    async unbindwx(@Body(ALL) data: Api) {
+        const user = await this.UserService.getUser(data.token.user)
+        if (user.rgtype === 'wx') {
+            await this.UserService.deleteUser(user.user)
+        } else {
+            await this.UserService.modifyUserInfo(user.user, { wpId: '', userId: '' })
+        }
+        return {
+            code: 200
+        }
+    }
+
+    /**
+   * 获取未确认告警数量
+   */
+    @Post("/getAlarmunconfirmed")
+    @Validate()
+    async getAlarmunconfirmed(@Body(ALL) data: Api) {
+        return {
+            code: 200,
+            data: await this.UserService.getAlarmunconfirmed(data.token.user)
+        }
+    }
+
+    /**
+     * 获取gps定位的详细地址
+     * @param location 
+     * @returns 
+     */
+    @Post("/getGPSaddress")
+    async getGPSaddress(@Body() location: string) {
+        const r = await this.TencetMap.geocoder(location)
+        return {
+            code: r.status === 0 ? 200 : 0,
+            data: r.result,
+            msg: r.message
+        }
+    }
+
+    /**
+     * 更新dtugps定位
+     * @param data 
+     * @returns 
+     */
+    @Post("/updateGps")
+    @Validate()
+    async updateGps(@Body(ALL) data: updateJw) {
+        return {
+            code: 200,
+            data: await this.UserService.modifyTerminalJw(data.token.user, data.mac, data.jw)
+        }
+    }
+
+    /**
+     * 获取指定注册设备
+     * @param id 
+     * @returns 
+     */
+     @Post("/getRegisterDev")
+     async getRegisterDev(@Body() id: string) {
+         return {
+             code: 200,
+             data: await this.Device.getRegisterDev(id)
+         }
+     }
 }
 

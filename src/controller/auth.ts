@@ -1,11 +1,18 @@
 import { Inject, Controller, Get, Provide, Query, Body, Post, Validate, ALL } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { UserService } from '../service/user';
-import { login, loginHash, wxlogin } from "../dto/user"
+import { login, loginHash, wplogin, wxlogin } from "../dto/user"
 import { Util } from "../util/util"
 import { RedisService } from "../service/redis"
 import { Wx } from "../util/wx"
+import { Logs } from "../service/log"
 import { AES, enc } from "crypto-js"
+import { code2Session, getPhone, registerUser } from '../dto/auth';
+
+
+/**
+ * 登录相关控制器
+ */
 @Provide()
 @Controller('/api/auth', { middleware: ['tokenParse'] })
 export class AuthController {
@@ -23,6 +30,9 @@ export class AuthController {
 
   @Inject()
   Wx: Wx
+
+  @Inject()
+  logs: Logs
 
   /**
    * 获取用户名
@@ -109,7 +119,7 @@ export class AuthController {
 
     return {
       code: 200,
-      token: await this.Util.Secret_JwtSign({ user: user.user, userGroup: user.userGroup }),
+      token: await this.userService.getToken(user.user),
       data: await this.userService.updateUserLoginlog(user.user, this.ctx.ip)
     }
   }
@@ -138,7 +148,131 @@ export class AuthController {
     }
     return {
       code: 200,
-      token: await this.Util.Secret_JwtSign({ user: user.user, userGroup: user.userGroup })
+      token: await this.userService.getToken(user.user)
     }
   }
+
+
+  // ----------------------------------------------
+  /**
+   * 以下是微信小程序端支持
+   * https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html
+   */
+  @Get("/code2Session")
+  async code2Session(@Query(ALL) data: code2Session) {
+
+    // 正确的话返回sessionkey
+    const seesion = await this.Wx.WP.UserOpenID(data.js_code)
+    // 存储session
+    await this.RedisService.setCode2Session(seesion.openid, seesion.session_key)
+    // 检查unionid是否为已注册用户,
+    const user = await this.userService.getUser(seesion.unionid)
+    // console.log({seesion,user});
+
+    if (user) {
+      await this.userService.updateUserLoginlog(user.user, this.ctx.ip, 'wx_login')
+      // 如果没有小程序id,更新
+      if (!user.wpId) await this.userService.modifyUserInfo(user.user, { wpId: seesion.openid })
+      return {
+        code: 200,
+        data: {
+          token: await this.userService.getToken(user.user)
+        }
+      }
+      // 如果登录携带扫码scene值,则是绑定小程序和透传账号
+    } else if (data.scene) {
+      const user = await this.userService.getIdUser(data.scene)
+      if (user) {
+        await this.userService.updateUserLoginlog(user.user, this.ctx.ip, 'wx_bind')
+        await this.userService.modifyUserInfo(user.user, { userId: seesion.unionid, wpId: seesion.openid })
+        return {
+          code: 200,
+          data: {
+            token: await this.userService.getToken(user.user)
+          }
+        }
+      }
+    }
+
+    return {
+      code: 0,
+      data: seesion,
+      msg: '用户未注册'
+    }
+  }
+
+  /**
+   * 解密电话字符串
+   * @param data 
+   */
+  @Post("/getphonenumber")
+  @Validate()
+  async getphonenumber(@Body(ALL) data: getPhone) {
+    const session = await this.RedisService.getCode2Session(data.openid)
+    return {
+      code: 200,
+      data: await this.Wx.WP.BizDataCryptdecryptData(session, data.encryptedData, data.iv)
+    }
+  }
+
+  /**
+   * 注册
+   * @param data 
+   */
+  @Post("/wxRegister")
+  @Validate()
+  async wxRegister(@Body(ALL) data: registerUser) {
+    if (await this.userService.getUser(data.tel)) {
+      return {
+        code: 0,
+        msg: '手机号已被用户注册'
+      }
+    } else {
+      return {
+        code: 200,
+        data: await this.userService.createUser({ user: data.user, userId: data.user, wpId: data.openid, avanter: data.avanter, name: data.name, tel: Number(data.tel), rgtype: "wx" })
+      }
+    }
+  }
+
+
+  /**
+   * wp登录
+   * @param accont 
+   */
+  @Post("/wplogin")
+  @Validate()
+  async wplogin(@Body(ALL) accont: wplogin) {
+    const user = await this.userService.getUser(accont.user)
+    if (!user) {
+      return {
+        code: 0,
+        msg: '用户未注册,请使用微信注册'
+      }
+    }
+    if (!await this.Util.BcryptCompare(accont.passwd, user.passwd)) {
+      return {
+        code: 0,
+        msg: '用户名或密码错误'
+      }
+    }
+    if (user.userId && user.userId !== accont.unionid) {
+      return {
+        code: 0,
+        msg: "账号已被其他微信用户绑定,请核对账号是否正确"
+      }
+    } else {
+      await this.userService.modifyUserInfo(user.user, { userId: accont.unionid, wpId: accont.openid, avanter: accont.avanter })
+    }
+    await this.userService.updateUserLoginlog(user.user, this.ctx.ip, 'wpLogin')
+    return {
+      code: 200,
+      data: { token: await this.userService.getToken(user.user) }
+    }
+  }
+
+
+
 }
+
+

@@ -50,6 +50,7 @@ export class UserService {
   @Inject()
   Util: Util
 
+
   /**
    * 检查是否是用户绑定mac
    * @param user 
@@ -57,7 +58,8 @@ export class UserService {
    * @returns 
    */
   async isBindMac(user: string, mac: string) {
-    if (user === 'root') return true
+    const u = await this.getUser(user)
+    if (u && ['root', 'admin'].includes(u.userGroup)) return true
     const r = await this.userbindModel.findOne({ user, UTs: mac }, { _id: 1 })
     return r ? true : false
   }
@@ -136,13 +138,38 @@ export class UserService {
   }
 
   /**
-   * 使用用户名或邮箱或id或uniId获取用户信息
+   * 使用用户名或邮箱,tel或id或uniId获取用户信息
    * @param user 
    * @param filter 刷选
    * @returns 
    */
   getUser(user: string, filter: filter<Uart.UserInfo> = { _id: 0 }) {
-    return this.userModel.findOne({ $or: [{ user }, { mail: user }, { userId: user }, { _id: ObjectId(user) }] }, filter).lean()
+    return this.userModel.findOne({ $or: [{ user }, { mail: user }, { userId: user }, { tel: user }] }, filter).lean()
+  }
+
+  /**
+   * 使用用户id获取用户信息
+   * @param id
+   * @param filter 刷选
+   * @returns 
+   */
+  getIdUser(id: string, filter: filter<Uart.UserInfo> = { _id: 0 }) {
+    return this.userModel.findOne({ _id: ObjectId(id) }, filter).lean()
+  }
+
+  /**
+   * 获取用户token
+   * @param user 
+   * @returns 
+   */
+  async getToken(user: string) {
+    const users = await this.getUser(user)
+    const data: Partial<Uart.UserInfo> = {
+      user: users.user,
+      name: users.name,
+      userGroup: users.userGroup
+    }
+    return await this.Util.Secret_JwtSign(data)
   }
 
   /**
@@ -164,7 +191,7 @@ export class UserService {
    * @returns 
    */
   async createUser(user: Partial<Uart.UserInfo>) {
-    user.passwd = await this.Util.BcryptDo(user.passwd)
+    user.passwd = await this.Util.BcryptDo(user.passwd || user.user)
     const u = await this.userModel.create(user as any)
     await this.initUserAlarmSetup(u.user)
     await this.loguserModel.create({ user: u.user, type: '用户注册', address: user.address, msg: '' })
@@ -263,11 +290,24 @@ export class UserService {
    */
   async modifyTerminal(user: string, mac: string, name: string) {
     const bind = await this.getUserBind(user)
-    console.log(bind.UTs, mac);
-
     if (bind.UTs.includes(mac)) {
       const model = getModelForClass(Terminal)
       return await model.updateOne({ DevMac: mac }, { $set: { name } }).lean()
+    } else throw new Error('mac Error')
+  }
+
+  /**
+   * 修改用户设备定位
+   * @param user 
+   * @param mac 
+   * @param jw
+   * @returns 
+   */
+  async modifyTerminalJw(user: string, mac: string, jw: string) {
+    const bind = await this.getUserBind(user)
+    if (bind.UTs.includes(mac)) {
+      const model = getModelForClass(Terminal)
+      return await model.updateOne({ DevMac: mac }, { $set: { jw } }).lean()
     } else throw new Error('mac Error')
   }
 
@@ -318,22 +358,39 @@ export class UserService {
    * @param param2 
    * @returns 
    */
-  async addTerminalMountDev(user: string, mac: string, { Type, mountDev, protocol, pid }: Uart.TerminalMountDevs) {
+  async addTerminalMountDev(user: string, mac: string, { Type, mountDev, protocol, pid, bindDev }: Uart.TerminalMountDevs) {
     const isBind = await this.isBindMac(user, mac)
     if (!isBind) {
       return null
     } else {
+      console.log({ user, mac, Type, mountDev, protocol, pid, bindDev });
+
       const model = getModelForClass(Terminal)
-      return await model.updateOne({ DevMac: mac }, {
-        $addToSet: {
-          mountDevs: {
-            Type,
-            mountDev,
-            protocol,
-            pid
+      if (bindDev) {
+        return await model.updateOne({ DevMac: mac }, {
+          bindDev,
+          $addToSet: {
+            mountDevs: {
+              Type,
+              mountDev,
+              protocol,
+              pid,
+              bindDev
+            }
           }
-        }
-      }).lean()
+        }).lean()
+      } else {
+        return await model.updateOne({ DevMac: mac }, {
+          $addToSet: {
+            mountDevs: {
+              Type,
+              mountDev,
+              protocol,
+              pid
+            }
+          }
+        }).lean()
+      }
     }
   }
 
@@ -415,7 +472,7 @@ export class UserService {
    */
   async getUserAlarmProtocol(user: string, protocol: string) {
     const data = await this.userAlarmSetupModel.findOne({ user, "ProtocolSetup.Protocol": protocol }, { "ProtocolSetup.$": 1 }).lean()
-    const setup = data.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null
+    const setup = data?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null
     const obj: Pick<Uart.ProtocolConstantThreshold, "Protocol" | "AlarmStat" | "ShowTag" | "Threshold"> = {
       Protocol: protocol,
       ShowTag: setup?.ShowTag || [],
@@ -481,44 +538,6 @@ export class UserService {
    */
   async refreshDevTimeOut(mac: string, pid: number) {
 
-  }
-
-  /**
-   * 固定发送设备操作指令
-   * @param query 
-   * @param item 
-   * @returns 
-   */
-  async SendProcotolInstructSet(user: string, query: Uart.instructQueryArg, item: Uart.OprateInstruct) {
-    if (await this.isBindMac(user, query.DevMac)) {
-      const protocol = await this.Device.getProtocol(query.protocol)
-      // 携带事件名称，触发指令查询
-      const Query: Uart.instructQuery = {
-        protocol: query.protocol,
-        DevMac: query.DevMac,
-        pid: query.pid,
-        type: protocol.Type,
-        events: 'oprate' + Date.now() + query.DevMac,
-        content: item.value
-      }
-      // 检查操作指令是否含有自定义参数
-      if (/(%i)/.test(item.value)) {
-        // 如果识别字为%i%i,则把值转换为四个字节的hex字符串,否则转换为两个字节
-        if (/%i%i/.test(item.value)) {
-          const b = Buffer.allocUnsafe(2)
-          b.writeIntBE(this.Util.ParseCoefficient(item.bl, Number(item.val)), 0, 2)
-          Query.content = item.value.replace(/(%i%i)/, b.slice(0, 2).toString("hex"))
-        } else {
-          const val = this.Util.ParseCoefficient(item.bl, Number(item.val)).toString(16)
-          Query.content = item.value.replace(/(%i)/, val.length < 2 ? val.padStart(2, '0') : val)
-        }
-      }
-      //const result = await ctx.$Event.DTU_OprateInstruct(Query)
-      //return result
-      return true
-    } else {
-      return null
-    }
   }
 
   /**
@@ -621,7 +640,7 @@ export class UserService {
     if (await this.isBindMac(user, mac)) {
       return await this.Device.getTerminal(mac)
     } else {
-      return null
+      return await this.Device.getTerminal(mac, { DevMac: 1, name: 1, mountNode: 1, _id: 0 })
     }
   }
 
@@ -765,6 +784,17 @@ export class UserService {
     ${data.slice(0, 20).map(el => {
       return `<a href="https://www.ladishb.com${el.rout}">${el.title.slice(0, 12).trim()}...</a>\n\n`
     })}`.replace(/(\,|^ )/g, '')
+  }
+
+
+  /**
+   * 获取未确认告警数量
+   * @param user 
+   * @returns 
+   */
+  async getAlarmunconfirmed(user: string) {
+    const macs = await this.getUserBind(user)
+    return await this.AlarmModel.countDocuments({ mac: { $in: macs.UTs }, isOk: false })
   }
 
 }

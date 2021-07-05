@@ -386,4 +386,22 @@ export class RedisService {
     getloctionIp(ip: string) {
         return this.redisService.get(ip)
     }
+
+    /**
+     * 保存小程序用户获取到的session
+     * @param openId 
+     * @param session 
+     */
+    setCode2Session(openId: string, session: string) {
+        return this.redisService.set(openId, session)
+    }
+
+    /**
+     * 获取小程序用户的session
+     * @param openId 
+     * @param session 
+     */
+    getCode2Session(openId: string) {
+        return this.redisService.get(openId)
+    }
 }

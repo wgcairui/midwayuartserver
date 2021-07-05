@@ -14,6 +14,18 @@ export class login extends loginHash {
     passwd: string
 }
 
+@Rule(login)
+export class wplogin extends login {
+    @Rule(RuleType.string())
+    avanter: string
+
+    @Rule(RuleType.string())
+    openid: string
+
+    @Rule(RuleType.string())
+    unionid: string
+}
+
 export class wxlogin {
     @Rule(RuleType.string().required())
     code: string
@@ -29,6 +41,9 @@ class token {
 
     @Rule(RuleType.string().required())
     userGroup: Group
+
+    @Rule(RuleType.string())
+    type: "wp" | 'web'
 }
 
 export class Api {
@@ -126,6 +141,9 @@ export class mountDev {
 
     @Rule(RuleType.number().required())
     pid: number
+
+    @Rule(RuleType.string().allow())
+    bindDev?: string
 }
 
 /**
@@ -269,6 +287,9 @@ export class setAggs extends id {
     Layout: Uart.AggregationLayoutNode[]
 }
 
+/**
+ * add
+ */
 @Rule(Api)
 export class addAgg extends Api {
     @Rule(RuleType.string())
@@ -276,4 +297,22 @@ export class addAgg extends Api {
 
     @Rule(RuleType.array().allow())
     aggs: Uart.AggregationDev[]
+}
+
+/**
+ * 
+ */
+@Rule(Api)
+export class updateAvanter extends Api {
+    @Rule(RuleType.string())
+    nickName: string
+
+    @Rule(RuleType.string())
+    avanter: string
+}
+
+@Rule(mac)
+export class updateJw extends mac {
+    @Rule(RuleType.string())
+    jw: string
 }

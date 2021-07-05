@@ -8,6 +8,7 @@ import { SecretApp } from "../entity/user"
  */
 @Provide()
 @Scope(ScopeEnum.Singleton)
+//@Autoload()
 export class Wx {
 
     /**
@@ -26,9 +27,11 @@ export class Wx {
     @Init()
     async init() {
 
-        this.initMp()
-        this.initOp()
-        this.initWp()
+        await this.initMp()
+        await this.initOp()
+        await this.initWp()
+
+        
     }
 
     private async getKey(type: 'wxopen' | "wxmp" | 'wxmpValidaton' | 'wxwp') {

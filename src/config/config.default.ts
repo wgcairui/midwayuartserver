@@ -2,6 +2,7 @@ import { DefaultConfig } from "@midwayjs/typegoose"
 import { RedisOptions } from "ioredis"
 import { ServerRegistration } from 'apollo-server-koa';
 import { GetMiddlewareOptions } from 'apollo-server-koa/dist/ApolloServer';
+import { tencetMapConfig } from "../interface";
 
 export type ExtendedConfig = DefaultConfig & {
     apollo: GetMiddlewareOptions;
@@ -13,7 +14,7 @@ export const mongoose: DefaultConfig = {
         dbName: "UartServer",
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        useCreateIndex:true
+        useCreateIndex: true
     }
 }
 
@@ -37,4 +38,10 @@ export const taskConfig = {
             tz: "Asia/Shanghai"           // Task等参数里面设置的比如（0 0 0 * * *）本来是为了0点执行，但是由于时区不对，所以国内用户时区设置一下。
         }
     }
+}
+
+export const tencetMap: tencetMapConfig = {
+    key: '7LGBZ-JLHWW-UCHRM-OIJG6-PNBLV-6ZBCN',
+    apiUrl: 'https://apis.map.qq.com',
+    SK: 'VNXI1sCXNvFIAZFeRT7ghlnLeOuiZWt'
 }
