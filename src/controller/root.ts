@@ -11,7 +11,7 @@ import { date, IdDate, macDate, registerDev } from "../dto/root"
 import { SocketUart } from "../service/socketUart"
 
 @Provide()
-@Controller("/api/root", { middleware: ['ip', 'root'] })
+@Controller("/api/root", { middleware: ['root'] })
 export class RootControll {
 
     @Inject()

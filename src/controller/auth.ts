@@ -14,7 +14,7 @@ import { code2Session, getPhone, registerUser } from '../dto/auth';
  * 登录相关控制器
  */
 @Provide()
-@Controller('/api/auth', { middleware: ['ip', 'tokenParse'] })
+@Controller('/api/auth', { middleware: ['tokenParse'] })
 export class AuthController {
   @Inject()
   ctx: Context;

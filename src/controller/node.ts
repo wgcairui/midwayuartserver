@@ -9,7 +9,7 @@ import { RedisService } from "../service/redis"
 import * as _ from "lodash"
 
 @Provide()
-@Controller("/api/Node", { middleware: ['ip', 'nodeHttp'] })
+@Controller("/api/Node", { middleware: ['nodeHttp'] })
 export class NodeControll {
 
     @Inject()

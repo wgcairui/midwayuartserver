@@ -9,6 +9,7 @@ import { Util } from "../util/util";
 export class root implements IWebMiddleware {
     resolve() {
         return async (ctx: Context, next: IMidwayKoaNext) => {
+            
             const token = ctx.cookies.get("auth._token.local") || ctx.header.token as string
             if (!token || token === 'false') throw new Error('token null')
 

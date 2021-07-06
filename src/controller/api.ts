@@ -11,7 +11,7 @@ import { SocketUart } from "../service/socketUart"
 import * as lodash from "lodash"
 
 @Provide()
-@Controller("/api", { middleware: ['ip', 'token'] })
+@Controller("/api", { middleware: ['token'] })
 export class ApiControll {
 
     @Inject()

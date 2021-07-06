@@ -21,6 +21,7 @@ export class ContainerLifeCycle implements ILifeCycle {
   app: Application;
 
   async onReady() {
+    this.app.proxy = true
     this.app.use(body({
       multipart: true,
       formidable: {
