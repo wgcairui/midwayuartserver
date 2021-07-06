@@ -11,7 +11,7 @@ import { SocketUart } from "../service/socketUart"
 import * as lodash from "lodash"
 
 @Provide()
-@Controller("/api", { middleware: ['token'] })
+@Controller("/api", { middleware: ['ip', 'token'] })
 export class ApiControll {
 
     @Inject()
@@ -127,6 +127,7 @@ export class ApiControll {
        * @returns 
        */
     @Post("/modifyTerminal")
+    @Sms()
     @Validate()
     async modifyTerminal(@Body(ALL) data: modifiTerminalName) {
         return {
@@ -158,6 +159,7 @@ export class ApiControll {
    * @returns 
    */
     @Post("/delUserTerminal")
+    @Sms()
     @Validate()
     async delUserTerminal(@Body(ALL) data: mac) {
         return {
@@ -185,9 +187,11 @@ export class ApiControll {
    * @param pid 
    */
     @Post("/delTerminalMountDev")
+    @Sms()
     @Validate()
     async delTerminalMountDev(@Body(ALL) data: macPid) {
         const d = await this.UserService.delTerminalMountDev(data.token.user, data.mac, data.pid)
+        if (d) this.SocketUart.delTerminalMountDevCache(data.mac, data.pid)
         return {
             code: d ? 200 : 0,
             data: d,
@@ -206,6 +210,7 @@ export class ApiControll {
     @Sms()
     async addTerminalMountDev(@Body(ALL) data: addMountDev) {
         const d = await this.UserService.addTerminalMountDev(data.token.user, data.mac, data.mountDev)
+        if (d) this.SocketUart.setTerminalMountDevCache(data.mac)
         return {
             code: d ? 200 : 0,
             data: d,
@@ -224,7 +229,7 @@ export class ApiControll {
     async smsValidation(@Body(ALL) data: Api) {
         const sr = await this.UserService.sendValidation(data.token.user)
         if (sr.code) {
-            await this.RedisService.setUserSmsCode(data.token.user, sr.code)
+            await this.RedisService.setUserSmsCode(data.token.user, sr.data)
             return {
                 code: 200,
                 msg: sr.msg
@@ -244,7 +249,7 @@ export class ApiControll {
     @Post("/smsCodeValidation")
     @Validate()
     async smsCodeValidation(@Body(ALL) data: smsCode) {
-        const code = Number(await this.RedisService.getUserSmsCode(data.token.user))
+        const code = await this.RedisService.getUserSmsCode(data.token.user)
         if (code === data.code) {
             await this.RedisService.getClient().setex(this.ctx.cookies.get("auth._token.local"), 60 * 60 * 72, 'true')
         }
@@ -275,6 +280,7 @@ export class ApiControll {
   * @returns 
   */
     @Post("/modifyUserAlarmSetupTel")
+    @Sms()
     @Validate()
     async modifyUserAlarmSetupTel(@Body(ALL) data: alarmTels) {
         return {
@@ -291,6 +297,7 @@ export class ApiControll {
    * @returns 
    */
     @Post("/modifyUserInfo")
+    @Sms()
     async modifyUserInfo(@Body() token: { user: string }, @Body() data: Partial<Uart.UserInfo>) {
         return {
             code: 200,
@@ -368,7 +375,7 @@ export class ApiControll {
         return {
             code: d ? 200 : 0,
             data: d,
-            msg: d ? "success" : 'mac is binding'
+            msg: d ? "success" : '设备没有数据'
         }
     }
 
@@ -431,6 +438,7 @@ export class ApiControll {
    * @returns 
    */
     @Post("/SendProcotolInstructSet")
+    @Sms()
     @Validate()
     async SendProcotolInstructSet(@Body(ALL) data: InstructSet) {
         const { token: { user }, query, item } = data
@@ -459,7 +467,8 @@ export class ApiControll {
             }
             return {
                 code: 200,
-                data: await this.SocketUart.InstructQuery(Query)
+                data: await this.SocketUart.InstructQuery(Query),
+                msg: 'success'
             }
         } else {
             return {
@@ -498,9 +507,11 @@ export class ApiControll {
     @Post("/setUserSetupProtocol")
     @Validate()
     async setUserSetupProtocol(@Body(ALL) data: setUserSetupProtocol) {
+        const d = await this.UserService.setUserSetupProtocol(data.token.user, data.protocol, data.type, data.arg)
+        this.RedisService.setUserSetup(data.token.user, data.protocol)
         return {
             code: 200,
-            data: await this.UserService.setUserSetupProtocol(data.token.user, data.protocol, data.type, data.arg)
+            data: d
         }
     }
 
@@ -541,13 +552,13 @@ export class ApiControll {
      * 
      * @returns 获取所以节点
      */
-     @Post("/Nodes")
-     async Nodes() {
-         return {
-             code: 200,
-             data: await this.Device.getNodes()
-         }
-     }
+    @Post("/Nodes")
+    async Nodes() {
+        return {
+            code: 200,
+            data: await this.Device.getNodes()
+        }
+    }
 
     /**
    *  获取用户布局配置
@@ -622,6 +633,7 @@ export class ApiControll {
      * @returns 
      */
     @Post("/deleteAggregation")
+    @Sms()
     async deleteAggregation(@Body(ALL) data: id) {
         return {
             code: 200,
@@ -710,6 +722,7 @@ export class ApiControll {
    */
     @Post("/unbindwx")
     @Validate()
+    @Sms()
     async unbindwx(@Body(ALL) data: Api) {
         const user = await this.UserService.getUser(data.token.user)
         if (user.rgtype === 'wx') {
@@ -768,12 +781,12 @@ export class ApiControll {
      * @param id 
      * @returns 
      */
-     @Post("/getRegisterDev")
-     async getRegisterDev(@Body() id: string) {
-         return {
-             code: 200,
-             data: await this.Device.getRegisterDev(id)
-         }
-     }
+    @Post("/getRegisterDev")
+    async getRegisterDev(@Body() id: string) {
+        return {
+            code: 200,
+            data: await this.Device.getRegisterDev(id)
+        }
+    }
 }
 

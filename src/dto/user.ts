@@ -172,8 +172,8 @@ export class modifiTerminalName extends Api {
  */
 @Rule(Api)
 export class smsCode extends Api {
-    @Rule(RuleType.number().required())
-    code: number
+    @Rule(RuleType.string())
+    code: string
 }
 
 /**

@@ -243,12 +243,14 @@ export class Device {
         // 基数
         const baseNum = terminal.ICCID ? 1000 : 500
         // 指令合计数量
-        const LensCount = MountDevLens.flat().reduce((pre, cu) => pre + cu)
+        // console.log({ MountDevLens });
+
+        const LensCount = MountDevLens.length > 0 ? MountDevLens.flat().reduce((pre, cu) => pre + cu) : 1
         /* // 此PID设备协议指令数量
         const PidProtocolInstructNum = MountDevLens.get(Pid)!
         // 
         return (PidProtocolInstructNum * baseNum) + ((LensCount * baseNum) * (PidProtocolInstructNum / LensCount)) */
-        return (LensCount || 1) * baseNum
+        return (LensCount) * baseNum
     }
 
     /**

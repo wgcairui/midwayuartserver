@@ -11,7 +11,7 @@ import { date, IdDate, macDate, registerDev } from "../dto/root"
 import { SocketUart } from "../service/socketUart"
 
 @Provide()
-@Controller("/api/root")
+@Controller("/api/root", { middleware: ['ip', 'root'] })
 export class RootControll {
 
     @Inject()
@@ -49,12 +49,12 @@ export class RootControll {
     @Post("/runingState")
     async runingState() {
         const User = {
-            online: (await this.SocketApp.of("/web").allSockets()).size,
+            online: this.SocketApp.of("/web").sockets.size,
             all: (await this.UserService.getUsers()).length
         }
         // 在线节点
         const Node = {
-            online: (await this.SocketApp.of("/node").allSockets()).size,
+            online: this.SocketApp.of("/node").sockets.size,
             all: (await this.Device.getNodes()).length
         }
         // 在线终端
@@ -312,9 +312,11 @@ export class RootControll {
      */
     @Post("/updateProtocol")
     async updateProtocol(@Body() protocol: Uart.protocol) {
+        const d = await this.Device.updateProtocol(protocol)
+        this.RedisService.setProtocolInstruct(protocol.Protocol)
         return {
             code: 200,
-            data: await this.Device.updateProtocol(protocol)
+            data: d
         }
     }
 
@@ -328,9 +330,11 @@ export class RootControll {
      */
     @Post("/setProtocol")
     async setProtocol(@Body() Type: number, @Body() ProtocolType: string, @Body() Protocol: string, @Body() instruct: Uart.protocolInstruct[]) {
+        const d = await this.Device.setProtocol(Type, ProtocolType, Protocol, instruct)
+        this.RedisService.setProtocolInstruct(Protocol)
         return {
             code: 200,
-            data: await this.Device.setProtocol(Type, ProtocolType, Protocol, instruct)
+            data: d
         }
     }
 

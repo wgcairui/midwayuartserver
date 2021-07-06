@@ -167,7 +167,8 @@ export class UserService {
     const data: Partial<Uart.UserInfo> = {
       user: users.user,
       name: users.name,
-      userGroup: users.userGroup
+      userGroup: users.userGroup,
+      rgtype: users.rgtype as any
     }
     return await this.Util.Secret_JwtSign(data)
   }
@@ -263,7 +264,7 @@ export class UserService {
    */
   async getUserAlarm(user: string, start: number, end: number, filter: filter<Uart.uartAlarmObject> = { _id: 0 }) {
     const bind = await this.getUserBind(user)
-    return this.AlarmModel.find({ mac: { $in: bind.UTs || [] }, timeStamp: { $gte: start, $lte: end } }, filter).lean()
+    return this.AlarmModel.find({ mac: { $in: bind?.UTs || [] }, timeStamp: { $gte: start, $lte: end } }, filter).lean()
   }
 
   /**
@@ -322,7 +323,7 @@ export class UserService {
     if (isBind) {
       return null
     } else {
-      return await this.userbindModel.updateOne({ user }, { $addToSet: { UTs: mac } }).lean()
+      return await this.userbindModel.updateOne({ user }, { $addToSet: { UTs: mac } }, { upsert: true }).lean()
     }
   }
 
@@ -488,7 +489,7 @@ export class UserService {
    * @param mac 
    * @param pid 
    */
-  async getTerminalData(user: string, mac: string, pid: number, filter: filter<Uart.queryResultSave> = { _id: 0 }) {
+  async getTerminalData(user: string, mac: string, pid: number, filter: filter<Uart.queryResultSave> = { _id: 0, Interval: 1, result: 1, time: 1, useTime: 1 }) {
     const isBind = await this.isBindMac(user, mac)
     if (!isBind) {
       return null
@@ -794,7 +795,7 @@ export class UserService {
    */
   async getAlarmunconfirmed(user: string) {
     const macs = await this.getUserBind(user)
-    return await this.AlarmModel.countDocuments({ mac: { $in: macs.UTs }, isOk: false })
+    return await this.AlarmModel.countDocuments({ mac: { $in: macs?.UTs || [] }, isOk: false })
   }
 
 }

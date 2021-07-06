@@ -4,6 +4,7 @@ import { Util } from "../util/util"
 import { Logs } from "./log"
 import { RedisService } from "./redis"
 import { Device } from "./device"
+import { EventEmitter } from "events"
 
 interface mountDevEx extends Uart.TerminalMountDevs {
     TerminalMac: string
@@ -36,10 +37,26 @@ export class SocketUart {
      * 节点信息缓存
      */
     nodeMap: Map<string, Uart.NodeClient>
+    /**
+     * 查询指令缓存
+     */
     cache: Map<string, mountDevEx>
+    /**
+     * 迭代计数器
+     */
     private count: number
+    /**
+     * 协议缓存
+     */
     proMap: Map<string, Uart.protocol>
-    CacheQueryIntruct: Map<string, string>
+    /**
+     * 指令缓存
+     */
+    private CacheQueryIntruct: Map<string, string>
+    /**
+     * 事件对象
+     */
+    event: EventEmitter
 
     @Init()
     async init() {
@@ -53,6 +70,10 @@ export class SocketUart {
 
         this.count = 0
 
+        this.event = new EventEmitter()
+
+        this.event.setMaxListeners(100)
+
 
         // 循环迭代缓存,发送查询指令
         // 设置定时器
@@ -65,6 +86,13 @@ export class SocketUart {
             })
             this.count += 500
         }, 500)
+
+        // 设置所有终端为离线状态
+        this.Device.getTerminals({ DevMac: 1, _id: 0 }).then(els => {
+            els.forEach(el => {
+                this.Device.setStatTerminal(el.DevMac, false)
+            })
+        })
     }
 
     /**
@@ -108,13 +136,28 @@ export class SocketUart {
     }
 
     /**
-     * 每分钟清理一处节点信息缓存
+     * 每hour清理一处节点信息缓存
+     * https://www.yuque.com/midwayjs/midway_v2/task
      */
     @TaskLocal("1 * * * *")
     async clear_nodeMap() {
+        console.log(`${new Date().toLocaleString()}===clear_nodeMap`);
         this.nodeMap.clear()
         this.count = 0
     }
+
+    /**
+     * 
+     * 每天3点重置一次指令缓存
+     */
+    @TaskLocal("* 3 * * *")
+    async clear_Cache() {
+        console.log(`${new Date().toLocaleString()}===clear_Cache`);
+        const nodes = await this.Device.getNodes()
+        this.cache.clear()
+        nodes.forEach(node => this.setNodeCache(node.Name))
+    }
+
 
     /**
      * 根据节点名称缓存终端
@@ -123,7 +166,6 @@ export class SocketUart {
     async setNodeCache(nodeName: string) {
         const terminals = (await this.Device.getTerminals({ _id: 0, createdAt: 0, updatedAt: 0, __v: 0 })).filter(el => el.mountNode === nodeName)
         terminals.forEach(async ({ DevMac, mountDevs, mountNode }) => {
-            this.Device.setStatTerminal(DevMac)
             if (mountDevs) {
                 const Interval = await this.Device.getMountDevInterval(DevMac)
                 mountDevs.forEach(mountDev => {
@@ -131,6 +173,28 @@ export class SocketUart {
                 })
             }
         })
+    }
+
+    /**
+     * 根据终端缓存终端
+     * @param mac
+     */
+    async setTerminalMountDevCache(mac: string) {
+        const { mountDevs, DevMac, mountNode } = await this.Device.getTerminal(mac)
+        if (mountDevs) {
+            const Interval = await this.Device.getMountDevInterval(mac)
+            mountDevs.forEach(mountDev => {
+                this.cache.set(DevMac + mountDev.pid, { ...mountDev, TerminalMac: DevMac, Interval, mountNode })
+            })
+        }
+    }
+
+    /**
+     * delete终端缓存终端
+     * @param mac
+     */
+    async delTerminalMountDevCache(mac: string, pid: number) {
+        this.cache.delete(mac + pid)
     }
 
     /**
@@ -218,7 +282,7 @@ export class SocketUart {
                 // 取出查询间隔
                 Query.Interval = 20000
                 // 构建指令
-                if (Query.type === 485) {
+                if ((await this.Device.getProtocol(Query.protocol, { Type: 1 })).Type === 485) {
                     const instructs = (await this.cacheProtocol(Query.protocol)).instruct
                     // 如果包含非标协议,取第一个协议指令的前处理脚本处理指令内容
                     if (instructs && instructs[0].noStandard && instructs[0].scriptStart) {
@@ -227,22 +291,22 @@ export class SocketUart {
                     } else {
                         Query.content = this.Util.Crc16modbus(Query.pid, Query.content)
                     }
-                    return new Promise<Partial<Uart.ApolloMongoResult>>((resolve) => {
-                        // 创建一次性监听，监听来自Node节点指令查询操作结果            
-                        this
-                            .getApp()
-                            .once(Query.events, result => {
-                                this.log.saveTerminal({ NodeIP: '', NodeName: terminal.mountNode, TerminalMac: Query.DevMac, type: "操作设备", query: Query, result })
-                                resolve(result)
-                            })
-                            .in(terminal.mountNode)
-                            .emit('instructQuery', Query)
-                        // 设置定时器，超过30秒无响应则触发事件，避免事件堆积内存泄漏
-                        setTimeout(() => {
-                            resolve({ ok: 0, msg: 'Node节点无响应，请检查设备状态信息是否变更' })
-                        }, Query.Interval * 2);
-                    })
                 }
+                return new Promise<Partial<Uart.ApolloMongoResult>>((resolve) => {
+                    // 创建一次性监听，监听来自Node节点指令查询操作结果     
+                    this.event.once(Query.events, result => {
+                        this.log.saveTerminal({ NodeIP: '', NodeName: terminal.mountNode, TerminalMac: Query.DevMac, type: "操作设备", query: Query, result })
+                        resolve(result)
+                    })
+                    this
+                        .getApp()
+                        .in(terminal.mountNode)
+                        .emit('instructQuery', Query)
+                    // 设置定时器，超过30秒无响应则触发事件，避免事件堆积内存泄漏
+                    setTimeout(() => {
+                        resolve({ ok: 0, msg: 'Node节点无响应，请检查设备状态信息是否变更' })
+                    }, Query.Interval * 2);
+                })
             } else {
                 return { ok: 0, msg: '设备所在节点离线' }
             }
@@ -261,19 +325,21 @@ export class SocketUart {
             if ((await this.app.of("/node").in(terminal.mountNode).fetchSockets()).length > 0) {
                 // 构建指令
                 return new Promise<Partial<Uart.ApolloMongoResult>>((resolve) => {
-                    // 创建一次性监听，监听来自Node节点指令查询操作结果            
+                    // 创建一次性监听，监听来自Node节点指令查询操作结果   
+                    this.event.once(Query.events, result => {
+                        this.log.saveTerminal({ NodeIP: '', NodeName: terminal.mountNode, TerminalMac: Query.DevMac, type: "DTU操作", query: Query, result })
+                        resolve(result)
+                    })
                     this
                         .getApp()
-                        .once(Query.events, result => {
-                            this.log.saveTerminal({ NodeIP: '', NodeName: terminal.mountNode, TerminalMac: Query.DevMac, type: "DTU操作", query: Query, result })
-                            resolve(result)
-                        })
                         .in(terminal.mountNode)
                         .emit('DTUoprate', Query)
                     // 设置定时器，超过30秒无响应则触发事件，避免事件堆积内存泄漏
                     setTimeout(() => {
-                        resolve({ ok: 0, msg: 'Node节点无响应，请检查设备状态信息是否变更' })
-                    }, 30000 * 2);
+                        this.event.removeListener(Query.events, () => {
+                            resolve({ ok: 0, msg: 'Node节点无响应，请检查设备状态信息是否变更' })
+                        })
+                    }, 10000);
                 })
             } else {
                 return { ok: 0, msg: '设备所在节点离线' }

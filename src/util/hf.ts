@@ -119,7 +119,7 @@ export class HF {
      */
     async macRemote(mac: string) {
         const macInfo = await this.macInfo(mac)
-        return macInfo.result === 0 ? '' : `http://bridge.iotworkshop.com/ctrl/device/index.html?remote_code=${macInfo.data.content[0].remoteCode}`
+        return macInfo.result !== 0 ? '' : `http://bridge.iotworkshop.com/ctrl/device/index.html?remote_code=${macInfo.data.content[0].remoteCode}`
     }
 
     /**

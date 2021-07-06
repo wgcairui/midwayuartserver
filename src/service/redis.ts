@@ -44,9 +44,6 @@ export class RedisService {
         this.redisService = new redis(this.redisConfig)
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
-
-        this.delArgumentAlarmLog('7140445028950')
-
     }
 
     getClient() {
@@ -339,7 +336,16 @@ export class RedisService {
     }
 
     /**
-     * 获取查询指令和实际指令的映射
+     * 判断查询指令和实际指令的映射
+     * @param content 查询指令
+     * @returns 
+     */
+    hasContentToInstructName(content: string) {
+        return this.redisService.exists('ContentToInstructName' + content)
+    }
+
+    /**
+     * 删除查询指令和实际指令的映射
      * @param content 查询指令
      * @returns 
      */

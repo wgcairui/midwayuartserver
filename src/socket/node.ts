@@ -239,4 +239,28 @@ export class NodeSocket {
             this.SocketUart.setNodeCache(node.Name)
         }
     }
+
+    /**
+     * 监听dtu查询事件结果,转发至event
+     * @param events 
+     * @param result 
+     */
+    @OnWSMessage("deviceopratesuccess")
+    @OnWSMessage("dtuopratesuccess")
+    dtuOprateSuccess(events: string, result: Uart.ApolloMongoResult) {
+        console.log({ events, result });
+
+        this.SocketUart.event.emit(events, result)
+    }
+
+
+    /**
+     * 监听设备查询事件结果,转发至event
+     * @param events 
+     * @param result 
+     */
+    /* @OnWSMessage("deviceopratesuccess")
+    deviceOprateSuccess(events: string, result: Uart.ApolloMongoResult) {
+        this.SocketUart.event.emit(events, result)
+    } */
 }

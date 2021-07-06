@@ -210,7 +210,7 @@ class saveResult {
  */
 @modelOptions({ schemaOptions: { collection: "client.resultcolltions" } })
 export class TerminalClientResult {
-    @prop({ type: () => saveResult })
+    @prop({ type: () => saveResult, _id: false })
     public result: saveResult[]
 
     @prop({ index: true, type: Number })
@@ -241,7 +241,7 @@ export class TerminalClientResult {
  */
 @modelOptions({ schemaOptions: { collection: 'client.resultsingles' } })
 export class TerminalClientResultSingle {
-    @prop({ type: () => result })
+    @prop({ type: () => result, _id: false })
     public result: result[]
 
 

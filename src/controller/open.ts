@@ -4,7 +4,7 @@ import { Util } from "../util/util"
 import { Sms } from "../util/sms"
 
 @Provide()
-@Controller("/api/open")
+@Controller("/api/open", { middleware: ['ip'] })
 export class OpenControll {
 
     @Inject()

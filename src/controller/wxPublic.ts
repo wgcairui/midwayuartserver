@@ -1,4 +1,4 @@
-import { Provide, Controller, Inject, Get } from "@midwayjs/decorator"
+import { Provide, Controller, Inject, Post } from "@midwayjs/decorator"
 import { Context } from "@midwayjs/koa"
 import { Wx } from "../util/wx"
 import { Logs } from "../service/log"
@@ -18,7 +18,7 @@ interface xmlObj {
  * 响应微信公众号
  */
 @Provide()
-@Controller("/api")
+@Controller("/api/wxPublic")
 export class WxPublic {
 
     @Inject()
@@ -33,11 +33,9 @@ export class WxPublic {
     @Inject()
     UserService: UserService
 
-    @Get("/wxPublic")
+    @Post("/")
     async wxPublic() {
         const body: Uart.WX.wxValidation | Uart.WX.WxEvent = await parseStringPromise(this.ctx.request.body).then(el => this.parseXmlObj(el) as any);
-        this.logs.saveWxEvent(body)
-
         // 微信校验接口
         if ('signature' in body) {
             const { signature, timestamp, nonce, echostr } = body
@@ -56,7 +54,7 @@ export class WxPublic {
                     this.Wx.MP.getUserInfo(FromUserName).then(el => {
                         this.UserService.updateWxUser(el)
                     })
-                    return 'success'
+                    break
                 // 取消关注
                 case "unsubscribe":
                     this.UserService.delWxUser(FromUserName)
@@ -71,6 +69,7 @@ export class WxPublic {
                          */
                         if ("Ticket" in body) {
                             const { EventKey, FromUserName } = body
+                            // EventKey是用户的数据库文档id字符串
                             const user = await this.UserService.getUser(EventKey)
                             if (user && !user.wxId) {
                                 const { unionid, headimgurl } = await this.Wx.MP.getUserInfo(FromUserName)
@@ -83,12 +82,8 @@ export class WxPublic {
                         }
                     }
                     break
-
-                default:
-                    break;
             }
             return "success"
-            return
         }
         // 处理普通消息
         else {
@@ -99,7 +94,6 @@ export class WxPublic {
             }
             // 自动回复信息
             return this.TextMessege(body, text)
-
         }
 
     }
