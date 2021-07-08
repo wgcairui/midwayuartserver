@@ -7,6 +7,7 @@ import { ProtocolParse } from "../service/protocolParse"
 import { ProtocolCheck } from "../service/protocolCheck"
 import { RedisService } from "../service/redis"
 import * as _ from "lodash"
+import { SocketUser } from "../service/socketUser"
 
 @Provide()
 @Controller("/api/Node", { middleware: ['nodeHttp'] })
@@ -33,6 +34,9 @@ export class NodeControll {
     @Inject()
     ProtocolCheck: ProtocolCheck
 
+    @Inject()
+    SocketUser: SocketUser
+
 
     /**
      * 透传设备数据上传接口
@@ -42,6 +46,13 @@ export class NodeControll {
         if (data.length > 0) {
             const date = new Date().toLocaleDateString()
             data.forEach(async el => {
+                // 如果数据设备状态不在线,设置在线
+                this.Device.getStatTerminalDevs(el.mac, el.pid).then(els => {
+                    if (!els) {
+                        this.Device.setStatTerminalDevs(el.mac, el.pid, true)
+                        this.SocketUser.sendMacUpdate(el.mac)
+                    }
+                })
                 // 保存每个终端使用的数字节数
                 // 保存每个查询指令使用的字节，以天为单位
                 this.Logs.incUseBytes(el.mac, date, el.useBytes)

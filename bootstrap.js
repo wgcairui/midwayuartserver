@@ -15,7 +15,7 @@ const socket = new SocketFramework().configure({
 })
 
 /* const ws = new WsFramework().configure({
-  path: '/wx',
+  path: '/ws',
 }) */
 
 const { Bootstrap } = require('@midwayjs/bootstrap');

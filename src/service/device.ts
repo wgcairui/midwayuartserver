@@ -7,7 +7,7 @@ import { DevArgumentAlias, DevConstant, DevType, Protocols } from "../entity/pro
 import { filter } from "../interface"
 import * as  _ from "lodash"
 import { UserAlarmSetup, UserBindDevice } from "../entity/user"
-import { UartTerminalDataTransfinite, Terminals, UseBytes } from "../entity/log"
+import { UartTerminalDataTransfinite, Terminals, UseBytes, DtuBusy } from "../entity/log"
 
 
 /**
@@ -39,7 +39,7 @@ export class Device {
     async getTerminal<T extends string | string[]>(macs: T, filter: filter<Uart.Terminal> = { _id: 0 }): Promise<T extends string ? Terminal : Terminal[]> {
         const model = this.getModel(Terminal)
         if (typeof macs === 'string') {
-            return await model.findOne({ $or: [{ DevMac: macs }, { bindDev: macs }] }, filter).lean()
+            return await model.findOne({ $or: [{ DevMac: macs }, { "mountDevs.bindDev": macs }] }, filter).lean()
         } else {
             return await model.find({ DevMac: { $in: macs as string[] } }, filter).lean() as any
         }
@@ -72,17 +72,6 @@ export class Device {
     async setNodeRun(NodeName: string, doc: Partial<Uart.nodeInfo>) {
         const model = this.getModel(NodeRunInfo)
         return await model.updateOne({ NodeName }, { $set: { ...doc as any } }).lean()
-    }
-
-    /**
-     * 获取指定且在线的终端
-     * @param mac 
-     * @returns 
-     */
-    async getTerminalOnline(mac: string) {
-        const model = this.getModel(Terminal)
-        const terminal = await model.findOne({ $or: [{ DevMac: mac }, { bindDev: mac }] }).lean()
-        return (!terminal || !terminal.online) ? null : terminal
     }
 
     /**
@@ -203,7 +192,8 @@ export class Device {
      * @param stat 
      */
     async setStatTerminal(mac: string | string[], stat: boolean = true) {
-        return await this.getModel(Terminal).updateMany({ DevMac: { $in: [mac].flat() }, "mountDevs.pid": { $lt: 256 } }, { $set: { online: stat, "mountDevs.$.online": stat } })
+        const macs = [mac].flat()
+        return await this.getModel(Terminal).updateMany({ DevMac: { $in: macs }, "mountDevs.pid": { $lt: 256 } }, { $set: { online: stat, "mountDevs.$.online": false } })
 
     }
 
@@ -588,10 +578,40 @@ export class Device {
     }
 
     /**
+     * 删除指定注册设备
+     * @param id 
+     * @returns 
+     */
+    async delRegisterDev(id: string) {
+        return await this.getModel(registerDev).deleteOne({ id }).lean()
+    }
+
+
+
+
+    /**
      * 获取指定所有设备
      * @returns 
      */
     getRegisterDevs() {
         return this.getModel(registerDev).find().lean()
+    }
+
+    /**
+     * 初始化设备
+     * @param mac 
+     */
+    async initTerminal(mac: string) {
+        const a = Date.now()
+        await this.getModel(UseBytes).deleteMany({ mac })
+        await this.getModel(UartTerminalDataTransfinite).deleteMany({ mac })
+        await this.getModel(Terminals).deleteMany({ mac })
+        await this.getModel(DtuBusy).deleteMany({ mac })
+        await this.getModel(DevArgumentAlias).deleteMany({ mac })
+        await this.getModel(TerminalClientResult).deleteMany({ mac })
+        await this.getModel(TerminalClientResultSingle).deleteMany({ mac })
+        await this.getModel(TerminalClientResultSingle).deleteOne({ mac })
+        await this.getModel(Terminal).updateOne({ DevMac: mac }, { $set: { mountDevs: [], name: mac } })
+        return Date.now() - a
     }
 }

@@ -175,10 +175,6 @@ export class ProtocolParse {
         const IntructResult = R.contents;
 
         const result = R.type === 232 ? await this.parse232(IntructResult, R.protocol) : await this.parse485(IntructResult, R)
-        if (result.length > 0) {
-            // 设备请求结果,发送设备正常查询
-            this.Device.setStatTerminalDevs(R.mac, R.pid, true)
-        }
         return (await Promise.all(result)).filter(el => !el.issimulate || el.parseValue)
     }
 }

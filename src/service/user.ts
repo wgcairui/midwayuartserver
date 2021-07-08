@@ -235,6 +235,15 @@ export class UserService {
   }
 
   /**
+   * 获取绑定设备所属用户
+   * @param mac
+   */
+  async getBindMacUser(mac: string) {
+    const t = await this.userbindModel.findOne({ UTs: mac }).lean()
+    return t ? t.user : null
+  }
+
+  /**
    * 获取第三方密匙信息
    * @param type 
    * @returns 
@@ -364,12 +373,12 @@ export class UserService {
     if (!isBind) {
       return null
     } else {
-      console.log({ user, mac, Type, mountDev, protocol, pid, bindDev });
-
       const model = getModelForClass(Terminal)
       if (bindDev) {
+        if (await model.findOne({ "mountDevs.bindDev": bindDev }, { _id: 1 })) {
+          return null
+        }
         return await model.updateOne({ DevMac: mac }, {
-          bindDev,
           $addToSet: {
             mountDevs: {
               Type,
@@ -796,6 +805,17 @@ export class UserService {
   async getAlarmunconfirmed(user: string) {
     const macs = await this.getUserBind(user)
     return await this.AlarmModel.countDocuments({ mac: { $in: macs?.UTs || [] }, isOk: false })
+  }
+
+  /**
+     * 变更用户组
+     * @param user 
+     */
+  async toggleUserGroup(user: string) {
+    const u = await this.getUser(user)
+    const userGroup = u.userGroup === 'admin' ? 'user' : 'admin'
+    await this.userModel.updateOne({ user }, { $set: { userGroup } })
+    return userGroup
   }
 
 }

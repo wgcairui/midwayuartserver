@@ -230,7 +230,7 @@ export class AuthController {
     } else {
       return {
         code: 200,
-        data: await this.userService.createUser({ user: data.user, userId: data.user, wpId: data.openid, avanter: data.avanter, name: data.name, tel: Number(data.tel), rgtype: "wx" })
+        data: await this.userService.createUser({ user: data.user, userId: data.user, wpId: data.openid, avanter: data.avanter, name: data.getName(), tel: Number(data.tel), rgtype: "wx" })
       }
     }
   }

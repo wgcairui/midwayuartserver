@@ -11,7 +11,8 @@ export class nodeHttp implements IWebMiddleware {
         return async (ctx: Context, next: IMidwayKoaNext) => {
             const nodes = await (await ctx.requestContext.getAsync(Device)).getNodes()
 
-            if (nodes.some(el => el.IP === ctx.ip)) {
+            const ip = ctx.ip.split(":").reverse()[0]
+            if (nodes.some(el => el.IP === ip)) {
                 await next()
             } else
                 throw new Error('nodeData premiss')

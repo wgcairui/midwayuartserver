@@ -39,4 +39,8 @@ export class registerUser {
 
     @Rule(RuleType.string().uri())
     avanter: string
+
+    getName() {
+        return !this.name || this.name === "undefined" ? this.user.slice(this.user.length - 4) : this.name
+    }
 }

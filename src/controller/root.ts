@@ -848,6 +848,27 @@ export class RootControll {
     }
 
     /**
+    * 删除指定注册设备
+    * @param id 
+    * @returns 
+    */
+    @Post("/delRegisterDev")
+    async delRegisterDev(@Body() id: string) {
+        const t = await this.Device.getTerminal(id)
+        if (t) {
+            return {
+                code: 0,
+                msg: `设备已被${t.DevMac}绑定,请先解除与${t.DevMac}之间的绑定`
+            }
+        } else {
+            return {
+                code: 200,
+                data: await this.Device.delRegisterDev(id)
+            }
+        }
+    }
+
+    /**
      * 获取指定所有设备
      * @returns 
      */
@@ -859,4 +880,37 @@ export class RootControll {
         }
     }
 
+
+    /**
+     * 初始化设备
+     * @param mac 
+     */
+    @Post("/initTerminal")
+    async initTerminal(@Body() mac: string) {
+        const u = await this.UserService.getBindMacUser(mac)
+        if (u) {
+            const user = await this.UserService.getUser(u)
+            return {
+                code: 0,
+                msg: `设备被用户${u}/${user.name}绑定`
+            }
+        } else {
+            return {
+                code: 200,
+                data: await this.Device.initTerminal(mac)
+            }
+        }
+    }
+
+    /**
+     * 变更用户组
+     * @param user 
+     */
+    @Post("/toggleUserGroup")
+    async toggleUserGroup(@Body() user: string) {
+        return {
+            code: 200,
+            data: await this.UserService.toggleUserGroup(user)
+        }
+    }
 }

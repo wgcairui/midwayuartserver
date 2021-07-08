@@ -116,9 +116,10 @@ export class ApiControll {
     @Post("/getTerminalOnline")
     @Validate()
     async getTerminalOnline(@Body(ALL) data: mac) {
+        const ter = await this.Device.getTerminal(data.mac)
         return {
             code: 200,
-            data: await this.Device.getTerminalOnline(data.mac)
+            data: ter && ter.online ? ter : null
         }
     }
 

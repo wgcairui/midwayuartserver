@@ -279,6 +279,9 @@ export class RegisterTerminal {
 
     @prop()
     public mountNode!: string
+
+    @prop({ default: Date.now() })
+    public timeStamp?: number
 }
 
 class mountDev {
@@ -298,7 +301,7 @@ class mountDev {
     @prop({ default: false })
     public online?: boolean
 
-    @prop()
+    @prop({ unique: true, sparse: true, required: false })
     public bindDev?: string;
 }
 
@@ -309,9 +312,6 @@ class mountDev {
 export class Terminal {
     @prop()
     public DevMac!: string
-
-    @prop()
-    public bindDev?: string
 
     @prop()
     public name!: string

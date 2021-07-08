@@ -6,6 +6,7 @@ import { Logs } from "../service/log"
 import { Alarm } from "../service/alarm"
 import { RedisService } from "../service/redis"
 import { SocketUart } from "../service/socketUart"
+import { SocketUser } from "../service/socketUser"
 
 @Provide()
 @WSController('/node')
@@ -26,6 +27,9 @@ export class NodeSocket {
     SocketUart: SocketUart
 
     @Inject()
+    SocketUser: SocketUser
+
+    @Inject()
     Alarm: Alarm
 
     @App(MidwayFrameworkType.WS_IO)
@@ -38,7 +42,7 @@ export class NodeSocket {
     async connect() {
         const socket = this.ctx
         const ID = socket.id
-
+        if (!this.ctx.handshake) return
         // ip由nginx代理后会变为nginx服务器的ip，重写文件头x-real-ip为远端ip
         const IP: string = socket.handshake.headers["x-real-ip"] || socket.conn.remoteAddress
         // 检查连接节点是否在系统登记
@@ -57,6 +61,12 @@ export class NodeSocket {
             // 添加日志
             this.log.saveNode({ ID, IP, type: "非法连接请求", Name: 'null' })
         }
+    }
+
+    @OnWSMessage('message')
+    async gotMessage(data: any) {
+        console.log({ data });
+
     }
 
     /**
@@ -135,6 +145,7 @@ export class NodeSocket {
                 ters.forEach(async t => {
                     if (t) {
                         this.RedisService.delDtuWorkBus(t.DevMac)
+                        this.SocketUser.sendMacUpdate(t.DevMac)
                         this.log.saveTerminal({ NodeIP: node.IP, NodeName: node.Name, TerminalMac: data[0], type: reline ? "重新连接" : "连接" })
                         // 如果是重连，加入缓存
                         if (reline) this.RedisService.setMacOnlineTime(t.DevMac, date)
@@ -155,6 +166,7 @@ export class NodeSocket {
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
             this.Device.setStatTerminal(mac, false)
+            this.SocketUser.sendMacUpdate(mac)
             console.error(`${new Date().toLocaleTimeString()}##${node.Name} DTU:${mac} 已${active ? '主动' : '被动'}离线`);
             this.RedisService.delDtuWorkBus(mac)
             // 添加日志
@@ -174,6 +186,7 @@ export class NodeSocket {
         if (node) {
             console.log('部分指令超时', mac, pid, instructNum);
             this.Device.setStatTerminalDevs(mac, pid)
+            this.SocketUser.sendMacUpdate(mac)
             const EX = this.SocketUart.cache.get(mac + pid)
             if (EX) EX.Interval += 500 * instructNum
         }
@@ -199,6 +212,7 @@ export class NodeSocket {
                 // 如果超时次数>10和短信发送状态为false
                 if (timeOut > 20) {
                     this.Device.setStatTerminalDevs(mac, pid, false)
+                    this.SocketUser.sendMacUpdate(mac)
                     // 把查询超时间隔修改为10分钟
                     Query.Interval = 6e5
                     console.log(`${hash} 查询超时次数:${timeOut},查询间隔：${Query.Interval}`);
