@@ -111,21 +111,24 @@ export class NodeRunInfo {
     public SocketMaps: WebSocketTerminal[]
 }
 
-@modelOptions({ options: { allowMixed: 0 } })
+/* @modelOptions({ options: { allowMixed: 0 } })
 class buffer {
     @prop()
     public type: string
 
     @prop({ type: Number })
     public data: number[]
-}
+} */
 
 class content {
     @prop()
     public content: string
 
-    @prop({ type: buffer })
-    public buffe: buffer
+    /* @prop()
+    public buffe: buffer */
+
+    @prop({ type: Number })
+    public data: number[]
 }
 
 /**
@@ -133,35 +136,24 @@ class content {
  */
 @modelOptions({ schemaOptions: { collection: 'client.results' } })
 export class TerminalClientResults {
-    @prop({ min: 0, max: 255, default: 0 })
+    /* @prop({ min: 0, max: 255, default: 0 })
     public pid: number
-
-    @prop()
-    public time: string
-
-    @prop({ index: true })
-    public timeStamp: number
 
     @prop()
     public mac: string
 
     @prop()
-    public type: number
-
-    @prop()
     public protocol: string
 
     @prop()
-    public Interval: number
+    public useTime: number 
 
-    @prop()
-    public useTime: number
+    @prop({ index: true })
+    public timeStamp: number
+    */
 
-    @prop({ type: () => content })
+    @prop({ type: () => content, _id: false })
     public contents: content[]
-
-    @prop({ index: true, default: 0 })
-    public hasAlarm?: number
 }
 
 
@@ -223,9 +215,6 @@ export class TerminalClientResult {
     public mac: string
 
     @prop()
-    public Interval: number
-
-    @prop()
     public useTime: number
 
     @prop()
@@ -243,7 +232,6 @@ export class TerminalClientResult {
 export class TerminalClientResultSingle {
     @prop({ type: () => result, _id: false })
     public result: result[]
-
 
     @prop({ index: true })
     public pid: number

@@ -10,7 +10,7 @@ import * as _ from "lodash"
 import { SocketUser } from "../service/socketUser"
 
 @Provide()
-@Controller("/api/Node", { middleware: ['nodeHttp'] })
+@Controller("/api/node", { middleware: ['nodeHttp'] })
 export class NodeControll {
 
     @Inject()
@@ -37,12 +37,70 @@ export class NodeControll {
     @Inject()
     SocketUser: SocketUser
 
+    /**
+     * 上传dtu信息
+     * @param info 
+     */
+    @Post("/dtuInfo")
+    async dtuInfo(@Body() info: Uart.Terminal) {
+        // 获取terminal信息
+        const terminal = await this.Device.getTerminal(info.DevMac)
+        if (terminal) {
+            const { DevMac, ip, port, AT, PID, ver, Gver, iotStat, jw, uart, ICCID } = info
+            // 比较参数，如果有修改则更新数据库
+            {
+                const temp: any[] = []
+                if (terminal.ip !== ip && this.Util.RegexIP(ip)) temp.push({ ip })
+                if (terminal.port !== port && Number(port) > 0) temp.push({ port })
+                if (terminal.PID !== PID) temp.push({ PID })
+                if (AT) {
+                    if (terminal.AT !== AT) temp.push({ AT })
+                    if (terminal.ver !== ver) temp.push({ ver })
+                    if (terminal.Gver !== Gver) temp.push({ Gver })
+                    if (terminal.iotStat !== iotStat) temp.push({ iotStat })
+                    if (terminal.jw !== jw && this.Util.RegexLocation(jw)) temp.push({ jw })
+                    if (terminal.uart !== uart && this.Util.RegexUart(uart)) temp.push({ uart })
+                    if (terminal.ICCID !== ICCID && this.Util.RegexICCID(ICCID)) temp.push({ ICCID })
+                }
+
+                if (temp.length > 0) {
+                    temp.push({ uptime: Date.now() })
+                    // console.log(terminal,Object.assign({}, ...temp));
+                    this.Device.setTerminal(DevMac, Object.assign({}, ...temp))
+                } else {
+                    this.Device.setTerminal(DevMac, { uptime: new Date() as any })
+                }
+            }
+            return {
+                code: 200,
+                msg: 'success'
+            }
+        }
+        return {
+            code: 0,
+            msg: 'no terminal'
+        }
+    }
 
     /**
-     * 透传设备数据上传接口
+     * 上传节点运行状态
+     * @param node 
+     * @param tcp 
      */
-    @Post("/UartData")
-    async UartData(@Body() data: Uart.queryResult[]) {
+    @Post("/nodeInfo")
+    async nodeInfo(@Body() name: string, @Body() node: Uart.nodeInfo, @Body() tcp: number) {
+        return {
+            code: 200,
+            data: await this.Device.setNodeRun(name, { ...node, Connections: tcp, updateTime: new Date() })
+        }
+    }
+
+    /**
+     * 上传查询数据
+     * @param data 
+     */
+    @Post("/queryData")
+    queryData(@Body() data: Uart.queryResult[]) {
         if (data.length > 0) {
             const date = new Date().toLocaleDateString()
             data.forEach(async el => {
@@ -56,7 +114,8 @@ export class NodeControll {
                 // 保存每个终端使用的数字节数
                 // 保存每个查询指令使用的字节，以天为单位
                 this.Logs.incUseBytes(el.mac, date, el.useBytes)
-                const docResults = await this.Device.saveTerminalResults(el)
+                const contents = el.contents.map(el => ({ content: el.content, data: el.buffer.data }))
+                const docResults = await this.Device.saveTerminalResults({ contents } as any)
                 const parentId = docResults._id
 
                 const parse = await this.ProtocolParse.parse(el)
@@ -113,49 +172,10 @@ export class NodeControll {
                 }
             })
         }
+        //
         return {
             code: 200
         }
     }
 
-    /**
-     * 透传运行数据上传接口
-     */
-    @Post("/RunData")
-    async RunData(@Body() NodeInfo: Uart.nodeInfo, @Body() WebSocketInfos: Uart.WebSocketInfo, @Body() updateTime: string) {
-        // 遍历DTUs信息,保存新的配置
-        WebSocketInfos.SocketMaps.forEach(async el => {
-            // 获取terminal信息
-            const terminal = await this.Device.getTerminal(el.mac)
-            if (terminal) {
-                const { mac, ip, port, AT, PID, ver, Gver, iotStat, jw, uart, ICCID } = el
-                // 比较参数，如果有修改则更新数据库
-                {
-                    const temp: any[] = []
-                    if (terminal.ip !== ip && this.Util.RegexIP(ip)) temp.push({ ip })
-                    if (terminal.port !== port && Number(port) > 0) temp.push({ port })
-                    if (terminal.PID !== PID) temp.push({ PID })
-                    if (AT) {
-                        if (terminal.AT !== AT) temp.push({ AT })
-                        if (terminal.ver !== ver) temp.push({ ver })
-                        if (terminal.Gver !== Gver) temp.push({ Gver })
-                        if (terminal.iotStat !== iotStat) temp.push({ iotStat })
-                        if (terminal.jw !== jw && this.Util.RegexLocation(jw)) temp.push({ jw })
-                        if (terminal.uart !== uart && this.Util.RegexUart(uart)) temp.push({ uart })
-                        if (terminal.ICCID !== ICCID && this.Util.RegexICCID(ICCID)) temp.push({ ICCID })
-                    }
-
-                    if (temp.length > 0) {
-                        temp.push({ uptime: updateTime })
-                        // console.log(terminal,Object.assign({}, ...temp));
-                        this.Device.setTerminal(mac, Object.assign({}, ...temp))
-                    } else {
-                        this.Device.setTerminal(mac, { uptime: updateTime })
-                    }
-                }
-            }
-        })
-        //写入运行信息
-        return await this.Device.setNodeRun(WebSocketInfos.NodeName, { ...WebSocketInfos, ...NodeInfo, updateTime: updateTime } as any)
-    }
 }

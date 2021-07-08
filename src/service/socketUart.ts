@@ -136,12 +136,26 @@ export class SocketUart {
     }
 
     /**
+     * 每分钟获取一次节点状态
+     * https://www.yuque.com/midwayjs/midway_v2/task
+     */
+    @TaskLocal("* * * * *")
+    async nodeInfo() {
+        this.nodeMap.forEach(node => {
+            this.getCtx(node.Name).emit("nodeInfo", node.Name)
+        })
+    }
+
+    /**
      * 每hour清理一处节点信息缓存
      * https://www.yuque.com/midwayjs/midway_v2/task
      */
     @TaskLocal("1 * * * *")
     async clear_nodeMap() {
         console.log(`${new Date().toLocaleString()}===clear_nodeMap`);
+        this.nodeMap.forEach(node => {
+            this.getCtx(node.Name).emit("nodeInfo", node.Name)
+        })
         this.nodeMap.clear()
         this.count = 0
     }

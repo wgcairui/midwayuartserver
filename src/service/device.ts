@@ -69,9 +69,9 @@ export class Device {
      * @param mac
      * @returns 
      */
-    async setNodeRun(NodeName: string, doc: Partial<Uart.nodeInfo>) {
+    async setNodeRun(NodeName: string, doc: any) {
         const model = this.getModel(NodeRunInfo)
-        return await model.updateOne({ NodeName }, { $set: { ...doc as any } }).lean()
+        return await model.updateOne({ NodeName }, { $set: { ...doc } }, { upsert: true }).lean()
     }
 
     /**

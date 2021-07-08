@@ -16,6 +16,25 @@ interface hf_loginRequst extends hfRequst {
     }
 }
 
+interface hf_userId extends hfRequst {
+    data: {
+        admin: boolean
+        company: string
+        companyAddress: string
+        companySize: string
+        country: string
+        createdTime: string
+        email: string
+        enabled: boolean
+        id: number
+        managerLevel: boolean
+        nickName: string
+        telephone: string
+        userKey: string
+        userName: string
+    }
+}
+
 interface hf_macInfo extends hfRequst {
     data: {
         content: {
@@ -60,11 +79,13 @@ interface hf_macInfo extends hfRequst {
  */
 export class HF {
     token: string
+    uerId: string
 
 
     @Init()
     async init() {
         this.token = ''
+        this.uerId = ''
     }
 
     /**
@@ -113,6 +134,15 @@ export class HF {
         return this.post<hf_macInfo>(url, data)
     }
 
+
+    async getUserId() {
+        if (!this.uerId) {
+            const url = "http://open.bridge.iotworkshop.com:8080/iotbs/api/v1/users/info?null"
+            const r = await this.get<hf_userId>(url)
+            this.uerId = r.data.userKey
+        }
+        return this.uerId
+    }
     /**
      * @method 获取iot远程设置网页
      * @param mac iotMac
@@ -132,5 +162,16 @@ export class HF {
             await this.login()
         }
         return axios.post<T>(url, data, { headers: { "Access-Token": this.token } }).then(el => el.data)
+    }
+
+    /**
+     * post
+     * @param url 
+     */
+    private async get<T>(url: string,) {
+        if (!this.token) {
+            await this.login()
+        }
+        return axios.get<T>(url, { headers: { "Access-Token": this.token } }).then(el => el.data)
     }
 }

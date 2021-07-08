@@ -7,6 +7,7 @@ import { Alarm } from "../service/alarm"
 import { RedisService } from "../service/redis"
 import { SocketUart } from "../service/socketUart"
 import { SocketUser } from "../service/socketUser"
+import { HF } from "../util/hf"
 
 @Provide()
 @WSController('/node')
@@ -31,6 +32,9 @@ export class NodeSocket {
 
     @Inject()
     Alarm: Alarm
+
+    @Inject()
+    HF: HF
 
     @App(MidwayFrameworkType.WS_IO)
     app: Application
@@ -103,7 +107,9 @@ export class NodeSocket {
     @OnWSMessage('register')
     @WSEmit('registerSuccess')
     async register(data: string) {
-        return await this.SocketUart.getNode(this.ctx.id)
+        const node = await this.SocketUart.getNode(this.ctx.id)
+        const UserID = await this.HF.getUserId()
+        return { ...node, UserID }
     }
 
     /**
@@ -245,12 +251,14 @@ export class NodeSocket {
     }
 
     @OnWSMessage("ready")
+    @WSEmit("nodeInfo")
     async ready() {
         console.log('ready');
         // 迭代所有设备,加入缓存
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
             this.SocketUart.setNodeCache(node.Name)
+            return node.Name
         }
     }
 
