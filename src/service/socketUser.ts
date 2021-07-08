@@ -1,6 +1,6 @@
 import { Provide, Scope, ScopeEnum, Inject, App, MidwayFrameworkType } from "@midwayjs/decorator"
 import { Application as IO } from "@midwayjs/socketio"
-import { Application as WS } from "@midwayjs/ws"
+//import { Application as WS } from "@midwayjs/ws"
 import { Util } from "../util/util"
 import { Logs } from "./log"
 import { RedisService } from "./redis"
@@ -30,8 +30,8 @@ export class SocketUser {
     @App(MidwayFrameworkType.WS_IO)
     app: IO
 
-    @App(MidwayFrameworkType.WS)
-    ws: WS
+    /* @App(MidwayFrameworkType.WS)
+    ws: WS */
 
     /**
      * 
@@ -41,7 +41,7 @@ export class SocketUser {
         const user = await this.UserService.getBindMacUser(mac)
         if (user) {
             this.app.of("/web").in(user).emit("MacUpdate", mac)
-            this.ws.emit("MacUpdate", mac)
+            //this.ws.emit("MacUpdate", mac)
         }
     }
 

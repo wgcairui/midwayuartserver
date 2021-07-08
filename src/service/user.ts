@@ -109,8 +109,13 @@ export class UserService {
    * @param users 
    * @returns 
    */
-  updateWxUser(users: Uart.WX.userInfoPublic) {
-    return this.wxUserModel.updateOne({ openid: users.openid }, { $set: { ...users } }, { upsert: true }).lean()
+  async updateWxUser(users: Uart.WX.userInfoPublic) {
+    await this.wxUserModel.updateOne({ openid: users.openid }, { $set: { ...users } }, { upsert: true }).lean()
+    const u = await this.getUser(users.unionid)
+    if (u && !u.userId) {
+      await this.userModel.updateOne({ user: u.user }, { $set: { wxId: users.openid } })
+    }
+    return u
   }
 
   /**
