@@ -38,12 +38,20 @@ export class RedisService {
     userSetup: Map<string, Map<string, userSetupMap>>
 
 
+    /**
+     * 存储正在处理的mac设备
+     */
+    parseSet: Set<string>
+
+
 
     @Init()
     async init() {
         this.redisService = new redis(this.redisConfig)
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
+        this.parseSet = new Set()
+        this.redisService.flushall()
     }
 
     getClient() {
@@ -56,7 +64,7 @@ export class RedisService {
      * @returns 
      */
     addArgumentAlarmLog(key: string) {
-        return this.redisService.sadd('ArgumentAlarm', key)
+        return this.redisService.setex('ArgumentAlarm' + key, 60 * 60 * 24, '1')
     }
 
     /**
@@ -64,8 +72,8 @@ export class RedisService {
      * @param key 
      * @returns 
      */
-    hasArgumentAlarmLog(key: string) {
-        return this.redisService.sismember('ArgumentAlarm', key)
+    async hasArgumentAlarmLog(key: string) {
+        return Boolean(await this.redisService.exists('ArgumentAlarm' + key))
     }
 
     /**
@@ -74,7 +82,7 @@ export class RedisService {
      * @returns 
      */
     delArgumentAlarmLog(key: string) {
-        return this.redisService.srem('ArgumentAlarm', key)
+        return this.redisService.del('ArgumentAlarm' + key)
     }
 
     /**
@@ -132,12 +140,17 @@ export class RedisService {
         }
         // 获取用户+协议 缓存实例
         const setup = cache.get(protocol)!
+
+        // 
+        setup.Threshold = new Map(Constant.Threshold.map(el => [el.name, el]))
+
         // 如果用户有阈值设置&&阈值设置有protocol,迭代用户设置加入到缓存
         UserSetup.Threshold.forEach(el => {
             setup.Threshold.set(el.name, el)
         })
 
         // 如果用户有状态设置&&状态设置有protocol,迭代用户设置加入到缓存
+        setup.AlarmStat = new Map(Constant.AlarmStat.map(el => [el.name, el]))
         UserSetup.AlarmStat.forEach(el => {
             setup.AlarmStat.set(el.name, el)
         })

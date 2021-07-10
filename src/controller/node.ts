@@ -8,6 +8,8 @@ import { ProtocolCheck } from "../service/protocolCheck"
 import { RedisService } from "../service/redis"
 import * as _ from "lodash"
 import { SocketUser } from "../service/socketUser"
+import { UserService } from "../service/user"
+import { alarm } from "../interface"
 
 @Provide()
 @Controller("/api/node", { middleware: ['nodeHttp'] })
@@ -36,6 +38,9 @@ export class NodeControll {
 
     @Inject()
     SocketUser: SocketUser
+
+    @Inject()
+    UserService: UserService
 
     /**
      * 上传dtu信息
@@ -100,82 +105,144 @@ export class NodeControll {
      * @param data 
      */
     @Post("/queryData")
-    queryData(@Body() data: Uart.queryResult[]) {
-        if (data.length > 0) {
-            const date = new Date().toLocaleDateString()
-            data.forEach(async el => {
+    async queryData(@Body() data: Uart.queryResult) {
+        // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
+        if (!this.RedisService.parseSet.has(data.mac + data.pid)) {
+            // 标记数据正在处理
+            this.RedisService.parseSet.add(data.mac + data.pid)
+            {
                 // 如果数据设备状态不在线,设置在线
-                this.Device.getStatTerminalDevs(el.mac, el.pid).then(els => {
+                this.Device.getStatTerminalDevs(data.mac, data.pid).then(els => {
                     if (!els) {
-                        this.Device.setStatTerminalDevs(el.mac, el.pid, true)
-                        this.SocketUser.sendMacUpdate(el.mac)
+                        // 设置
+                        this.Device.setStatTerminalDevs(data.mac, data.pid, true)
+                        this.SocketUser.sendMacUpdate(data.mac)
                     }
                 })
                 // 保存每个终端使用的数字节数
                 // 保存每个查询指令使用的字节，以天为单位
-                this.Logs.incUseBytes(el.mac, date, el.useBytes)
-                const contents = el.contents.map(el => ({ content: el.content, data: el.buffer.data }))
-                const docResults = await this.Device.saveTerminalResults({ contents } as any)
-                const parentId = docResults._id
+                this.Logs.incUseBytes(data.mac, new Date(data.time).toLocaleDateString(), data.useBytes)
+            }
 
-                const parse = await this.ProtocolParse.parse(el)
-                // 获得解析数据首先写入数据库
-                const clientData = { ...el, parentId, result: parse }
+            // 处理数据
+            const parse = await this.ProtocolParse.parse(data)
 
-                const { _id } = await this.Device.saveTerminalResultColletion(clientData as any)
-                // 如果设备有用户绑定则进入检查流程
-                const user = await this.Alarm.getMactoUser(el.mac)
-                if (user) {
-                    const { alarm, result } = await this.ProtocolCheck.check(user.user, el, parse)
-                    // 写入到单例数据库
-                    await this.Device.updateTerminalResultSingle(el.mac, el.pid, _.omit({ ...el, parentId, result }, ['mac', 'pid']))
+            /* // 把结果集数据扁平化
+            const { _id: parentId } = await 
+            // 获得解析数据首先写入数据库
+            const { _id } = await this.Device.saveTerminalResultColletion({ ...data, parentId, result: parse } as any) */
+            // 如果设备有用户绑定则进入检查流程
 
-                    const instructLen = (await this.Device.getProtocol(el.protocol)).instruct.map(el => el.formResize.length).reduce((pre, cur) => pre + cur)
-                    /* console.log({
-                        date1,
-                        result: result.length,
-                        ilen: instructLen,
-                        len: alarm.length,
-                        r: result.some(el => el.name === '输入电压'),
-                        alarm,
-                        has: await this.RedisService.hasArgumentAlarmLog(el.mac + el.pid),
-                        all: await this.RedisService.redisService.smembers('ArgumentAlarm')
+            const { a, r } = await this.check(data, parse)
+
+            // 发送数据更新消息
+            this.SocketUser.sendMacDateUpdate(data.mac, data.pid)
+
+            {
+                const alarmTag = await this.RedisService.hasArgumentAlarmLog(data.mac + data.pid)
+
+                if (a.length > 0) {/* 
+                    console.log({
+                        typeof: '新的告警',
+                        arguments: a[0].argument,
+                        value: a[0].data.value,
+                        con: a[0].contant,
+    
+                        a: a.length,
+                        alarmTag
                     }); */
-                    // 迭代告警记录,
-                    if (instructLen === result.length && alarm.length > 0) {
-                        if (await this.RedisService.hasArgumentAlarmLog(el.mac + el.pid) === 0) {
-                            await this.RedisService.addArgumentAlarmLog(el.mac + el.pid)
-
-                            this.Alarm.argumentAlarm(el.mac, el.pid, alarm)
-
-                            alarm.forEach(el2 => {
+                    // 如果没有告警标记
+                    if (!alarmTag) {
+                        // 添加告警标志
+                        await this.RedisService.addArgumentAlarmLog(data.mac + data.pid)
+                        // 发送告警
+                        this.Alarm.argumentAlarm(data.mac, data.pid, a)
+                        // 迭代告警信息,加入日志
+                        this.saveResultHistory(data, parse, a.length, r).then(el => {
+                            a.forEach(el2 => {
                                 this.Logs.saveDataTransfinite({
-                                    parentId: _id,
-                                    mac: el.mac,
-                                    pid: el.pid,
-                                    devName: el.mountDev,
-                                    protocol: el.protocol,
+                                    parentId: el._id,
+                                    mac: data.mac,
+                                    pid: data.pid,
+                                    devName: data.mountDev,
+                                    protocol: data.protocol,
                                     timeStamp: el2.timeStamp,
                                     tag: el2.tag,
                                     msg: `${el2.argument}[${el2.data.parseValue}]`
                                 })
                             })
-                        }
+                        })
 
-                        this.Device.alarmTerminalResults(parentId)
-                        this.Device.alarmTerminalResultColletion(_id)
                     } else {
-                        await this.RedisService.delArgumentAlarmLog(el.mac + el.pid)
+                        this.saveResultHistory(data, parse, a.length, r)
                     }
-                } else {
-                    await this.Device.updateTerminalResultSingle(el.mac, el.pid, _.omit(clientData, ['mac', 'pid']))
                 }
-            })
+                // 如果有告警标志,清除告警标识并发送恢复提醒
+                else {/* 
+                    console.log({
+                        typeof: '告警',
+                        alarmTag
+                    }); */
+                    if (alarmTag) {
+                        await this.RedisService.delArgumentAlarmLog(data.mac + data.pid)
+                        this.Alarm.argumentAlarmReload(data.mac, data.pid)
+                    }
+                    this.saveResultHistory(data, parse, a.length, r)
+                }
+            }
+            // 清除标记
+            this.RedisService.parseSet.delete(data.mac + data.pid)
         }
-        //
         return {
             code: 200
         }
+
+    }
+
+    // 检查数据
+    async check(data: Uart.queryResult, parse: Uart.queryResultArgument[]) {
+        const a: alarm[] = []
+        const r: Uart.queryResultArgument[] = []
+        // 获取设备用户
+        const user = await this.UserService.getBindMacUser(data.mac)
+        // 获取协议指令条数
+        const instructLen = (await this.Device.getProtocol(data.protocol)).instruct.map(data => data.formResize.length).reduce((pre, cur) => pre + cur)
+
+        /**
+         * 检查的必要条件
+         * 1,需要有用户
+         * 2,没有未处理的告警记录
+         * 3,解析结果数量和协议解析数量需要一致
+         */
+        await this.Device.updateTerminalResultSingle(data.mac, data.pid, _.omit({ ...data, result: parse }, ['mac', 'pid']))
+        if (user && parse.length === instructLen) {
+            const { alarm, result } = await this.ProtocolCheck.check(user, data, parse)
+            // 如果有告警
+            if (alarm.length > 0) {
+                a.push(...alarm)
+                r.push(...result)
+                // 写入到单例数据库
+                await this.Device.updateTerminalResultSingle(data.mac, data.pid, { result })
+            }
+        }
+        return { a, r }
+    }
+
+    /**
+     * 保存历史数据
+     * @param data 
+     * @param parse 
+     * @param a 
+     * @param r 
+     * @returns 
+     */
+    async saveResultHistory(data: Uart.queryResult, parse: Uart.queryResultArgument[], a: number, r: Uart.queryResultArgument[]) {
+        // 异步保存设备数据
+        const { _id: parentId } = await this.Device.saveTerminalResults({ contents: data.contents.map(data => ({ content: data.content, data: data.buffer.data })) } as any)
+        const { _id } = await this.Device.saveTerminalResultColletion({ ...data, parentId, result: r.length > 0 ? r : parse, hasAlarm: a } as any)
+        // 单例中的parentId只具备参考意义,可能不准确
+        this.Device.updateTerminalResultSingle(data.mac, data.pid, { parentId })
+        return { parentId, _id }
     }
 
 }

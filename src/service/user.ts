@@ -565,21 +565,22 @@ export class UserService {
    */
   async setUserSetupProtocol(user: string, Protocol: string, type: Uart.ConstantThresholdType, arg: any) {
     // 获取用户告警配置
-    const setup = await this.getUserAlarmSetup(user, { user: 1, tels: 1, mails: 1, ProtocolSetup: 1 }) //await UserAlarmSetup.findOne({ user: ctx.user }).lean<Pick<Uart.userSetup, 'user' | 'mails' | 'tels' | 'ProtocolSetup'>>()!
+    let setup = await this.getUserAlarmSetup(user, { user: 1, tels: 1, mails: 1, ProtocolSetup: 1 }) //await UserAlarmSetup.findOne({ user: ctx.user }).lean<Pick<Uart.userSetup, 'user' | 'mails' | 'tels' | 'ProtocolSetup'>>()!
     // 如果没有初始配置则新建
     if (!setup) {
-      await this.userAlarmSetupModel.create({ user, tels: [], mails: [], ProtocolSetup: [] })
+      setup = await this.initUserAlarmSetup(user)
     }
     // 如果如果没有ProtocolSetup属性或ProtocolSetup中没有此协议则加入
-    if (setup?.ProtocolSetup || setup.ProtocolSetup.findIndex(el => el.Protocol === Protocol) === -1) {
+    if (!setup?.ProtocolSetup || setup.ProtocolSetup.findIndex(el => el.Protocol === Protocol) === -1) {
       await this.userAlarmSetupModel.updateOne({ user }, { $push: { ProtocolSetup: { Protocol } as any } }, { upsert: true }).exec()
     }
     let result;
     switch (type) {
       case "Threshold":
         {
-          const { type, data }: { type: 'del' | 'add', data: Uart.Threshold } = arg
-          if (type === 'del') {
+          const { data }: { type: 'del' | 'add', data: Uart.Threshold } = arg
+          
+          if (arg.type === 'del') {
             result = await this.userAlarmSetupModel.updateOne({ user, "ProtocolSetup.Protocol": Protocol }, { $pull: { "ProtocolSetup.$.Threshold": { name: data.name } } })
           } else {
             const has = await this.userAlarmSetupModel.findOne({ user, ProtocolSetup: { $elemMatch: { "Protocol": Protocol, "Threshold.name": data.name } } })

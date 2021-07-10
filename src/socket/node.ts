@@ -84,6 +84,7 @@ export class NodeSocket {
             // 
             this.ctx.leave(node.Name)
             this.ctx.leave(node.IP)
+            this.RedisService.getClient().del('sid' + this.ctx.id)
             console.log(`${new Date().toLocaleTimeString()}## 节点：${node.Name}断开连接，清除定时操作`);
             this.ctx.disconnect();
             console.log('socket disconnected Stat:', this.ctx?.disconnected);

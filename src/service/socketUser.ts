@@ -1,28 +1,9 @@
-import { Provide, Scope, ScopeEnum, Inject, App, MidwayFrameworkType } from "@midwayjs/decorator"
+import { Provide, Inject, App, MidwayFrameworkType } from "@midwayjs/decorator"
 import { Application as IO } from "@midwayjs/socketio"
-//import { Application as WS } from "@midwayjs/ws"
-import { Util } from "../util/util"
-import { Logs } from "./log"
-import { RedisService } from "./redis"
-import { Device } from "./device"
 import { UserService } from "../service/user"
 
 @Provide()
-@Scope(ScopeEnum.Singleton)
 export class SocketUser {
-
-    @Inject()
-    Util: Util
-
-    @Inject()
-    log: Logs
-
-    @Inject()
-    RedisService: RedisService
-
-
-    @Inject()
-    Device: Device
 
     @Inject()
     UserService: UserService
@@ -38,9 +19,37 @@ export class SocketUser {
      * @param mac 向客户端发送设备变更日志
      */
     async sendMacUpdate(mac: string) {
+        this.toUser(mac, "MacUpdate", { mac })
+    }
+
+    /**
+     * 
+     * @param mac 向客户端发送设备数据更新
+     */
+    async sendMacDateUpdate(mac: string, pid: number) {
+        this.toUser(mac, "MacDateUpdate" + mac + pid, { mac, pid })
+    }
+
+
+    /**
+     * 向用户发送告警提醒
+     * @param mac 
+     * @param alarm 
+     */
+    async sendMacAlarm(mac: string, alarm: Uart.uartAlarmObject) {
+        this.toUser(mac, 'alarm', alarm)
+    }
+
+    /**
+     * 向用户发送socket事件
+     * @param mac 
+     * @param events 
+     * @param data 
+     */
+    private async toUser(mac: string, events: string, data: any = {}) {
         const user = await this.UserService.getBindMacUser(mac)
         if (user) {
-            this.app.of("/web").in(user).emit("MacUpdate", mac)
+            this.app.of("/web").in(user).emit(events, data)
             //this.ws.emit("MacUpdate", mac)
         }
     }

@@ -134,9 +134,13 @@ export class RootControll {
      */
     @Post("/getTerminals")
     async getTerminals() {
+        const ts = await this.Device.getTerminals()
+        for (const t of ts) {
+            (t as any).user = await this.UserService.getBindMacUser(t.DevMac)
+        }
         return {
             code: 200,
-            data: await this.Device.getTerminals()
+            data: ts
         }
     }
 
@@ -652,9 +656,10 @@ export class RootControll {
     async getUsersOnline() {
         const s = await this.SocketApp.of("/web").fetchSockets()
         const rooms = s.map(el => el.rooms.size > 1 ? [...el.rooms.values()][1] : '').flat()
+        const names = rooms.filter(el => el)
         return {
             code: 200,
-            data: rooms.filter(el => el)
+            data: await Promise.all(names.map(u => this.UserService.getUser(u)))
         }
     }
 
@@ -911,6 +916,40 @@ export class RootControll {
         return {
             code: 200,
             data: await this.UserService.toggleUserGroup(user)
+        }
+    }
+
+    /**
+     * 清空整个redis数据库
+     * @returns 
+     */
+    @Post("/redisflushall")
+    async redisflushall() {
+        return {
+            code: 200,
+            data: await this.RedisService.getClient().flushall()
+        }
+    }
+
+    /**
+     * 清空当前库中的所有 key
+     */
+    @Post("/redisflushdb")
+    async redisflushdb() {
+        return {
+            code: 200,
+            data: await this.RedisService.getClient().flushdb()
+        }
+    }
+
+    /**
+     * 获取redis中所有key
+     */
+    @Post("/rediskeys")
+    async rediskeys() {
+        return {
+            code: 200,
+            data: await this.RedisService.getClient().keys("*")
         }
     }
 }

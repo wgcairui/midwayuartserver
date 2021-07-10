@@ -180,11 +180,11 @@ export class Alarm {
                         },
                         data: {
                             first: {
-                                value: `[${ter.name}/${dev.mountDev}] 运行异常`,
-                                color: "#173177"
+                                value: `[ ${ter.name}-${dev.mountDev} ] 运行异常`,
+                                color: "#F56C6C"
                             },
                             device: {
-                                value: `${ter.name}/${dev.mountDev}`,
+                                value: `${ter.name}-${dev.mountDev}`,
                                 color: "#173177"
                             },
                             time: {
@@ -194,9 +194,9 @@ export class Alarm {
                             remark: {
                                 value: alarm.map(el => {
                                     const str = el.tag === 'ups' ? '' : (el.tag === "Threshold" ? [(el.contant as Uart.Threshold).min, (el.contant as Uart.Threshold).max].join('~') : '');
-                                    return `${el.argument}[${el.data.parseValue}],参考值:[${str}]`
+                                    return `${el.argument} ${el.data.parseValue} ,参考值: [ ${str} ]`
                                 }).join('\n'),
-                                color: "#173177"
+                                color: "#F56C6C"
                             }
                         }
                     })
@@ -247,6 +247,91 @@ export class Alarm {
     }
 
     /**
+     * 发送参数告警恢复
+     * @param mac 
+     * @param pid 
+     */
+    async argumentAlarmReload(mac: string, pid: number) {
+        const user = await this.getMactoUser(mac)
+        if (user) {
+            const ter = await this.getTerminal(mac)
+            const dev = ter.mountDevs.find(el => el.pid === pid)
+            if (user.wxid) {
+                return {
+                    type: 'wx',
+                    data: await this.Wx.MP.SendsubscribeMessageDevAlarm({
+                        touser: user.wxid,
+                        template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+                        miniprogram: {
+                            appid: "wx38800d0139103920",
+                            pagepath: "/pages/index/alarm/alarm",
+                        },
+                        data: {
+                            first: {
+                                value: `[ ${ter.name}-${dev.mountDev} ] 运行恢复`,
+                                color: "#67C23A"
+                            },
+                            device: {
+                                value: `${ter.name}-${dev.mountDev}`,
+                                color: "#67C23A"
+                            },
+                            time: {
+                                value: this.Util.parseTime(),
+                                color: "#67C23A"
+                            },
+                            remark: {
+                                value: `设备 ${dev.mountDev} 异常告警已全部消除`,
+                                color: "#67C23A"
+                            }
+                        }
+                    })
+                }
+            } /* else if (user.tels) {
+                const remind = alarm.length === 1 ? `${alarm[0].argument}[${alarm[0].data.parseValue}]` : `${alarm.map(el => el.argument).slice(0, 2).join(',')}等告警`
+                const TemplateParam = JSON.stringify({
+                    name: user.name,
+                    DTU: ter.name,
+                    pid: pid,
+                    devname: dev.mountDev,
+                    time: this.Util.parseTime(alarm[0].timeStamp),
+                    remind
+                })
+                return {
+                    type: 'sms',
+                    data: await this.Sms.send({
+                        "RegionId": "cn-hangzhou",
+                        "PhoneNumbers": user.tels.join(','),
+                        "SignName": "雷迪司科技湖北有限公司",
+                        "TemplateCode": 'SMS_200701342',
+                        TemplateParam
+                    })
+                }
+            } else if (user.mails) {
+                const body = `<p><strong>尊敬的${user.name}</strong></p>
+                <hr />
+                <p><strong>您的DTU <em>${ter.name}</em> 挂载的 ${dev.mountDev} 告警</strong></p>
+                <p><strong>告警时间:&nbsp; </strong>${this.Util.parseTime(alarm[0].timeStamp)}</p>
+                ${alarm.map(el => {
+                    const str = el.tag === 'ups' ? '' : (el.tag === 'AlarmStat' ? (el.contant as Uart.ConstantAlarmStat).alarmStat : [(el.contant as Uart.Threshold).min, (el.contant as Uart.Threshold).max].join('~'));
+                    return `<p><strong>告警事件:</strong>&nbsp; ${el.argument}</p>
+                    <p><strong>实际值: </strong>&nbsp;${el.data.parseValue}</p>
+                    <p><strong>参考值: </strong>&nbsp;${str}</p>`
+                })}
+                <p>您可登录 <a title="透传服务平台" href="https://uart.ladishb.com" target="_blank" rel="noopener">LADS透传服务平台</a> 查看处理(右键选择在新标签页中打开)</p>
+                <hr />
+                <p>&nbsp;</p>
+                <p>扫码或点击程序码使用微信小程序查看</p>
+                <a href="weixin://dl/business/?t=203U27hghyu" target="_blank"><img src="https://www.ladishb.com/admin/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></a>
+                <p>&nbsp;</p>`
+                return {
+                    type: "mail",
+                    data: await this.Mail.send(user.mails.join(","), "Ladis透传平台", "设备告警", body)
+                }
+            } */
+        }
+    }
+
+    /**
      * 根据mac获取用户告警号码和邮箱,wx
      * @param mac 
      * @returns 
@@ -273,8 +358,8 @@ export class Alarm {
      * @param user
      * @returns 
      */
-    async getUser(user: string) {
-        return await this.UserService.getUser(user, { tel: 1, mail: 1, wxId: 1 })
+    async getUser(user: string): Promise<Pick<Uart.UserInfo, "mail" | "tel" | "wxId">> {
+        return await this.UserService.getUser(user, { tel: 1, mail: 1, wxId: 1 }) as any
     }
 
     /**

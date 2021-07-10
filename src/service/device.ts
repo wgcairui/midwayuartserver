@@ -172,7 +172,8 @@ export class Device {
         const tModel = this.getModel(Terminal)
         const nodes = await model.find({}).lean()
         for (const node of nodes) {
-            (node as any).count = await tModel.countDocuments({ mountNode: node.Name })
+            (node as any).count = await tModel.countDocuments({ mountNode: node.Name });
+            (node as any).online = await tModel.countDocuments({ mountNode: node.Name, online: true })
         }
         return nodes
     }
@@ -227,15 +228,14 @@ export class Device {
         // 统计挂载的设备协议指令数量
         const MountDevLens = await Promise.all(terminal.mountDevs.map(async el => {
             // 如果设备在线则统计所有指令条数，不在线则记为1
-            const instructLen = el.online ? (await this.getProtocol(el.protocol, { instruct: 1 }))!.instruct.length : 0
-            return [el.pid, instructLen]
+            return (await this.getProtocol(el.protocol, { instruct: 1 }))!.instruct.length
         }))
         // 基数
         const baseNum = terminal.ICCID ? 1000 : 500
         // 指令合计数量
         // console.log({ MountDevLens });
 
-        const LensCount = MountDevLens.length > 0 ? MountDevLens.flat().reduce((pre, cu) => pre + cu) : 1
+        const LensCount = MountDevLens.length > 0 ? MountDevLens.reduce((pre, cu) => pre + cu) : 1
         /* // 此PID设备协议指令数量
         const PidProtocolInstructNum = MountDevLens.get(Pid)!
         // 
@@ -248,7 +248,7 @@ export class Device {
      * @param doc
      * @returns 
      */
-    async saveTerminalResults(doc: Uart.queryResult) {
+    async saveTerminalResults(doc: Pick<Uart.queryResult, "contents">) {
         return await this.getModel(TerminalClientResults).create(doc as any)
     }
 
@@ -257,7 +257,7 @@ export class Device {
      * @param doc
      * @returns 
      */
-    async saveTerminalResultColletion(doc: Uart.queryResultParse) {
+    async saveTerminalResultColletion(doc: Partial<Uart.queryResultParse>) {
         return await this.getModel(TerminalClientResult).create(doc as any)
     }
 

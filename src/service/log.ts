@@ -1,13 +1,17 @@
-import { Provide } from "@midwayjs/decorator"
+import { Provide, Inject } from "@midwayjs/decorator"
 import { getModelForClass } from "@midwayjs/typegoose"
 import { AnyParamConstructor } from "@typegoose/typegoose/lib/types"
 import { Nodes, Terminals, UartTerminalDataTransfinite, DtuBusy, MailSend, UseBytes, WXEvent, InstructQuery, SmsSend, UserLogin, UserRequst, DataClean } from "../entity/log"
+import { SocketUser } from "../service/socketUser"
 
 /**
  * 日至操作
  */
 @Provide()
 export class Logs {
+
+    @Inject()
+    SocketUser: SocketUser
 
 
     private getModel<T>(cl: AnyParamConstructor<T>) {
@@ -38,6 +42,7 @@ export class Logs {
      * @returns 
      */
     async saveDataTransfinite(doc: Uart.uartAlarmObject) {
+        this.SocketUser.sendMacAlarm(doc.mac, doc)
         return await this.getModel(UartTerminalDataTransfinite).create(doc as any)
     }
 
