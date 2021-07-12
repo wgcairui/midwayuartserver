@@ -204,7 +204,7 @@ export class Device {
      */
     async getStatTerminalDevs(mac: string, pid: number) {
         const t = await this.getModel(Terminal).findOne({ DevMac: mac, "mountDevs.pid": pid }, { "mountDevs.$": 1 }).lean()
-        return Boolean(t.mountDevs[0]?.online)
+        return Boolean(t?.mountDevs[0]?.online)
     }
 
     /**

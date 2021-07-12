@@ -107,7 +107,7 @@ export class NodeControll {
     @Post("/queryData")
     async queryData(@Body() data: Uart.queryResult) {
         // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
-        if (!this.RedisService.parseSet.has(data.mac + data.pid)) {
+        if (data.mac && !this.RedisService.parseSet.has(data.mac + data.pid)) {
             // 标记数据正在处理
             this.RedisService.parseSet.add(data.mac + data.pid)
             {
@@ -121,7 +121,7 @@ export class NodeControll {
                 })
                 // 保存每个终端使用的数字节数
                 // 保存每个查询指令使用的字节，以天为单位
-                this.Logs.incUseBytes(data.mac, new Date(data.time).toLocaleDateString(), data.useBytes)
+                if (data.useBytes) this.Logs.incUseBytes(data.mac, new Date(data.time).toLocaleDateString(), data.useBytes)
             }
 
             // 处理数据
@@ -192,6 +192,9 @@ export class NodeControll {
             }
             // 清除标记
             this.RedisService.parseSet.delete(data.mac + data.pid)
+        } else {
+            console.log({ data, stat: this.RedisService.parseSet });
+
         }
         return {
             code: 200

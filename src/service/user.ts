@@ -112,7 +112,7 @@ export class UserService {
   async updateWxUser(users: Uart.WX.userInfoPublic) {
     await this.wxUserModel.updateOne({ openid: users.openid }, { $set: { ...users } }, { upsert: true }).lean()
     const u = await this.getUser(users.unionid)
-    if (u && !u.userId) {
+    if (u) {
       await this.userModel.updateOne({ user: u.user }, { $set: { wxId: users.openid } })
     }
     return u
@@ -466,8 +466,8 @@ export class UserService {
    * @returns 
    */
   async mpTicket(user: string) {
-    const { _id } = await this.getUser(user)
-    return this.Wx.MP?.getTicket(_id)
+    const { _id } = await this.getUser(user, { _id: 1 })
+    return this.Wx.MP.getTicket(_id)
   }
 
   /**
@@ -476,8 +476,8 @@ export class UserService {
    * @returns 
    */
   async wpTicket(user: string) {
-    const { _id } = await this.getUser(user)
-    return this.Wx.WP?.getTicket(_id)
+    const { _id } = await this.getUser(user, { _id: 1 })
+    return this.Wx.WP.getTicket(_id)
   }
 
   /**

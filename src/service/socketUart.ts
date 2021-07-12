@@ -143,6 +143,8 @@ export class SocketUart {
     async nodeInfo() {
         this.nodeMap.forEach(node => {
             this.getCtx(node.Name).emit("nodeInfo", node.Name)
+            console.log(new Date().toLocaleTimeString() + "===" + node.Name, "nodeInfo");
+
         })
     }
 
@@ -228,13 +230,13 @@ export class SocketUart {
     private async _SendQueryIntruct(Query: mountDevEx) {
         const mac = Query.TerminalMac
         // 判断挂载设备是否空闲和是否在线
-        console.log({
+        /* console.log({
             mac,
             pid: Query.pid,
             name: Query.mountDev,
             a: await this.RedisService.hasDtuWorkBus(mac),
             b: await this.Device.getStatTerminal(mac)
-        });
+        }); */
 
         if (!await this.RedisService.hasDtuWorkBus(mac) && await this.Device.getStatTerminal(mac)) {
             // console.log("send" + mac, Query.Interval, this.Event.getClientDtuMountDev(Query.TerminalMac, Query.pid));

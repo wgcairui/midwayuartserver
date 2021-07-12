@@ -40,6 +40,8 @@ export class WxPublic {
     @Post("/")
     async wxPublic() {
         const body: Uart.WX.wxValidation | Uart.WX.WxEvent = await parseStringPromise(this.ctx.request.body).then(el => this.parseXmlObj(el) as any);
+        console.log(body);
+
         // 微信校验接口
         if ('signature' in body) {
             const { signature, timestamp, nonce, echostr } = body
@@ -55,15 +57,54 @@ export class WxPublic {
             switch (Event) {
                 // 关注公众号
                 case "subscribe":
-                    const wxUser = await this.Wx.MP.getUserInfo(FromUserName)
-                    const u = await this.UserService.updateWxUser(wxUser)
-                    if (u && u.wpId) {
-                        return this.TextMessege(body, `亲爱的用户:${u.name},我们已经自动为你的LADS透传云平台和公众号进行绑定,后期云平台的告警将会通过公众号进行推送,请注意查收!!`)
+                    {
+                        const wxUser = await this.Wx.MP.getUserInfo(FromUserName)
+                        const u = await this.UserService.updateWxUser(wxUser)
+                        // 如果可以根据unidid找到用户
+                        if (u && u.wpId) {
+                            return this.TextMessege(body, `亲爱的用户:${u.name},我们已经自动为你的LADS透传云平台和公众号进行绑定,后期云平台的告警将会通过公众号进行推送,请注意查收!!`)
+                        } else
+                            /**
+                            * 如果是通过二维码扫码绑定账号
+                            * 通过判断有这个用户和用户还没有绑定公众号
+                            * 
+                            */
+                            if ("Ticket" in body && body.EventKey) {
+                                const { EventKey, FromUserName } = body
+                                // EventKey是用户的数据库文档id字符串
+                                const user = await this.UserService.getIdUser(EventKey.replace("qrscene_", ""))
+                                // 如果有用户和用户还没有绑定公众号
+                                if (user && !user.wxId) {
+                                    const { unionid, headimgurl } = wxUser
+                                    // 如果用户没有绑定微信或绑定的微信是扫码的微信
+                                    if (!user.userId || user.userId === unionid) {
+                                        await this.UserService.modifyUserInfo(user.user, { userId: unionid, wxId: FromUserName, avanter: headimgurl })
+                                        return this.TextMessege(body, `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`)
+                                    } else {
+                                        console.error(
+                                            {
+                                                event: 'scan绑定公证号',
+                                                ...user,
+                                                ...body,
+                                            }
+                                        );
+
+                                    }
+                                }
+                            }
                     }
                     break
                 // 取消关注
                 case "unsubscribe":
-                    this.UserService.delWxUser(FromUserName)
+                    {
+                        const wxUser = await this.UserService.getWxUser(body.FromUserName)
+                        const user = await this.UserService.getUser(wxUser.unionid)
+                        // 如果有用户,解绑用户的公众号关联
+                        if (user) {
+                            this.UserService.modifyUserInfo(user.user, { wxId: '' })
+                        }
+                        this.UserService.delWxUser(FromUserName)
+                    }
                     break
 
                 case "SCAN":
@@ -76,13 +117,22 @@ export class WxPublic {
                         if ("Ticket" in body) {
                             const { EventKey, FromUserName } = body
                             // EventKey是用户的数据库文档id字符串
-                            const user = await this.UserService.getUser(EventKey)
+                            const user = await this.UserService.getIdUser(EventKey)
                             if (user && !user.wxId) {
                                 const { unionid, headimgurl } = await this.Wx.MP.getUserInfo(FromUserName)
                                 // 如果用户没有绑定微信或绑定的微信是扫码的微信
                                 if (!user.userId || user.userId === unionid) {
                                     await this.UserService.modifyUserInfo(user.user, { userId: unionid, wxId: FromUserName, avanter: headimgurl })
                                     return this.TextMessege(body, `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`)
+                                } else {
+                                    console.error(
+                                        {
+                                            event: 'scan绑定公证号',
+                                            ...user,
+                                            ...body,
+                                        }
+                                    );
+
                                 }
                             }
                         }
@@ -96,51 +146,58 @@ export class WxPublic {
             switch (body.Content) {
                 // 激活绑定策略
                 case '绑定':
-                    const wxUser = await this.Wx.MP.getUserInfo(FromUserName)
-                    const u = await this.UserService.updateWxUser(wxUser)
-                    if (u && u.wpId) {
-                        return this.TextMessege(body, `亲爱的用户:${u.name},我们将为你的LADS透传云平台和公众号进行绑定,后期云平台的告警将会通过公众号进行推送,请注意查收!!\n回复'告警测试'我们将推送一条测试告警信息`)
+                    {
+                        const { unionid } = await this.UserService.getWxUser(body.FromUserName)
+                        const u = await this.UserService.getUser(unionid)
+                        if (u && u.wpId) {
+                            return this.TextMessege(body, `亲爱的用户:${u.name},我们将为你的LADS透传云平台和公众号进行绑定,后期云平台的告警将会通过公众号进行推送,请注意查收!!\n回复'告警测试'我们将推送一条测试告警信息`)
+                        }
                     }
                     break;
 
                 case "告警测试":
-                    await this.Wx.MP.SendsubscribeMessageDevAlarm({
-                        touser: FromUserName,
-                        template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
-                        miniprogram: {
-                            appid: "wx38800d0139103920",
-                            pagepath: 'pages/index/index',
-                        },
-                        data: {
-                            first: {
-                                value: body.Content,
-                                color: "#173177"
+                    {
+                        const { unionid } = await this.UserService.getWxUser(body.FromUserName)
+                        const user = await this.UserService.getUser(unionid)
+                        await this.Wx.MP.SendsubscribeMessageDevAlarm({
+                            touser: FromUserName,
+                            template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+                            miniprogram: {
+                                appid: "wx38800d0139103920",
+                                pagepath: 'pages/index/index',
                             },
-                            device: {
-                                value: `test`,
-                                color: "#173177"
-                            },
-                            time: {
-                                value: this.Util.parseTime(),
-                                color: "#173177"
-                            },
-                            remark: {
-                                value: "test",
-                                color: "#173177"
+                            data: {
+                                first: {
+                                    value: `${user.name}的测试`,
+                                    color: "#173177"
+                                },
+                                device: {
+                                    value: `test`,
+                                    color: "#173177"
+                                },
+                                time: {
+                                    value: this.Util.parseTime(),
+                                    color: "#173177"
+                                },
+                                remark: {
+                                    value: body.Content,
+                                    color: "#173177"
+                                }
                             }
-                        }
-                    })
+                        })
+                    }
                     break;
 
                 default:
-                    let text = '详情请咨询400-6655778\n\n招商专线18971282941'
-                    if (body.MsgType === 'text' && body.Content && body.Content !== '') {
-                        const data = await this.UserService.seach_user_keywords(body.Content)
-                        text = data + text
+                    {
+                        let text = '详情请咨询400-6655778\n\n招商专线18971282941'
+                        if (body.MsgType === 'text' && body.Content && body.Content !== '') {
+                            const data = await this.UserService.seach_user_keywords(body.Content)
+                            text = data + text
+                        }
+                        // 自动回复信息
+                        return this.TextMessege(body, text)
                     }
-                    // 自动回复信息
-                    return this.TextMessege(body, text)
-                    break
             }
 
         }

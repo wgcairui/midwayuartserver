@@ -52,6 +52,11 @@ export class RedisService {
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
         this.parseSet = new Set()
+        // 一分钟之后清理标记,
+        // 应用启动之后缓存还没有准备好,可能会收到数据导致接口崩溃,流程不完整,
+        setTimeout(() => {
+            this.parseSet = new Set()
+        }, 1000 * 60);
     }
 
     getClient() {
@@ -102,8 +107,13 @@ export class RedisService {
      */
     async setProtocolInstruct(protocol: string) {
         const Protocol = await this.Device.getProtocol(protocol)
-        // 缓存协议方法
-        this.protocolInstructMap.set(protocol, new Map(Protocol.instruct.map(el => [el.name, el])))
+        try {
+            const ins = new Map(Protocol.instruct.map(el => [el.name, el]))
+            // 缓存协议方法
+            this.protocolInstructMap.set(protocol, ins)
+        } catch (error) {
+            console.log(Protocol);
+        }
     }
 
     /**
