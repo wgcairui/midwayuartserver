@@ -946,10 +946,21 @@ export class RootControll {
      * 获取redis中所有key
      */
     @Post("/rediskeys")
-    async rediskeys() {
+    async rediskeys(@Body() pattern: string) {
         return {
             code: 200,
-            data: await this.RedisService.getClient().keys("*")
+            data: await this.RedisService.getClient().keys(pattern)
+        }
+    }
+
+    /**
+     * 获取redis中所有key
+     */
+    @Post("/rediskeysdel")
+    async rediskeysdel(@Body() keys: string[]) {
+        return {
+            code: 200,
+            data: await this.RedisService.getClient().del(keys)
         }
     }
 }

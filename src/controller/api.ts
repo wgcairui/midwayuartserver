@@ -425,9 +425,10 @@ export class ApiControll {
     @Post("/refreshDevTimeOut")
     @Validate()
     async refreshDevTimeOut(@Body(ALL) data: macPid) {
+        await this.SocketUart.setTerminalMountDevCache(data.mac)
         return {
             code: 200,
-            data: await this.UserService.refreshDevTimeOut(data.mac, data.pid),
+            data: this.Device.setStatTerminalDevs(data.mac, data.pid),
             msg: 'success'
         }
     }

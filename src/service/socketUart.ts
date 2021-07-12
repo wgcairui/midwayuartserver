@@ -228,12 +228,14 @@ export class SocketUart {
     private async _SendQueryIntruct(Query: mountDevEx) {
         const mac = Query.TerminalMac
         // 判断挂载设备是否空闲和是否在线
-        /* console.log({
+        console.log({
             mac,
-            a:await this.RedisService.hasDtuWorkBus(mac),
-            b:await this.Device.getStatTerminal(mac)
+            pid: Query.pid,
+            name: Query.mountDev,
+            a: await this.RedisService.hasDtuWorkBus(mac),
+            b: await this.Device.getStatTerminal(mac)
         });
-         */
+
         if (!await this.RedisService.hasDtuWorkBus(mac) && await this.Device.getStatTerminal(mac)) {
             // console.log("send" + mac, Query.Interval, this.Event.getClientDtuMountDev(Query.TerminalMac, Query.pid));
             // 获取设备协议
@@ -310,6 +312,7 @@ export class SocketUart {
                     // 创建一次性监听，监听来自Node节点指令查询操作结果     
                     this.event.once(Query.events, result => {
                         this.log.saveTerminal({ NodeIP: '', NodeName: terminal.mountNode, TerminalMac: Query.DevMac, type: "操作设备", query: Query, result })
+                        if (result.ok) this.Device.setStatTerminalDevs(Query.DevMac, Query.pid)
                         resolve(result)
                     })
                     this
@@ -340,8 +343,9 @@ export class SocketUart {
                 // 构建指令
                 return new Promise<Partial<Uart.ApolloMongoResult>>((resolve) => {
                     // 创建一次性监听，监听来自Node节点指令查询操作结果   
-                    this.event.once(Query.events, result => {
+                    this.event.once(Query.events, (result: Uart.ApolloMongoResult) => {
                         this.log.saveTerminal({ NodeIP: '', NodeName: terminal.mountNode, TerminalMac: Query.DevMac, type: "DTU操作", query: Query, result })
+
                         resolve(result)
                     })
                     this

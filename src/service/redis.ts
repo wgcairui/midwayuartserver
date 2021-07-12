@@ -45,13 +45,13 @@ export class RedisService {
 
 
 
+
     @Init()
     async init() {
         this.redisService = new redis(this.redisConfig)
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
         this.parseSet = new Set()
-        this.redisService.flushall()
     }
 
     getClient() {

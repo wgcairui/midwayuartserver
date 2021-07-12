@@ -546,14 +546,6 @@ export class UserService {
     }
   }
 
-  /**
-   * 重置设备超时状态
-   * @param mac 
-   * @param pid 
-   */
-  async refreshDevTimeOut(mac: string, pid: number) {
-
-  }
 
   /**
    * 设置用户自定义设置(协议配置)
@@ -579,7 +571,7 @@ export class UserService {
       case "Threshold":
         {
           const { data }: { type: 'del' | 'add', data: Uart.Threshold } = arg
-          
+
           if (arg.type === 'del') {
             result = await this.userAlarmSetupModel.updateOne({ user, "ProtocolSetup.Protocol": Protocol }, { $pull: { "ProtocolSetup.$.Threshold": { name: data.name } } })
           } else {
