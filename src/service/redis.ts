@@ -55,7 +55,9 @@ export class RedisService {
         // 一分钟之后清理标记,
         // 应用启动之后缓存还没有准备好,可能会收到数据导致接口崩溃,流程不完整,
         setTimeout(() => {
-            this.parseSet = new Set()
+            console.log('clear parseSet');
+
+            this.parseSet.clear()
         }, 1000 * 60);
     }
 

@@ -193,7 +193,7 @@ export class NodeControll {
             // 清除标记
             this.RedisService.parseSet.delete(data.mac + data.pid)
         } else {
-            console.log({ data, stat: this.RedisService.parseSet });
+            console.log({ time: new Date().toLocaleString(), data, stat: this.RedisService.parseSet });
 
         }
         return {
