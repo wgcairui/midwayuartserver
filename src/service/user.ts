@@ -375,19 +375,15 @@ export class UserService {
    */
   async addTerminalMountDev(user: string, mac: string, mountDevs: Uart.TerminalMountDevs) {
     const isBind = await this.isBindMac(user, mac)
-    if (!isBind) {
+    const model = getModelForClass(Terminal)
+    if (!isBind || (mountDevs.bindDev && await model.findOne({ "mountDevs.bindDev": mountDevs.bindDev }, { _id: 1 }))) {
       return null
     } else {
-      const model = getModelForClass(Terminal)
-      if (mountDevs.bindDev && await model.findOne({ "mountDevs.bindDev": mountDevs.bindDev }, { _id: 1 })) {
-        return null
-      } else {
-        return await model.updateOne({ DevMac: mac }, {
-          $addToSet: {
-            mountDevs
-          }
-        }).lean()
-      }
+      return await model.updateOne({ DevMac: mac }, {
+        $addToSet: {
+          mountDevs
+        }
+      }).lean()
     }
   }
 
