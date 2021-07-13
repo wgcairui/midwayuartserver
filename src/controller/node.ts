@@ -107,9 +107,9 @@ export class NodeControll {
     @Post("/queryData")
     async queryData(@Body() data: Uart.queryResult) {
         // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
-        if (data.mac && !this.RedisService.parseSet.has(data.mac + data.pid)) {
+        if (data.mac && !await this.RedisService.hasParseSet(data.mac + data.pid)) {
             // 标记数据正在处理
-            this.RedisService.parseSet.add(data.mac + data.pid)
+            this.RedisService.setParseSet(data.mac + data.pid)
             {
                 // 如果数据设备状态不在线,设置在线
                 this.Device.getStatTerminalDevs(data.mac, data.pid).then(els => {
@@ -121,7 +121,8 @@ export class NodeControll {
                 })
                 // 保存每个终端使用的数字节数
                 // 保存每个查询指令使用的字节，以天为单位
-                if (data.useBytes) this.Logs.incUseBytes(data.mac, new Date(data.time).toLocaleDateString(), data.useBytes)
+                this.Logs.incUseBytes(data.mac, new Date(data.time).toLocaleDateString(), data.useBytes)
+                this.RedisService.addQueryTerminaluseTime(data.mac, data.pid, data.useTime)
             }
 
             // 处理数据
@@ -178,11 +179,7 @@ export class NodeControll {
                     }
                 }
                 // 如果有告警标志,清除告警标识并发送恢复提醒
-                else {/* 
-                    console.log({
-                        typeof: '告警',
-                        alarmTag
-                    }); */
+                else {
                     if (alarmTag) {
                         await this.RedisService.delArgumentAlarmLog(data.mac + data.pid)
                         this.Alarm.argumentAlarmReload(data.mac, data.pid)
@@ -191,10 +188,9 @@ export class NodeControll {
                 }
             }
             // 清除标记
-            this.RedisService.parseSet.delete(data.mac + data.pid)
+            this.RedisService.delParseSet(data.mac + data.pid)
         } else {
-            console.log({ time: new Date().toLocaleString(), data, stat: this.RedisService.parseSet });
-
+            console.log({ time: new Date().toLocaleString(), data, stat: await this.RedisService.getClient().keys("parseSet*") });
         }
         return {
             code: 200

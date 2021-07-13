@@ -37,32 +37,31 @@ export class RedisService {
        */
     userSetup: Map<string, Map<string, userSetupMap>>
 
-
-    /**
-     * 存储正在处理的mac设备
-     */
-    parseSet: Set<string>
-
-
-
-
     @Init()
     async init() {
         this.redisService = new redis(this.redisConfig)
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
-        this.parseSet = new Set()
-        // 一分钟之后清理标记,
-        // 应用启动之后缓存还没有准备好,可能会收到数据导致接口崩溃,流程不完整,
-        setTimeout(() => {
-            console.log('clear parseSet');
-
-            this.parseSet.clear()
-        }, 1000 * 60);
+        this.clear()
     }
 
     getClient() {
         return this.redisService
+    }
+
+    /**
+     * 执行清理工作
+     */
+    async clear() {
+        const redis = this.redisService
+        // 清理节点映射
+        const nodes = await redis.keys("sid*")
+        /* const on = await redis.keys("OnlineTime*")
+        const off = await redis.keys("OfflineTime") */
+        const all = [...nodes]//, ...on, ...off]
+        console.log('clear all', all);
+        if (all.length > 0) await redis.del(all)
+
     }
 
     /**
@@ -228,8 +227,8 @@ export class RedisService {
      * @param time 
      * @returns 
      */
-    setMacOnlineTime(mac: string, time: Date) {
-        return this.redisService.set("OnlineTime" + mac, time.toString())
+    setMacOnlineTime(mac: string) {
+        return this.redisService.set("OnlineTime" + mac, Date.now())
     }
 
     /**
@@ -238,7 +237,7 @@ export class RedisService {
      * @returns 
      */
     async getMacOnlineTime(mac: string) {
-        return new Date(await this.redisService.get("OnlineTime" + mac))
+        return Number(await this.redisService.get("OnlineTime" + mac))
     }
 
     /**
@@ -246,35 +245,35 @@ export class RedisService {
      * @param mac 
      * @returns 
      */
-    detMacOnlineTime(mac: string) {
+    delMacOnlineTime(mac: string) {
         return this.redisService.del("OnlineTime" + mac)
     }
 
     /**
-     * 设置设备上线时间
+     * 设置设备下线时间
      * @param mac 
      * @param time 
      * @returns 
      */
-    setMacOfflineTime(mac: string, time: Date) {
-        return this.redisService.set("OfflineTime" + mac, time.toString())
+    setMacOfflineTime(mac: string) {
+        return this.redisService.set("OfflineTime" + mac, Date.now())
     }
 
     /**
-     * 获取设备上线时间
+     * 获取设备下线时间
      * @param mac 
      * @returns 
      */
     async getMacOfflineTime(mac: string) {
-        return new Date(await this.redisService.get("OfflineTime" + mac))
+        return Number(await this.redisService.get("OfflineTime" + mac))
     }
 
     /**
-     * 删除设备上线记录
+     * 删除设备下线记录
      * @param mac 
      * @returns 
      */
-    detMacOfflineTime(mac: string) {
+    delMacOfflineTime(mac: string) {
         return this.redisService.del("OfflineTime" + mac)
     }
 
@@ -434,5 +433,62 @@ export class RedisService {
      */
     getCode2Session(openId: string) {
         return this.redisService.get(openId)
+    }
+
+
+    /**
+     * 设备处理进程,失效10s
+     * @param hash 
+     * @returns 
+     */
+    setParseSet(hash: string) {
+        return this.redisService.setex("parseSet" + hash, 10, 1)
+    }
+
+    /**
+     * del设备处理进程
+     * @param hash 
+     * @returns 
+     */
+    delParseSet(hash: string) {
+        return this.redisService.del("parseSet" + hash)
+    }
+
+    /**
+     * has设备处理进程
+     * @param hash 
+     * @returns 
+     */
+    async hasParseSet(hash: string) {
+        return Boolean(await this.redisService.exists("parseSet" + hash))
+    }
+
+    /**
+     * 设置节点socketId和名称的映射
+     * @param id 
+     * @param name 
+     * @returns 
+     */
+    setSocketSid(id: string, name: string) {
+        return this.redisService.set("sid" + id, name)
+    }
+
+    /**
+     * get节点socketId和名称的映射
+     * @param id 
+     * @param name 
+     * @returns 
+     */
+    getSocketSid(id: string) {
+        return this.redisService.get("sid" + id)
+    }
+
+    /**
+     * del节点socketId和名称的映射
+     * @param id 
+     * @returns 
+     */
+    delSocketSid(id: string) {
+        return this.redisService.del("sid" + id)
     }
 }

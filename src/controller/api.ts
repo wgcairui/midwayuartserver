@@ -570,9 +570,13 @@ export class ApiControll {
     @Post("/getUserLayout")
     @Validate()
     async getUserLayout(@Body(ALL) data: id) {
+        const layout = await this.UserService.getUserLayout(data.token.user, data.id)
+        for (const i of layout.Layout) {
+            (i as any).result = await this.UserService.getTerminalDataName(data.token.user, i.bind.mac, i.bind.pid, i.bind.name)
+        }
         return {
             code: 200,
-            data: await this.UserService.getUserLayout(data.token.user, data.id)
+            data: layout
         }
     }
 
@@ -584,19 +588,9 @@ export class ApiControll {
     @Post("/getAggregation")
     @Validate()
     async getAggregation(@Body(ALL) data: id) {
-        const agg = await this.UserService.getAggregation(data.token.user, data.id) as unknown as Uart.Aggregation
-        const layout = await this.UserService.getUserLayout(data.token.user, data.id)
-
-        const nMap = new Map(layout.Layout.map(el => [el.bind.mac + el.bind.pid, el.bind.name]))
-
-        for (const i of agg.aggregations) {
-            const name = nMap.get(i.DevMac + i.pid)
-            const r = await this.UserService.getTerminalDataName(data.token.user, i.DevMac, i.pid, name)
-            i.result = r
-        }
         return {
             code: 200,
-            data: agg
+            data: await this.UserService.getAggregation(data.token.user, data.id)
         }
     }
 

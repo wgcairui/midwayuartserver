@@ -497,14 +497,14 @@ export class UserService {
    * @param mac 
    * @param pid 
    */
-  async getTerminalDataName(user: string, mac: string, pid: number, name: string) {
+  async getTerminalDataName(user: string, mac: string, pid: number, name: string): Promise<Uart.queryResultArgument | null> {
     const isBind = await this.isBindMac(user, mac)
     if (!isBind) {
       return null
     } else {
       const model = getModelForClass(TerminalClientResultSingle)
       const r = await model.findOne({ mac, pid, "result.name": name }, { "result.$": 1, _id: 0 }).lean()
-      return (r?.result || []) as unknown as Uart.queryResultArgument[]
+      return r && r.result.length > 0 ? r.result[0] : null
     }
   }
 

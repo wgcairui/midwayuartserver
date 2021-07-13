@@ -112,7 +112,7 @@ export class SocketUart {
      * @param id 
      */
     async getNode(id: string) {
-        const name = await this.RedisService.getClient().get("sid" + id)
+        const name = await this.RedisService.getSocketSid(id)
         if (!this.nodeMap.has(name)) {
             const node = await this.Device.getNode(name)
             if (node) this.nodeMap.set(name, node)
