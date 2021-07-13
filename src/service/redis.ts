@@ -422,7 +422,7 @@ export class RedisService {
      * @param session 
      */
     setCode2Session(openId: string, session: string) {
-        return this.redisService.set(openId, session)
+        return this.redisService.setex(openId, 8e4, session)
     }
 
     /**

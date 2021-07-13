@@ -295,7 +295,7 @@ export class addAgg extends Api {
     @Rule(RuleType.string())
     name: string
 
-    @Rule(RuleType.array().allow())
+    @Rule(RuleType.allow())
     aggs: Uart.AggregationDev[]
 }
 

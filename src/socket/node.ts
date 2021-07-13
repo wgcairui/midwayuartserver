@@ -89,11 +89,17 @@ export class NodeSocket {
             this.ctx.disconnect();
             console.log('socket disconnected Stat:', this.ctx?.disconnected);
             const macs = (await this.Device.getTerminals({ DevMac: 1, mountNode: 1 })).filter(el => el.mountNode === node.Name).map(el => el.DevMac)
+            console.log({ macs });
+
             // 批量设置终端离线
-            this.Device.setStatTerminal(macs, false)
-            this.SocketUart.delNodeCache(node.Name)
+            await this.Device.setStatTerminal(macs, false)
+            console.log("del");
+
+            await this.SocketUart.delNodeCache(node.Name)
+            console.log('log');
+
             // 添加日志
-            this.log.saveNode({ type: "断开", ID: this.ctx.id, IP: node.IP, Name: node.Name })
+            await this.log.saveNode({ type: "断开", ID: this.ctx.id, IP: node.IP, Name: node.Name })
             macs.forEach(mac => {
                 this.log.saveTerminal({ NodeIP: node.IP, NodeName: node.Name, TerminalMac: mac, type: "节点断开" })
             })

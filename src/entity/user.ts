@@ -1,4 +1,4 @@
-import { modelOptions, pre, prop, Ref } from "@typegoose/typegoose"
+import { modelOptions, pre, prop } from "@typegoose/typegoose"
 import { DevConstant } from "./protocol"
 
 @pre<Users>("save", function () {
@@ -113,8 +113,8 @@ export class UserAggregation {
     @prop()
     public name: string
 
-    @prop({ ref: () => aggregation })
-    public aggregations: Ref<aggregation>[]
+    @prop({ type: aggregation, _id: false })
+    public aggregations: aggregation[]
 }
 
 class bind {
@@ -144,7 +144,7 @@ class Layout {
     @prop()
     public color: string
 
-    @prop({ type: bind })
+    @prop({ type: bind, _id: false })
     public bind: bind
 }
 /**
@@ -164,7 +164,7 @@ export class UserLayout {
     @prop()
     public bg: string
 
-    @prop({ type: () => Layout })
+    @prop({ type: () => Layout, _id: false })
     public Layout: Layout[]
 }
 

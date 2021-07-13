@@ -711,7 +711,15 @@ export class UserService {
       devs: []
     }
     const { _id } = await this.useraggregModel.create(aggObj)
-    return await this.useraggregModel.updateOne({ name, user }, { $set: { id: _id } }).lean()
+    const layout = {
+      user,
+      id: _id,
+      bg: "https://www.ladishb.com/site/upload/12192020__aggregation.jpg",
+      type: "agg",
+      Layout: []
+    }
+    await this.layoutModel.create(layout)
+    return await this.useraggregModel.updateOne({ _id: ObjectId(_id) }, { $set: { id: _id } }).lean()
   }
 
   /**
@@ -721,6 +729,7 @@ export class UserService {
    * @returns 
    */
   async deleteAggregation(user: string, id: string) {
+    await this.layoutModel.deleteOne({ user, id }).lean()
     return await this.useraggregModel.deleteOne({ user, id }).lean()
   }
 

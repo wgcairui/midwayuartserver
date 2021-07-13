@@ -925,9 +925,13 @@ export class RootControll {
      */
     @Post("/redisflushall")
     async redisflushall() {
+        const d = await this.RedisService.getClient().flushall()
+        setTimeout(() => {
+            process.exit(1)
+        }, 1000);
         return {
             code: 200,
-            data: await this.RedisService.getClient().flushall()
+            data: d
         }
     }
 
@@ -936,14 +940,18 @@ export class RootControll {
      */
     @Post("/redisflushdb")
     async redisflushdb() {
+        const d = await this.RedisService.getClient().flushdb()
+        setTimeout(() => {
+            process.exit(1)
+        }, 1000);
         return {
             code: 200,
-            data: await this.RedisService.getClient().flushdb()
+            data: d
         }
     }
 
     /**
-     * 获取redis中所有key
+     * 获取redis中key
      */
     @Post("/rediskeys")
     async rediskeys(@Body() pattern: string) {
@@ -954,7 +962,18 @@ export class RootControll {
     }
 
     /**
-     * 获取redis中所有key
+     * 删除redis中指定key
+     */
+    @Post("/rediskeysdValue")
+    async rediskeysdValue(@Body() keys: string[]) {
+        return {
+            code: 200,
+            data: await this.RedisService.getClient().mget(keys)
+        }
+    }
+
+    /**
+     * 删除redis中指定key
      */
     @Post("/rediskeysdel")
     async rediskeysdel(@Body() keys: string[]) {
