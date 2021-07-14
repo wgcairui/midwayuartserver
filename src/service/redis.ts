@@ -42,7 +42,7 @@ export class RedisService {
         this.redisService = new redis(this.redisConfig)
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
-        this.clear()
+       //  this.clear()
     }
 
     getClient() {

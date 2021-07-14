@@ -245,8 +245,8 @@ export class NodeSocket {
                 if (timeOut > 10) {
                     this.Device.setStatTerminalDevs(mac, pid, false)
                     this.SocketUser.sendMacUpdate(mac)
-                    // 把查询超时间隔修改为5分钟
-                    Query.Interval = 3e5
+                    // 把查询超时间隔修改为1分钟
+                    Query.Interval = 6e4
                     console.log(`${hash} 查询超时次数:${timeOut},查询间隔：${Query.Interval}`);
                     if (!await this.RedisService.hasTimeOutMonutDevSmsSend(hash)) {
                         this.RedisService.setMacOfflineTime(mac)

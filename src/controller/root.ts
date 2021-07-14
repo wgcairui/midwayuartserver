@@ -133,8 +133,8 @@ export class RootControll {
      * @returns 
      */
     @Post("/getTerminals")
-    async getTerminals() {
-        const ts = await this.Device.getTerminals()
+    async getTerminals(@Body() filter?: any) {
+        const ts = await this.Device.getTerminals(filter)
         for (const t of ts) {
             (t as any).user = await this.UserService.getBindMacUser(t.DevMac)
         }
