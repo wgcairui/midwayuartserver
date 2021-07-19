@@ -416,3 +416,41 @@ export class WXEvent {
      */
     public Ticket: String
 }
+
+
+/**
+ * 记录微信消息推送事件
+ */
+@modelOptions({ schemaOptions: { collection: 'log.wxsubscribeMessages' }, options: { allowMixed: 0 } })
+export class wxsubscribeMessage {
+    /**
+     * 接收者openid
+     */
+    @prop()
+    touser: string
+    /**
+     * 模板ID
+     */
+    @prop()
+    template_id: string
+    /**
+     * 模板跳转链接（海外帐号没有跳转能力）
+     */
+    @prop()
+    url?: string
+    /**
+     * 
+     */
+    @prop()
+    page?: string
+
+    /**
+     * 模板数据
+     */
+    @prop({ type: Schema.Types.Mixed })
+    public data: any
+
+
+    @prop({ type: Schema.Types.Mixed })
+    public result: any
+}

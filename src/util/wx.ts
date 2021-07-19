@@ -1,7 +1,8 @@
-import { Provide, Scope, ScopeEnum, Init } from "@midwayjs/decorator"
+import { Provide, Scope, ScopeEnum, Init, Inject } from "@midwayjs/decorator"
 import { getModelForClass } from "@midwayjs/typegoose"
 import { wxApp, wxOpen, wxPublic } from "@cairui/wx-sdk"
 import { SecretApp } from "../entity/user"
+import { Logs } from "../service/log"
 
 /**
  * 微信开发套件
@@ -24,6 +25,9 @@ export class Wx {
      */
     OP?: wxOpen
 
+    @Inject()
+    logs: Logs
+
     @Init()
     async init() {
 
@@ -31,7 +35,7 @@ export class Wx {
         await this.initOp()
         await this.initWp()
 
-        
+
     }
 
     private async getKey(type: 'wxopen' | "wxmp" | 'wxmpValidaton' | 'wxwp') {
@@ -68,6 +72,18 @@ export class Wx {
         if (opSecret) {
             this.OP = new wxOpen(opSecret.appid, opSecret.secret)
         }
+    }
+
+    /**
+     * 
+     * @param postData 
+     * @returns 
+     */
+    async SendsubscribeMessageDevAlarm(postData: Uart.WX.wxsubscribeMessage) {
+        return this.MP.SendsubscribeMessageDevAlarm(postData).then(el => {
+            this.logs.saveWxsubscribeMessage({ ...postData, result: el })
+            return el
+        })
     }
 
 }

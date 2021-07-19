@@ -39,7 +39,7 @@ export class Alarm {
             if (user.wxid) {
                 return {
                     type: 'wx',
-                    data: await this.Wx.MP.SendsubscribeMessageDevAlarm({
+                    data: await this.Wx.SendsubscribeMessageDevAlarm({
                         touser: user.wxid,
                         template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
                         miniprogram: {
@@ -98,7 +98,7 @@ export class Alarm {
             if (user.wxid) {
                 return {
                     type: 'wx',
-                    data: await this.Wx.MP.SendsubscribeMessageDevAlarm({
+                    data: await this.Wx.SendsubscribeMessageDevAlarm({
                         touser: user.wxid,
                         template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
                         miniprogram: {
@@ -175,7 +175,7 @@ export class Alarm {
             if (user.wxid) {
                 return {
                     type: 'wx',
-                    data: await this.Wx.MP.SendsubscribeMessageDevAlarm({
+                    data: await this.Wx.SendsubscribeMessageDevAlarm({
                         touser: user.wxid,
                         template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
                         miniprogram: {
@@ -262,7 +262,7 @@ export class Alarm {
             const dev = ter.mountDevs.find(el => el.pid === pid)
             return {
                 type: 'wx',
-                data: await this.Wx.MP.SendsubscribeMessageDevAlarm({
+                data: await this.Wx.SendsubscribeMessageDevAlarm({
                     touser: user.wxid,
                     template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
                     miniprogram: {
@@ -305,7 +305,7 @@ export class Alarm {
 
             return {
                 type: 'wx',
-                data: await this.Wx.MP.SendsubscribeMessageDevAlarm({
+                data: await this.Wx.SendsubscribeMessageDevAlarm({
                     touser: user.wxid,
                     template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
                     miniprogram: {
@@ -374,4 +374,6 @@ export class Alarm {
     async getTerminal(mac: string) {
         return await this.Device.getTerminal(mac)
     }
+
+
 }

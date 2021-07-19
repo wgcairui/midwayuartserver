@@ -8,6 +8,7 @@ import { ProtocolCheck } from "../service/protocolCheck"
 import { RedisService } from "../service/redis"
 import * as _ from "lodash"
 import { SocketUser } from "../service/socketUser"
+import { SocketUart } from "../service/socketUart"
 import { UserService } from "../service/user"
 import { alarm } from "../interface"
 
@@ -41,6 +42,9 @@ export class NodeControll {
 
     @Inject()
     UserService: UserService
+
+    @Inject()
+    SocketUart: SocketUart
 
     /**
      * 上传dtu信息
@@ -170,6 +174,8 @@ export class NodeControll {
                                     timeStamp: el2.timeStamp,
                                     tag: el2.tag,
                                     msg: `${el2.argument}[${el2.data.parseValue}]`
+                                }).then(el => {
+                                    this.SocketUser.sendMacAlarm(data.mac, el.toJSON())
                                 })
                             })
                         })
@@ -190,7 +196,7 @@ export class NodeControll {
             // 清除标记
             this.RedisService.delParseSet(data.mac + data.pid)
         } else {
-            console.log({ time: new Date().toLocaleString(), data, stat: await this.RedisService.getClient().keys("parseSet*") });
+            // console.log({ time: new Date().toLocaleString(), data: data.mac, stat: await this.RedisService.getClient().keys("parseSet*") });
         }
         return {
             code: 200
@@ -215,6 +221,7 @@ export class NodeControll {
          */
         await this.Device.updateTerminalResultSingle(data.mac, data.pid, _.omit({ ...data, result: parse }, ['mac', 'pid']))
         if (user && parse.length === instructLen) {
+
             const { alarm, result } = await this.ProtocolCheck.check(user, data, parse)
             // 如果有告警
             if (alarm.length > 0) {
@@ -223,6 +230,12 @@ export class NodeControll {
                 // 写入到单例数据库
                 await this.Device.updateTerminalResultSingle(data.mac, data.pid, { result })
             }
+
+            //判断数据间隔时间大于30秒
+            if (data.Interval > 3e4) {
+                this.SocketUart.setTerminalMountDevCache(data.mac)
+            }
+
         }
         return { a, r }
     }

@@ -1,9 +1,10 @@
-import { Provide, Scope, ScopeEnum, Init, App } from "@midwayjs/decorator"
+import { Provide, Scope, ScopeEnum, Init, App, Inject } from "@midwayjs/decorator"
 import { getModelForClass } from "@midwayjs/typegoose"
 import * as core from "@alicloud/pop-core"
 import { Application } from "@midwayjs/koa"
 import { SecretApp } from "../entity/user"
 import { SmsResult } from "../interface"
+import { Logs } from "../service/log"
 
 
 interface params {
@@ -18,6 +19,9 @@ interface params {
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class Sms {
+
+    @Inject()
+    logs: Logs
 
     @App()
     app: Application
@@ -55,6 +59,7 @@ export class Sms {
                 Success: el
             }
             new LogSmsSend(data).save() */
+            this.logs.saveSms({ tels, sendParams: params, Success: el })
             return el
         }).catch(e => {
             console.log(e);
@@ -65,6 +70,7 @@ export class Sms {
                 Error: e
             } 
             new LogSmsSend(data).save()*/
+            this.logs.saveSms({ tels, sendParams: params, Error: e })
             return e
         })
         // 如果发送成功,号码发送次数+1

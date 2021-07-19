@@ -1,8 +1,8 @@
-import { Provide, Inject } from "@midwayjs/decorator"
+import { Provide } from "@midwayjs/decorator"
 import { getModelForClass } from "@midwayjs/typegoose"
 import { AnyParamConstructor } from "@typegoose/typegoose/lib/types"
-import { Nodes, Terminals, UartTerminalDataTransfinite, DtuBusy, MailSend, UseBytes, WXEvent, InstructQuery, SmsSend, UserLogin, UserRequst, DataClean } from "../entity/log"
-import { SocketUser } from "../service/socketUser"
+import { Nodes, Terminals, UartTerminalDataTransfinite, DtuBusy, MailSend, UseBytes, WXEvent, InstructQuery, SmsSend, UserLogin, UserRequst, DataClean, wxsubscribeMessage } from "../entity/log"
+//import { SocketUser } from "../service/socketUser"
 
 /**
  * 日至操作
@@ -10,8 +10,8 @@ import { SocketUser } from "../service/socketUser"
 @Provide()
 export class Logs {
 
-    @Inject()
-    SocketUser: SocketUser
+    /* @Inject()
+    SocketUser: SocketUser */
 
 
     private getModel<T>(cl: AnyParamConstructor<T>) {
@@ -42,7 +42,7 @@ export class Logs {
      * @returns 
      */
     async saveDataTransfinite(doc: Uart.uartAlarmObject) {
-        this.SocketUser.sendMacAlarm(doc.mac, doc)
+        // this.SocketUser.sendMacAlarm(doc.mac, doc)
         return await this.getModel(UartTerminalDataTransfinite).create(doc as any)
     }
 
@@ -62,8 +62,29 @@ export class Logs {
         return await this.getModel(MailSend).create(doc as any)
     }
 
+    /**
+     * 保存短信打算记录
+     * @param doc 
+     * @returns 
+     */
+    async saveSms(doc: Uart.logSmsSend) {
+        return await this.getModel(SmsSend).create(doc as any)
+    }
+
+    /**
+     * 保存微信服务器推送
+     * @param doc 
+     * @returns 
+     */
     async saveWxEvent(doc: Uart.WX.wxValidation | Uart.WX.WxEvent) {
         return await this.getModel(WXEvent).create(doc as any)
+    }
+
+    /**
+     * 保存推送到用户的微信消息
+     */
+    async saveWxsubscribeMessage(doc: Uart.WX.wxsubscribeMessage & { result: Uart.WX.wxRequest }) {
+        return await this.getModel(wxsubscribeMessage).create(doc as any)
     }
 
     /**
