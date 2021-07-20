@@ -141,6 +141,8 @@ export class NodeSocket {
      */
     @OnWSMessage("terminalOn")
     async terminalOn(data: string | string[], reline = false) {
+        console.log({data,reline});
+        
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
             const date = new Date()
@@ -184,7 +186,7 @@ export class NodeSocket {
      */
     @OnWSMessage("terminalOff")
     async terminalOff(mac: string, active: boolean) {
-        console.log("terminalOff", mac, active);
+        //console.log("terminalOff", mac, active);
 
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {

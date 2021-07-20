@@ -205,7 +205,8 @@ export class Alarm {
                         }
                     })
                 }
-            } else if (user.tels) {
+            }
+            if (user.tels) {
                 const remind = alarm.length === 1 ? `${alarm[0].argument}[${alarm[0].data.parseValue}]` : `${alarm.map(el => el.argument).slice(0, 2).join(',')}等告警`
                 const TemplateParam = JSON.stringify({
                     name: user.name,
@@ -225,7 +226,8 @@ export class Alarm {
                         TemplateParam
                     })
                 }
-            } else if (user.mails) {
+            }
+            if (user.mails) {
                 const body = `<p><strong>尊敬的${user.name}</strong></p>
                 <hr />
                 <p><strong>您的DTU <em>${ter.name}</em> 挂载的 ${dev.mountDev} 告警</strong></p>
