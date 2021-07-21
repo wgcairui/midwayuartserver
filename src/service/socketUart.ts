@@ -143,7 +143,7 @@ export class SocketUart {
     async nodeInfo() {
         this.nodeMap.forEach(node => {
             this.getCtx(node.Name).emit("nodeInfo", node.Name)
-            console.log(new Date().toLocaleTimeString() + "===" + node.Name, "nodeInfo");
+            console.log(new Date().toLocaleTimeString() + "===" + node.Name, "nodeInfo",this.nodeMap);
 
         })
     }
