@@ -38,7 +38,7 @@
     "@types/crc": "^3.4.0",
     "@types/crypto-js": "^4.0.1",
     "@types/ioredis": "^4.26.4",
-    "@types/jest": "^26.0.10",
+    "@types/jest": "^26.0.24",
     "@types/jsonwebtoken": "^8.5.1",
     "@types/lodash": "^4.14.170",
     "@types/mongoose": "5.10.5",

@@ -1,4 +1,4 @@
-import { Provide, Inject } from "@midwayjs/decorator"
+import { Provide, Inject, Scope, ScopeEnum } from "@midwayjs/decorator"
 import { RedisService } from "../service/redis"
 import { Device } from "../service/device"
 import { UserService } from "../service/user"
@@ -9,6 +9,7 @@ import { alarm } from "../interface"
 
 
 @Provide()
+@Scope(ScopeEnum.Singleton)
 export class ProtocolCheck {
 
     @Inject()

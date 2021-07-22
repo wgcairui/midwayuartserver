@@ -1,5 +1,5 @@
-import { createApp } from '@midwayjs/mock'
-import { Framework } from '@midwayjs/socketio';
+import { createBootstrap } from '@midwayjs/mock'
+import { join } from "path"
 import { createSocketIOClient } from '@midwayjs/mock';
 
 
@@ -8,7 +8,7 @@ describe('/test/index.test.ts', () => {
     it('should test create socket app', async () => {
 
         // 创建一个服务
-        const app = await createApp<Framework>(process.cwd(), { port: 3000 });
+        const app = await createBootstrap(join(process.cwd(), 'bootstrap.js'));
 
         // 创建一个对应的客户端
         const client = await createSocketIOClient({
@@ -30,6 +30,8 @@ describe('/test/index.test.ts', () => {
 
         // 关闭客户端
         client.close();
+
+        await app.close()
     });
 
 });

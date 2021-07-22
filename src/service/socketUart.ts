@@ -141,10 +141,10 @@ export class SocketUart {
      */
     @TaskLocal("* * * * *")
     async nodeInfo() {
-        this.nodeMap.forEach(node => {
+        const nodes = await this.Device.getNodes()
+        nodes.forEach(node => {
             this.getCtx(node.Name).emit("nodeInfo", node.Name)
-            console.log(new Date().toLocaleTimeString() + "===" + node.Name, "nodeInfo",this.nodeMap);
-
+            console.log(new Date().toLocaleTimeString() + "===" + node.Name, "nodeInfo");
         })
     }
 

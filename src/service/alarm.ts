@@ -198,7 +198,7 @@ export class Alarm {
                             remark: {
                                 value: alarm.map(el => {
                                     const str = el.tag === 'ups' ? '' : (el.tag === "Threshold" ? [(el.contant as Uart.Threshold).min, (el.contant as Uart.Threshold).max].join('~') : '');
-                                    return `${el.argument} ${el.data.parseValue} ,参考值: [ ${str} ]`
+                                    return `${el.argument} ${el.data.parseValue} ${str ? `,参考值: [ ${str} ]` : ''}`
                                 }).join('\n'),
                                 color: "#F56C6C"
                             }

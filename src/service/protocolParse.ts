@@ -1,4 +1,4 @@
-import { Provide, Inject } from "@midwayjs/decorator"
+import { Provide, Inject, Scope, ScopeEnum } from "@midwayjs/decorator"
 import { Device } from "../service/device"
 import { Util } from "../util/util"
 import { RedisService } from "../service/redis"
@@ -7,6 +7,7 @@ import { RedisService } from "../service/redis"
  * 解析设备查询数据
  */
 @Provide()
+@Scope(ScopeEnum.Singleton)
 export class ProtocolParse {
 
 
@@ -68,8 +69,8 @@ export class ProtocolParse {
                     .split(instructs.isSplit ? " " : "");
                 // console.log({ cont:el.content,parseStr, parseStrlen: parseStr.length, ins: instructs.formResize.length });
                 return instructs.formResize.map(async el2 => {
-                    
-                    
+
+
                     const [start] = this.getProtocolRegx(el2.regx!)
                     const value = parseStr[start - 1]
                     return { name: el2.name, value, parseValue: el2.isState ? await this.RedisService.parseUnit(el2.unit!, value) : value, unit: el2.unit, issimulate: el2.isState } as any
