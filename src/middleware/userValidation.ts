@@ -1,7 +1,11 @@
 import { Provide } from "@midwayjs/decorator";
 import { Context, IMidwayKoaNext, IWebMiddleware } from "@midwayjs/koa";
 import { Util } from "../util/util";
+import { Logs } from "../service/log"
 
+/**
+ * 判断请求是否是
+ */
 @Provide()
 export class token implements IWebMiddleware {
     resolve() {
@@ -22,8 +26,15 @@ export class token implements IWebMiddleware {
                         userGroup: user.userGroup,
                         type: ctx.type || 'web'
                     }
-                } else
-                    throw new Error('token null')
+
+                    ctx.requestContext.getAsync(Logs).then(el => {
+                        el.saveUserRequst(user.user, user.userGroup, ctx.path, ctx.request.body)
+                    })
+
+                } else {
+                    ctx.throw('token null')
+                    // throw new Error('token null')
+                }
                 await next()
             }
         }

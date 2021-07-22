@@ -2,6 +2,9 @@ import { Provide } from "@midwayjs/decorator";
 import { Context, IMidwayKoaNext, IWebMiddleware } from "@midwayjs/koa";
 import { Util } from "../util/util";
 
+/**
+ * 解析请求是否携带token,是的话转换token数据
+ */
 @Provide()
 export class TokenParse implements IWebMiddleware {
     resolve() {

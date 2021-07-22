@@ -221,7 +221,6 @@ export class DataClean {
     @prop({ default: Date.now() })
     public timeStamp?: number
 
-
     @prop()
     public NumUartterminaldatatransfinites: string
 
@@ -232,13 +231,7 @@ export class DataClean {
     public NumClientresults: string
 
     @prop()
-    public NumClientresultcolltion: string
-
-    @prop()
     public CleanClientresultsTimeOut: string
-
-    @prop()
-    public lastDate: Date
 }
 
 /**

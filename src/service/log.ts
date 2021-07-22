@@ -14,7 +14,7 @@ export class Logs {
     SocketUser: SocketUser */
 
 
-    private getModel<T>(cl: AnyParamConstructor<T>) {
+    getModel<T>(cl: AnyParamConstructor<T>) {
         return getModelForClass(cl)
     }
 
@@ -69,6 +69,27 @@ export class Logs {
      */
     async saveSms(doc: Uart.logSmsSend) {
         return await this.getModel(SmsSend).create(doc as any)
+    }
+
+    /**
+     * 保存用户请求记录
+     * @param user 用户
+     * @param userGroup 用户类型
+     * @param type 请求类型
+     * @param argument 请求参数
+     * @returns 
+     */
+    saveUserRequst(user: string, userGroup: string, type: string, argument: any) {
+        return this.getModel(UserRequst).create({ user, userGroup, type, argument })
+    }
+
+    /**
+     * 保存清理记录
+     * @param doc 
+     * @returns 
+     */
+    saveClean(doc: any) {
+        return this.getModel(DataClean).create(doc)
     }
 
     /**
