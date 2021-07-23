@@ -109,9 +109,10 @@ export class Clean {
         console.log('清洗设备原始Result');
         console.time('CleanClientresults')
         const MapClientresults: Map<string, Map<string, string>> = new Map()
-
+        // 文档实例
         const ColltionMode = this.logs.getModel(TerminalClientResult)
         const sMode = this.logs.getModel(TerminalClientResults)
+
         const sQuery = sMode.find({ "__v": 0 })
         const scur = sQuery.cursor()
 
@@ -119,10 +120,9 @@ export class Clean {
         const deleteids: string[] = []
         const allids: string[] = []
 
-
+        console.log({ len });
 
         for (let doc = await this.next(scur); doc != null; doc = await this.next(scur)) {
-            // const tag = doc.mac + doc.pid
             const _id: string = doc._id
             const oldDoc = MapClientresults.get(_id)
             if (oldDoc) {
@@ -139,8 +139,9 @@ export class Clean {
                 MapClientresults.set(_id, new Map(doc.contents.map(el => [el.content, el.data.toString()])))
             }
             allids.push(_id)
-
         }
+        console.log({ deleteids: deleteids.length, allids: allids.length, MapClientresults: MapClientresults.size });
+        MapClientresults.clear()
 
         const statData = await ColltionMode.find({ parentId: { $in: deleteids }, hasAlarm: 0 }, { parentId: 1 }).lean()
         const statIds = statData.map(el => el.parentId)

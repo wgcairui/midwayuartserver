@@ -144,7 +144,6 @@ export class SocketUart {
         const nodes = await this.Device.getNodes()
         nodes.forEach(node => {
             this.getCtx(node.Name).emit("nodeInfo", node.Name)
-            console.log(new Date().toLocaleTimeString() + "===" + node.Name, "nodeInfo");
         })
     }
 

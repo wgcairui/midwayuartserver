@@ -1,19 +1,32 @@
-import { createBootstrap } from '@midwayjs/mock'
+import { createBootstrap, } from '@midwayjs/mock'
 import { join } from "path"
 import { createSocketIOClient } from '@midwayjs/mock';
 
 
 describe('/test/index.test.ts', () => {
 
-    it('should test create socket app', async () => {
 
-        // 创建一个服务
-        const app = await createBootstrap(join(process.cwd(), 'bootstrap.js'));
+    let app: any
+    beforeAll(async () => {
+        app = await createBootstrap(join(process.cwd(), 'bootstrap.js'));
+        console.log('start');
+    }, 30000)
+
+    afterAll(async () => {
+        await app.close()
+    })
+
+
+    it('should test create socket app', async () => {
 
         // 创建一个对应的客户端
         const client = await createSocketIOClient({
             port: 3000,
         });
+
+
+        console.log('client ok');
+
 
         // 拿到结果返回
         const data = await new Promise(resolve => {
@@ -31,7 +44,7 @@ describe('/test/index.test.ts', () => {
         // 关闭客户端
         client.close();
 
-        await app.close()
+
     });
 
 });

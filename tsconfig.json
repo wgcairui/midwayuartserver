@@ -24,7 +24,8 @@
     ],
     "outDir": "dist",
     "types": [
-      "types-uart"
+      "types-uart",
+      "@types/jest"
     ]
   },
   "exclude": [
