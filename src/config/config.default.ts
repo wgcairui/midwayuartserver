@@ -12,8 +12,6 @@ export const mongoose: DefaultConfig = {
     }
 }
 
-console.log({mongoose});
-
 
 export const redis: RedisOptions = {
     port: 6379, // Redis port

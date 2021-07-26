@@ -31,6 +31,7 @@ export class Clean {
         }
         console.log(`${new Date().toString()} ### end clean Data.....`, count);
         this.logs.saveClean(count)
+        return count
     }
 
 
@@ -113,43 +114,52 @@ export class Clean {
         const ColltionMode = this.logs.getModel(TerminalClientResult)
         const sMode = this.logs.getModel(TerminalClientResults)
 
-        const sQuery = sMode.find({ "__v": 0 })
-        const scur = sQuery.cursor()
+        const ColltionQuery = ColltionMode.find({ "__v": 0 })
+        const Colltioncur = ColltionQuery.cursor()
 
-        const len = await sQuery.countDocuments()
+        const len = await ColltionQuery.countDocuments()
         const deleteids: string[] = []
         const allids: string[] = []
 
         console.log({ len });
 
-        for (let doc = await this.next(scur); doc != null; doc = await this.next(scur)) {
-            const _id: string = doc._id
-            const oldDoc = MapClientresults.get(_id)
+        for (let doc = await this.next(Colltioncur); doc != null; doc = await this.next(Colltioncur)) {
+            // const _id: string = doc._id
+            const key = doc.mac + doc.pid
+            const oldDoc = MapClientresults.get(key)
+
             if (oldDoc) {
                 // 比较每个content查询下buffer.data的数据，有不一致则更新缓存，一致的话计入待删除array
-                const isrepeat = doc.contents.some(el => {
-                    const oldData = oldDoc.get(el.content)
-                    return !oldData || oldData !== el.data.toString()
+                const isrepeat = doc.result.some(el => {
+                    const oldData = oldDoc.get(el.name)
+                    return !oldData || oldData !== el.value
                 })
-                if (isrepeat) MapClientresults.set(_id, new Map(doc.contents.map(el => [el.content, el.data.toString()])))
+                if (isrepeat) MapClientresults.set(key, new Map(doc.result.map(el => [el.name, el.value])))
                 else {
-                    deleteids.push(_id)
+                    deleteids.push(doc.parentId)
                 }
             } else {
-                MapClientresults.set(_id, new Map(doc.contents.map(el => [el.content, el.data.toString()])))
+                MapClientresults.set(key, new Map(doc.result.map(el => [el.name, el.value])))
             }
-            allids.push(_id)
+            allids.push(doc.parentId)
         }
-        console.log({ deleteids: deleteids.length, allids: allids.length, MapClientresults: MapClientresults.size });
+        console.log({ time: new Date().toLocaleTimeString(), deleteids: deleteids.length, allids: allids.length });
         MapClientresults.clear()
 
-        const statData = await ColltionMode.find({ parentId: { $in: deleteids }, hasAlarm: 0 }, { parentId: 1 }).lean()
-        const statIds = statData.map(el => el.parentId)
 
-        await sMode.deleteMany({ _id: { $in: statIds.map(el => Types.ObjectId(el)) } })
-        await ColltionMode.deleteMany({ parentId: { $in: statIds } })
+        for (let del of chunk(deleteids, 1e5)) {
+            const statData = await ColltionMode.find({ parentId: { $in: del }, hasAlarm: 0 }, { parentId: 1 }).lean()
+            const statIds = statData.map(el => el.parentId)
+
+            await sMode.deleteMany({ _id: { $in: statIds.map(el => Types.ObjectId(el)) } })
+            await ColltionMode.deleteMany({ parentId: { $in: statIds } })
+        }
         // 更新标签
-        await sMode.updateMany({ _id: { $in: allids.map(el => Types.ObjectId(el)) } }, { $inc: { "__v": 1 } }).exec()
+
+        for (let all of chunk(allids, 1e5)) {
+            await ColltionMode.updateMany({ _id: { $in: all.map(el => Types.ObjectId(el)) } }, { $inc: { "__v": 1 } }).exec()
+        }
+
         console.timeEnd('CleanClientresults')
         return deleteids.length + '/' + len
     }

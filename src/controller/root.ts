@@ -9,6 +9,7 @@ import { Logs } from "../service/log"
 import { Application as SocketApp } from "@midwayjs/socketio"
 import { date, IdDate, macDate, registerDev } from "../dto/root"
 import { SocketUart } from "../service/socketUart"
+import { Clean } from '../task/clean'
 
 @Provide()
 @Controller("/api/root", { middleware: ['root'] })
@@ -34,6 +35,9 @@ export class RootControll {
 
     @Inject()
     private HF: HF
+
+    @Inject()
+    Clean: Clean
 
     @Inject()
     private SocketUart: SocketUart
@@ -980,6 +984,17 @@ export class RootControll {
         return {
             code: 200,
             data: await this.RedisService.getClient().del(keys)
+        }
+    }
+
+    /**
+     * 数据清理
+     */
+    @Post("/DataClean")
+    async DataClean() {
+        return {
+            code: 200,
+            data: await this.Clean.clean()
         }
     }
 }
