@@ -222,7 +222,7 @@ export class DataClean {
     public timeStamp?: number
 
     @prop()
-    public NumUartterminaldatatransfinites: string
+    public useTime: number
 
     @prop()
     public NumUserRequst: string
