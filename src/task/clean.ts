@@ -60,7 +60,7 @@ export class Clean {
                 // 比较同一个设备连续的告警,告警相同则删除后一个记录
                 deleteids.push(_id)
             } else {
-                MapUartterminaldatatransfinites.set(tag, doc)
+                MapUartterminaldatatransfinites.set(tag, doc as any)
             }
         }
 
@@ -210,8 +210,8 @@ export class Clean {
             if (old && (doc.timeStamp === old.timeStamp || doc.stat === old.stat)) {
                 deleteIds.push(old._id)
                 // await LogDtuBusy.deleteOne({ _id: old._id })
-                BusyMap.set(doc.mac, doc)
-            } else BusyMap.set(doc.mac, doc)
+                BusyMap.set(doc.mac, doc as any)
+            } else BusyMap.set(doc.mac, doc as any)
             allIds.push(doc._id)
         }
         //await LogDtuBusy.remove({ _id: { $in: deleteIds } })

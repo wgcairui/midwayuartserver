@@ -4,6 +4,7 @@ const SocketFramework = require('@midwayjs/socketio').Framework
 
 const web = new WebFramework().configure({
   port: 9010,
+  hostname: "0.0.0.0"
 });
 
 const socket = new SocketFramework().configure({

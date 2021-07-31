@@ -1,13 +1,6 @@
-import { modelOptions, pre, prop } from "@typegoose/typegoose"
+import { modelOptions, prop } from "@typegoose/typegoose"
 import { DevConstant } from "./protocol"
 
-@pre<Users>("save", function () {
-    this.creatTime = new Date()
-})
-
-@pre<Users>("updateOne", function () {
-    this.update({ $set: { modifyTime: new Date() } })
-})
 @modelOptions({ schemaOptions: { collection: 'users' } })
 export class Users {
     @prop()

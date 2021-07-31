@@ -172,7 +172,7 @@ export class NodeControll {
                                     tag: el2.tag,
                                     msg: `${el2.argument}[${el2.data.parseValue}]`
                                 }).then(el => {
-                                    this.SocketUser.sendMacAlarm(data.mac, el.toJSON())
+                                    this.SocketUser.sendMacAlarm(data.mac, el as any)
                                 })
                             })
                         })
