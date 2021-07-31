@@ -237,7 +237,7 @@ export class Device {
 
         const LensCount = MountDevLens.length > 0 ? MountDevLens.reduce((pre, cu) => pre + cu) : 1
 
-        console.log({ mac, MountDevLens, baseNum, LensCount });
+        // console.log({ mac, MountDevLens, baseNum, LensCount });
         /* // 此PID设备协议指令数量
         const PidProtocolInstructNum = MountDevLens.get(Pid)!
         // 
