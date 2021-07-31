@@ -181,7 +181,7 @@ export class SocketUart {
     async setNodeCache(nodeName: string) {
         const terminals = (await this.Device.getTerminals({ _id: 0, createdAt: 0, updatedAt: 0, __v: 0 })).filter(el => el.mountNode === nodeName)
         terminals.forEach(async ({ DevMac, mountDevs, mountNode }) => {
-            if (mountDevs) {
+            if (mountNode !== "test" && mountDevs) {
                 const Interval = await this.Device.getMountDevInterval(DevMac)
                 mountDevs.forEach(mountDev => {
                     this.cache.set(DevMac + mountDev.pid, { ...mountDev, TerminalMac: DevMac, Interval, mountNode })
@@ -196,7 +196,7 @@ export class SocketUart {
      */
     async setTerminalMountDevCache(mac: string) {
         const { mountDevs, DevMac, mountNode } = await this.Device.getTerminal(mac)
-        if (mountDevs) {
+        if (mountNode !== "test" && mountDevs) {
             const Interval = await this.Device.getMountDevInterval(mac)
             mountDevs.forEach(mountDev => {
                 this.cache.set(DevMac + mountDev.pid, { ...mountDev, TerminalMac: DevMac, Interval, mountNode })

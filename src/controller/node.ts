@@ -110,6 +110,7 @@ export class NodeControll {
      */
     @Post("/queryData")
     async queryData(@Body() data: Uart.queryResult) {
+
         // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
         if (data.mac && !await this.RedisService.hasParseSet(data.mac + data.pid)) {
             // 标记数据正在处理
@@ -132,10 +133,6 @@ export class NodeControll {
             // 处理数据
             const parse = await this.ProtocolParse.parse(data)
 
-            /* // 把结果集数据扁平化
-            const { _id: parentId } = await 
-            // 获得解析数据首先写入数据库
-            const { _id } = await this.Device.saveTerminalResultColletion({ ...data, parentId, result: parse } as any) */
             // 如果设备有用户绑定则进入检查流程
 
             const { a, r } = await this.check(data, parse)

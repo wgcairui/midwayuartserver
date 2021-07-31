@@ -52,6 +52,7 @@ export class ProtocolParse {
      */
     private async parse232(IntructResult: Uart.IntructQueryResult[], protocol: string): Promise<Promise<Uart.queryResultArgument>[]> {
         const InstructMap = await this.RedisService.getProtocolInstruct(protocol)
+        
         return IntructResult
             // 刷选出指令正确的查询，避免出错
             // 通过InstructMap.has(el.content)确认指令是系统所包含的

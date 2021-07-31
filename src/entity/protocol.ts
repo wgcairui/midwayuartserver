@@ -86,7 +86,7 @@ class instruct {
     public resize: string
 
     // 分割结果 [["power","1-5"，1]]代表第一和第五个字符是结果，倍率为1不修改结果，否则结果×倍率
-    @prop({ type: () => formResize })
+    @prop({ type: () => formResize, _id: false })
     public formResize: formResize[]
 }
 
