@@ -223,7 +223,7 @@ export class Device {
     * @param mac dtu设备mac
     */
     async getMountDevInterval(mac: string) {
-        const terminal = await this.getTerminal(mac, { "mountDevs.online": 1, "mountDevs.protocol": 1, "mountDevs.pid": 1 }) as unknown as Uart.Terminal
+        const terminal = await this.getTerminal(mac, { ICCID: 1, "mountDevs.online": 1, "mountDevs.protocol": 1, "mountDevs.pid": 1 }) as unknown as Uart.Terminal
 
         // 统计挂载的设备协议指令数量
         const MountDevLens = await Promise.all(terminal.mountDevs.map(async el => {
@@ -233,14 +233,16 @@ export class Device {
         // 基数
         const baseNum = terminal.ICCID ? 1000 : 500
         // 指令合计数量
-        // console.log({ MountDevLens });
+
 
         const LensCount = MountDevLens.length > 0 ? MountDevLens.reduce((pre, cu) => pre + cu) : 1
+
+        console.log({ mac, MountDevLens, baseNum, LensCount });
         /* // 此PID设备协议指令数量
         const PidProtocolInstructNum = MountDevLens.get(Pid)!
         // 
         return (PidProtocolInstructNum * baseNum) + ((LensCount * baseNum) * (PidProtocolInstructNum / LensCount)) */
-        return (LensCount) * baseNum
+        return LensCount * baseNum
     }
 
     /**
