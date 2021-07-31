@@ -194,7 +194,8 @@ export class Device {
      */
     async setStatTerminal(mac: string | string[], stat: boolean = true) {
         const macs = [mac].flat()
-        return await this.getModel(Terminal).updateMany({ DevMac: { $in: macs }, "mountDevs.pid": { $lt: 256 } }, { $set: { online: stat, "mountDevs.$.online": false } })
+        await this.getModel(Terminal).updateMany({ DevMac: { $in: macs } }, { $set: { online: stat } })
+        return await this.getModel(Terminal).updateMany({ DevMac: { $in: macs }, "mountDevs.pid": { $lt: 256 } }, { $set: { "mountDevs.$.online": false } })
 
     }
 

@@ -353,7 +353,7 @@ export class Terminal {
     public mountNode!: string
 
 
-    @prop({ type: mountDev, _id: false })
+    @prop({ type: mountDev, _id: false, default: [] })
     public mountDevs: mountDev[]
 }
 

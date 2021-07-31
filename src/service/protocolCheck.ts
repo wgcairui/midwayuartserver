@@ -192,7 +192,7 @@ export class ProtocolCheck {
                                 0x47: '控制板与通讯板MCU通信故障',
                                 0x48: '控制板韧体版本不兼容'
                             }
-                            const event = hashtable[Buffer.from(kk).toJSON().data[0]]
+                            const event = hashtable[Buffer.from(kk,"hex").toJSON().data[0]]
                             console.log(`### 发送其他故障消息:${Query.mac}/${Query.pid}/${Query.mountDev}, event:QFS(${event})`);
                             return {
                                 argument: event || '未知错误',
