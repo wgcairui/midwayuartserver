@@ -107,20 +107,21 @@ export class AuthController {
     // 解密hash密码
     const decryptPasswd = AES.decrypt(accont.passwd, hash!).toString(enc.Utf8)
     // 比对校验密码
-    const PwStat = this.Util.BcryptCompare(user.passwd, decryptPasswd)
+    const PwStat = await this.userService.BcryptComparePasswd(accont.user, decryptPasswd)
+
     if (!PwStat) {
       return {
         code: 2,
         msg: 'passwd Error'
       }
-    }
+    } else {
+      this.RedisService.getClient().del(user.user)
 
-    this.RedisService.getClient().del(user.user)
-
-    return {
-      code: 200,
-      token: await this.userService.getToken(user.user),
-      data: await this.userService.updateUserLoginlog(user.user, this.ctx.ip)
+      return {
+        code: 200,
+        token: await this.userService.getToken(user.user),
+        data: await this.userService.updateUserLoginlog(user.user, this.ctx.ip)
+      }
     }
   }
 
@@ -250,7 +251,7 @@ export class AuthController {
         msg: '用户未注册,请使用微信注册'
       }
     }
-    if (!await this.Util.BcryptCompare(accont.passwd, user.passwd)) {
+    if (!await this.userService.BcryptComparePasswd(accont.user, accont.passwd)) {
       return {
         code: 0,
         msg: '用户名或密码错误'

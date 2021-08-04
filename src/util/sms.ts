@@ -49,7 +49,7 @@ export class Sms {
     async send(params: params): Promise<SmsResult> {
         //const tels = params.PhoneNumbers.split(",")
         // 迭代发送的手机号码,检查号码每天的发送次数,每个号码每天限额50
-        const tels = params.PhoneNumbers.split(",")//.filter(el => !CacheAlarmSendNum.has(el) || CacheAlarmSendNum.get(el) as number < 51)
+        const tels = params.PhoneNumbers.toString().split(",")//.filter(el => !CacheAlarmSendNum.has(el) || CacheAlarmSendNum.get(el) as number < 51)
         params.PhoneNumbers = tels.join(',')
         // console.log(params);
         return await this.sms.request<SmsResult>('SendSms', params, { method: 'POST' }).then(el => {

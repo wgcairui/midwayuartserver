@@ -259,7 +259,7 @@ export class TerminalClientResultSingle {
  */
 @modelOptions({ schemaOptions: { collection: 'terminal.registers' } })
 export class RegisterTerminal {
-    @prop()
+    @prop({ uppercase: true })
     public DevMac!: string
 
     @prop()
@@ -298,7 +298,7 @@ class mountDev {
  */
 @modelOptions({ schemaOptions: { collection: 'terminals' } })
 export class Terminal {
-    @prop()
+    @prop({ uppercase: true })
     public DevMac!: string
 
     @prop()

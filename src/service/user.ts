@@ -1,7 +1,7 @@
 import { Provide, Init, Inject } from '@midwayjs/decorator';
 import { getModelForClass, ReturnModelType, } from "@midwayjs/typegoose"
 import { BeAnObject } from '@typegoose/typegoose/lib/types';
-import { Users, UserBindDevice, UserAggregation, SecretApp, UserAlarmSetup, UserLayout, wxUser } from "../entity/user"
+import { Users, UserBindDevice, UserAggregation, SecretApp, UserAlarmSetup, UserLayout, wxUser, Salt } from "../entity/user"
 import { UartTerminalDataTransfinite, UserLogin } from "../entity/log"
 import { Device } from "./device"
 import { Sms } from "../util/sms"
@@ -11,6 +11,7 @@ import { filter, MongoTypesId, ObjectId } from '../interface';
 import { Terminal, TerminalClientResult, TerminalClientResultSingle } from '../entity/node';
 import * as lodash from "lodash"
 import axios from "axios"
+import { SHA384 } from "crypto-js"
 
 
 @Provide()
@@ -24,6 +25,7 @@ export class UserService {
   layoutModel: ReturnModelType<typeof UserLayout, BeAnObject>;
   wxUserModel: ReturnModelType<typeof wxUser, BeAnObject>;
   secretModel: ReturnModelType<typeof SecretApp, BeAnObject>;
+  saltModel: ReturnModelType<typeof Salt, BeAnObject>;
 
   @Init()
   async init() {
@@ -36,6 +38,7 @@ export class UserService {
     this.layoutModel = getModelForClass(UserLayout)
     this.wxUserModel = getModelForClass(wxUser)
     this.secretModel = getModelForClass(SecretApp)
+    this.saltModel = getModelForClass(Salt)
   }
 
   @Inject()
@@ -49,6 +52,27 @@ export class UserService {
 
   @Inject()
   Util: Util
+
+  /**
+   * 校验用户密码
+   * @param user 用户名
+   * @param decryptPasswd 用户明文密码
+   */
+  async BcryptComparePasswd(user: string, decryptPasswd: string) {
+    const { passwd, rgtype } = await this.getUser(user)
+    if (rgtype === 'pesiv') {
+      
+      try {
+        const { salt } = await this.saltModel.findOne({ user })
+        const p = SHA384(decryptPasswd + salt).toString().toLocaleUpperCase()
+        return Boolean(p === passwd)
+      } catch (error) {
+        return false
+      }
+    } else {
+      return this.Util.BcryptCompare(decryptPasswd, passwd)
+    }
+  }
 
 
   /**
@@ -93,7 +117,9 @@ export class UserService {
    * @param passwd 
    */
   async resetUserPasswd(user: string, passwd: string) {
-    return await this.userModel.updateOne({ user }, { $set: { passwd: await this.Util.BcryptDo(passwd) } }).lean()
+    const users = await this.getUser(user)
+    const isPesiv = users.userGroup === 'user' && users.rgtype === 'pesiv'
+    return await this.userModel.updateOne({ user }, { $set: { passwd: await this.Util.BcryptDo(passwd), rgtype: isPesiv ? 'web' : users.rgtype } }).lean()
   }
 
   /**
@@ -143,13 +169,13 @@ export class UserService {
   }
 
   /**
-   * 使用用户名或邮箱,tel或id或uniId获取用户信息
+   * 使用用户名或tel或id或uniId获取用户信息
    * @param user 
    * @param filter 刷选
    * @returns 
    */
   getUser(user: string, filter: filter<Uart.UserInfo> = { _id: 0 }) {
-    return this.userModel.findOne({ $or: [{ user }, { mail: user }, { userId: user }, { tel: user }] }, filter).lean()
+    return this.userModel.findOne({ $or: [{ user }, { userId: user }, { tel: user }] }, filter).lean()
   }
 
   /**

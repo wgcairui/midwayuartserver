@@ -6,8 +6,8 @@ export class Users {
     @prop()
     public avanter: string
 
-    @prop({ default: 'web', enum: ['wx', 'web', 'app'] })
-    public rgtype!: string
+    @prop({ default: 'web', enum: ['wx', 'web', 'app', 'pesiv'] })
+    public rgtype!: Uart.registerType
 
     @prop({ unique: true })
     public userId: string
@@ -25,7 +25,7 @@ export class Users {
     public passwd!: string
 
     // https://www.jianshu.com/p/4dd08c935f00
-    @prop({ unique: true, sparse: true })
+    @prop()
     public mail: string
 
     @prop()
@@ -292,4 +292,16 @@ export class SecretApp {
 
     @prop()
     secret: string
+}
+
+/**
+ * 记录pesiv用户密码盐值
+ */
+@modelOptions({ schemaOptions: { timestamps: true, collection: 'user.salts' } })
+export class Salt {
+    @prop()
+    user: string
+
+    @prop()
+    salt: string
 }
