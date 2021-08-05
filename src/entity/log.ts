@@ -1,4 +1,4 @@
-import { modelOptions, prop, Ref } from "@typegoose/typegoose"
+import { modelOptions, prop } from "@typegoose/typegoose"
 import { Schema } from "mongoose"
 
 
@@ -39,10 +39,10 @@ export class SmsSend {
     public tels: string
 
     @prop()
-    public sendParams: Ref<smssendParams>
+    public sendParams: smssendParams
 
     @prop()
-    public Success: Ref<Success>
+    public Success:Success
 
     @prop({ type: Schema.Types.Mixed })
     public Error: any
@@ -75,7 +75,7 @@ export class MailSend {
     public mails: string[]
 
     @prop()
-    public sendParams: Ref<mailsendParams>
+    public sendParams: mailsendParams
 
     @prop({ type: Schema.Types.Mixed })
     public Success: any

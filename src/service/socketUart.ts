@@ -366,27 +366,5 @@ export class SocketUart {
         } else {
             throw new Error('无此设备')
         }
-        /* return new Promise<Partial<Uart.ApolloMongoResult>>((resolve) => {
-            // 在在线设备中查找
-            const terminal = this.Event.Cache.CacheTerminal.get(Query.DevMac)
-            if (terminal) {
-                const client = this.CacheSocket.get(terminal.mountNode)
-                if (client && client.socket.connected) {
-                    // 创建一次性监听，监听来自Node节点指令查询操作结果            
-                    client.socket.once(Query.events, result => {
-                        this.Event.savelog<Uart.logTerminals>('terminal', { NodeIP: client.property.IP, NodeName: client.property.Name, TerminalMac: Query.DevMac, type: "DTU操作", query: Query, result })
-                        resolve(result)
-                    }).emit('DTUoprate', Query)
-                    // 设置定时器，超过20秒无响应则触发事件，避免事件堆积内存泄漏
-                    setTimeout(() => {
-                        resolve({ ok: 0, msg: 'Node节点无响应，请检查设备状态信息是否变更' })
-                    }, 60000);
-                } else {
-                    resolve({ ok: 0, msg: '设备所在节点离线' })
-                }
-            } else {
-                throw new Error('无此设备')
-            }
-        }) */
     }
 }

@@ -141,8 +141,8 @@ export class NodeSocket {
      */
     @OnWSMessage("terminalOn")
     async terminalOn(data: string | string[], reline = false) {
-        console.log({data,reline});
-        
+        console.log({ data, reline });
+
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
             const date = new Date()
@@ -166,8 +166,12 @@ export class NodeSocket {
                                  * 要么是新的设备,没有上下线记录
                                  * 要么必须有上下线时间且下线时间大于上次上线时间
                                  */
-                                if ((!ofTime && !onTime) || (ofTime && ofTime > onTime))
+                                if ((!ofTime && !onTime) || (ofTime && ofTime > onTime)) {
                                     this.Alarm.macOnOff_line(t.DevMac, "上线")
+                                    console.log(`${t.DevMac} 发送上线信息`);
+                                }
+
+
                             }
                         }
                         // 如果是重连，加入缓存
@@ -239,7 +243,7 @@ export class NodeSocket {
             const hash = mac + pid
             const Query = this.SocketUart.cache.get(hash)
             if (Query) {
-                console.log('------全部指令超时', timeOut, Query);
+                console.log('------全部指令超时', timeOut, Query.TerminalMac, Query.pid, Query.mountDev);
                 // console.log(`${hash} 查询超时次数:${timeOut},查询间隔：${QueryTerminal.Interval}`);
                 // 如果查询间隔小于五分钟则每次查询间隔修改为+10000
                 // if (Query.Interval < 3e5) Query.Interval += 10000
