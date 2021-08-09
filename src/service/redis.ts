@@ -42,7 +42,7 @@ export class RedisService {
         this.redisService = new redis(this.redisConfig)
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
-       //  this.clear()
+        //  this.clear()
     }
 
     getClient() {
@@ -309,8 +309,9 @@ export class RedisService {
      * @param hash 
      * @returns 
      */
-    addTimeOutMonutDevSmsSend(hash: string) {
-        return this.redisService.hincrby('TimeOutMonutDevSmsSend', hash, 1)
+    setTimeOutMonutDevSmsSend(hash: string) {
+        this.redisService.setex("TimeOutMonutDevSmsSend" + hash, 864e5, 1)
+
     }
 
     /**
@@ -319,7 +320,7 @@ export class RedisService {
      * @returns 
      */
     hasTimeOutMonutDevSmsSend(hash: string) {
-        return this.redisService.hexists('TimeOutMonutDevSmsSend', hash)
+        return this.redisService.exists('TimeOutMonutDevSmsSend' + hash)
     }
 
     /**
@@ -327,9 +328,9 @@ export class RedisService {
      * @param hash 
      * @returns 
      */
-    getTimeOutMonutDevSmsSend(hash: string) {
-        return this.redisService.hget('TimeOutMonutDevSmsSend', hash)
-    }
+    /* getTimeOutMonutDevSmsSend(hash: string) {
+        return this.redisService.hget('TimeOutMonutDevSmsSend'+ hash)
+    } */
 
     /**
          * 删除设备掉线提醒发送记录次数
@@ -337,7 +338,7 @@ export class RedisService {
          * @returns 
          */
     delTimeOutMonutDevSmsSend(hash: string) {
-        return this.redisService.hdel('TimeOutMonutDevSmsSend', hash)
+        return this.redisService.del('TimeOutMonutDevSmsSend' + hash)
     }
 
     /**
@@ -379,10 +380,10 @@ export class RedisService {
 
 
     /**
-  * 
-  * @param unit 协议参数单位
-  * @val 值
-  */
+    * 
+    * @param unit 协议参数单位
+    * @val 值
+    */
     async parseUnit(unit: string, val: string) {
         const hash = "Unit_" + unit + val
         if (!await this.redisService.exists(hash)) {

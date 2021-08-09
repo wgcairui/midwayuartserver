@@ -31,6 +31,7 @@ export class Clean {
             CleanClientresultsTimeOut: await this.CleanClientresultsTimeOut(),
             timeStamp: Date.now()
         }
+       await this.CleanDtuBusy()
         count.useTime = Date.now() - now
         console.log(`${new Date().toString()} ### end clean Data.....`, count);
         this.logs.saveClean(count)

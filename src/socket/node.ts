@@ -82,8 +82,6 @@ export class NodeSocket {
             this.ctx.disconnect();
             console.log('socket disconnected Stat:', this.ctx?.disconnected);
             const macs = (await this.Device.getTerminals({ DevMac: 1, mountNode: 1 })).filter(el => el.mountNode === node.Name).map(el => el.DevMac)
-            console.log({ macs });
-
             // 批量设置终端离线
             await this.Device.setStatTerminal(macs, false)
             console.log("del");
@@ -141,8 +139,6 @@ export class NodeSocket {
      */
     @OnWSMessage("terminalOn")
     async terminalOn(data: string | string[], reline = false) {
-        console.log({ data, reline });
-
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
             const date = new Date()
@@ -161,7 +157,7 @@ export class NodeSocket {
                             if (typeof data == 'string') {
                                 const onTime = await this.RedisService.getMacOnlineTime(t.DevMac)
                                 const ofTime = await this.RedisService.getMacOfflineTime(t.DevMac)
-                                // console.log({ onTime, ofTime });
+                                console.log({ type: "terminalOn", reline, onTime, ofTime });
                                 /**
                                  * 要么是新的设备,没有上下线记录
                                  * 要么必须有上下线时间且下线时间大于上次上线时间
@@ -170,8 +166,6 @@ export class NodeSocket {
                                     this.Alarm.macOnOff_line(t.DevMac, "上线")
                                     console.log(`${t.DevMac} 发送上线信息`);
                                 }
-
-
                             }
                         }
                         // 如果是重连，加入缓存
@@ -190,8 +184,6 @@ export class NodeSocket {
      */
     @OnWSMessage("terminalOff")
     async terminalOff(mac: string, active: boolean) {
-        //console.log("terminalOff", mac, active);
-
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
             this.Device.setStatTerminal(mac, false)
@@ -201,7 +193,14 @@ export class NodeSocket {
             if (!active) {
                 const onTime = await this.RedisService.getMacOnlineTime(mac)
                 const ofTime = await this.RedisService.getMacOfflineTime(mac)
-                if (!active && onTime && (ofTime || 0) < onTime) this.Alarm.macOnOff_line(mac, "离线")
+                console.log({
+                    type: "terminalOff",
+                    active,
+                    onTime,
+                    ofTime
+                });
+
+                if (onTime && ofTime && ofTime < onTime) this.Alarm.macOnOff_line(mac, "离线")
                 this.RedisService.setMacOfflineTime(mac)
             }
 
@@ -225,8 +224,7 @@ export class NodeSocket {
             this.SocketUser.sendMacUpdate(mac)
             const EX = this.SocketUart.cache.get(mac + pid)
             if (EX) EX.Interval += 500 * instruct.length
-            console.log({ EX });
-
+            // console.log({ EX });
         }
     }
 
@@ -253,14 +251,14 @@ export class NodeSocket {
                     this.SocketUser.sendMacUpdate(mac)
                     // 把查询超时间隔修改为1分钟
                     Query.Interval = 6e4
-                    console.log(`${hash} 查询超时次数:${timeOut},查询间隔：${Query.Interval}`);
+                    console.log(`${hash}/${Query.mountDev} 查询超时次数:${timeOut},查询间隔：${Query.Interval}`);
                     if (!await this.RedisService.hasTimeOutMonutDevSmsSend(hash)) {
                         this.RedisService.setMacOfflineTime(mac)
                         const terminal = await this.Device.getTerminal(mac)
                         // 发送设备查询超时短信
                         this.Alarm.timeOut(Query.TerminalMac, Query.pid, Query.mountDev, '超时', new Date())
                         // 添加短信发送记录
-                        this.RedisService.addTimeOutMonutDevSmsSend(hash)
+                        this.RedisService.setTimeOutMonutDevSmsSend(hash)
                         this.log.saveDataTransfinite({ mac, devName: terminal.name, pid: 0, protocol: '', tag: '连接', msg: `${terminal.name}/${Query.pid}/${Query.mountDev} 查询超时`, timeStamp: Date.now() })
                         this.log.saveTerminal({ NodeIP: node.IP, NodeName: node.Name, TerminalMac: mac, type: "查询超时", query: Query })
 

@@ -17,9 +17,5 @@ export class crc {
     address: number;
 
     @Rule(RuleType.number().required())
-    value: number;
-
-    @Rule(RuleType.string().required())
-    result: string;
-
+    value: number
 }

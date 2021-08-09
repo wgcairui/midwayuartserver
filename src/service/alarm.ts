@@ -8,6 +8,17 @@ import { Mail } from "../util/mail"
 import { alarm } from "../interface"
 import { TencetMap } from "./tencetMap"
 
+const enum Config {
+    /**
+     * 公众号通用告警模板
+     */
+    TemplateIdUniversal = 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+    /**
+     * 透传小程序ID
+     */
+    wpId = "wx38800d0139103920"
+}
+
 @Provide()
 export class Alarm {
 
@@ -33,6 +44,7 @@ export class Alarm {
     TencetMap: TencetMap
 
     async timeOut(mac: string, pid: number, devName: string, event: '超时' | '恢复', time: number | Date) {
+        console.info(`${new Date().toLocaleString()} send timeOut ${mac}`)
         const user = await this.getMactoUser(mac)
         if (user) {
             const ter = await this.getTerminal(mac)
@@ -41,9 +53,9 @@ export class Alarm {
                     type: 'wx',
                     data: await this.Wx.SendsubscribeMessageDevAlarm({
                         touser: user.wxid,
-                        template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+                        template_id: Config.TemplateIdUniversal,
                         miniprogram: {
-                            appid: "wx38800d0139103920",
+                            appid: Config.wpId,
                             pagepath: "/pages/index/alarm/alarm",
                         },
                         data: {
@@ -92,6 +104,7 @@ export class Alarm {
     }
 
     async offline(mac: string, event: '恢复上线' | '离线', time: number | Date) {
+        console.info(`${new Date().toLocaleString()} send offline ${mac}`)
         const user = await this.getMactoUser(mac)
         if (user) {
             const ter = await this.getTerminal(mac)
@@ -100,9 +113,9 @@ export class Alarm {
                     type: 'wx',
                     data: await this.Wx.SendsubscribeMessageDevAlarm({
                         touser: user.wxid,
-                        template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+                        template_id: Config.TemplateIdUniversal,
                         miniprogram: {
-                            appid: "wx38800d0139103920",
+                            appid: Config.wpId,
                             pagepath: "/pages/index/alarm/alarm",
                         },
                         data: {
@@ -168,18 +181,21 @@ export class Alarm {
      * @param time 
      */
     async argumentAlarm(mac: string, pid: number, alarm: alarm[]) {
+        console.info(`${new Date().toLocaleString()} send argumentAlarm ${mac} ${pid}`)
         const user = await this.getMactoUser(mac)
         if (user) {
             const ter = await this.getTerminal(mac)
             const dev = ter.mountDevs.find(el => el.pid === pid)
+            console.log(user, ter, dev);
+
             if (user.wxid) {
                 return {
                     type: 'wx',
                     data: await this.Wx.SendsubscribeMessageDevAlarm({
                         touser: user.wxid,
-                        template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+                        template_id: Config.TemplateIdUniversal,
                         miniprogram: {
-                            appid: "wx38800d0139103920",
+                            appid: Config.wpId,
                             pagepath: "/pages/index/alarm/alarm",
                         },
                         data: {
@@ -258,6 +274,7 @@ export class Alarm {
      * @param pid 
      */
     async argumentAlarmReload(mac: string, pid: number) {
+        console.info(`${new Date().toLocaleString()} send argumentAlarmReload ${mac} ${pid}`);
         const user = await this.getMactoUser(mac)
         if (user && user.wxid) {
             const ter = await this.getTerminal(mac)
@@ -266,9 +283,9 @@ export class Alarm {
                 type: 'wx',
                 data: await this.Wx.SendsubscribeMessageDevAlarm({
                     touser: user.wxid,
-                    template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+                    template_id: Config.TemplateIdUniversal,
                     miniprogram: {
-                        appid: "wx38800d0139103920",
+                        appid: Config.wpId,
                         pagepath: "/pages/index/alarm/alarm",
                     },
                     data: {
@@ -300,6 +317,7 @@ export class Alarm {
      * @param pid 
      */
     async macOnOff_line(mac: string, type: "上线" | "离线") {
+        console.info(`${new Date().toLocaleString()} send macOnOff_line ${mac}`)
         const user = await this.getMactoUser(mac)
         if (user && user.wxid) {
             const ter = await this.getTerminal(mac)
@@ -309,27 +327,27 @@ export class Alarm {
                 type: 'wx',
                 data: await this.Wx.SendsubscribeMessageDevAlarm({
                     touser: user.wxid,
-                    template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+                    template_id: Config.TemplateIdUniversal,
                     miniprogram: {
-                        appid: "wx38800d0139103920",
+                        appid: Config.wpId,
                         pagepath: "/pages/index/alarm/alarm",
                     },
                     data: {
                         first: {
                             value: `[ ${ter.name} ] 已${type}`,
-                            color: "#67C23A"
+                            color: "#303133"
                         },
                         device: {
                             value: `${ter.name}`,
-                            color: "#67C23A"
+                            color: "#303133"
                         },
                         time: {
                             value: this.Util.parseTime(),
-                            color: "#67C23A"
+                            color: "#303133"
                         },
                         remark: {
                             value: `${type}地址:${address}(依赖ip定位,不保证精确,仅供参考)`,
-                            color: "#67C23A"
+                            color: "#303133"
                         }
                     }
                 })
@@ -343,6 +361,7 @@ export class Alarm {
      * @returns 
      */
     async getMactoUser(mac: string) {
+
         const bind = await this.UserService.userbindModel.findOne({ UTs: mac }, { user: 1 }).lean()
         if (bind) {
             const user = await this.UserService.getUser(bind.user, { tel: 1, mail: 1, wxId: 1, user: 1, name: 1 })

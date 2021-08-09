@@ -1,6 +1,6 @@
 import { Provide, Config } from "@midwayjs/decorator"
 import axios from "axios";
-import { MD5 } from "crypto-js";
+// import { MD5 } from "crypto-js";
 import { URL } from "url"
 import { tencetMapConfig } from "../interface";
 
@@ -70,8 +70,8 @@ export class TencetMap {
         for (let i in data) {
             query += `&${i}=${data[i]}`
         }
-        const sig = MD5(url.pathname + query + this.tencetMap.SK)
-        query += '&sig=' + sig
+        /* const sig = MD5(url.pathname + query + this.tencetMap.SK)
+        query += '&sig=' + sig */
         try {
             const res = await axios({
                 url: url.toString() + query

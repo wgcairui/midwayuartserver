@@ -77,8 +77,13 @@ export class AuthController {
       const hash = await this.Util.Secret_JwtSign({ key: user.creatTime, time: Date.now() })
       this.RedisService.getClient().set(data.user, hash, "EX", 120)
       return {
-        code: 0,
+        code: 200,
         hash
+      }
+    } else {
+      return {
+        code: 0,
+        msg: "没有此用户"
       }
     }
   }
