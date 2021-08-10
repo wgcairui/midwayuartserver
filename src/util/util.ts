@@ -356,8 +356,8 @@ export class Util {
      * 正则匹配手机号码
      * @param tel 
      */
-    RegexTel(tel: string) {
-        return /^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/.test(tel)
+    RegexTel(tel: string | number) {
+        return /^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/.test(String(tel))
     }
 
     /**

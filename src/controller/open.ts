@@ -2,6 +2,7 @@ import { Provide, Controller, Post, Validate, ALL, Body, Inject } from "@midwayj
 import { crc } from "../dto/open";
 import { Util } from "../util/util"
 import { Sms } from "../util/sms"
+import { Device } from "../service/device"
 
 @Provide()
 @Controller("/api/open")
@@ -12,6 +13,9 @@ export class OpenControll {
 
     @Inject()
     Sms: Sms
+
+    @Inject()
+    Device: Device
 
     /**
      * 生成crc校验码
@@ -43,5 +47,26 @@ export class OpenControll {
     @Post("/sendValidationSms")
     async sendValidationSms(@Body() tel: string) {
         return await this.Sms.SendValidation(tel)
+    }
+
+    /**
+     * 获取所有透传协议
+     * @returns 
+     */
+    @Post("/protocol")
+    async protocol() {
+        return await this.Device.getProtocols()
+    }
+
+    /**
+     * 获取指定协议常量配置
+     * @param protocol 
+     * @returns 
+     */
+    @Post("/protocolSetup")
+    async protocolSetup(@Body() protocol: string) {
+        if (protocol) {
+            return await this.Device.getAlarmProtocol(protocol)
+        }
     }
 }

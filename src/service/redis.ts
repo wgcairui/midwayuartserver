@@ -1,4 +1,4 @@
-import { Provide, Scope, ScopeEnum, Config, Init, Autoload, Inject, App } from "@midwayjs/decorator"
+import { Provide, Scope, ScopeEnum, Config, Init,  Inject, App } from "@midwayjs/decorator"
 import { Application } from "@midwayjs/koa"
 import * as redis from "ioredis"
 import { Device } from "../service/device"
@@ -11,7 +11,6 @@ interface userSetupMap {
 
 
 
-@Autoload()
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class RedisService {

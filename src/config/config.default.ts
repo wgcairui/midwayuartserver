@@ -3,7 +3,7 @@ import { RedisOptions } from "ioredis"
 import { tencetMapConfig } from "../interface";
 
 export const mongoose: DefaultConfig = {
-    uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : '192.168.1.126'}:27017/UartServer`,
+    uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : 'uart.ladishb.com'}:27017/UartServer`,
     options: {
         dbName: "UartServer",
         useNewUrlParser: true,

@@ -300,6 +300,15 @@ export class ApiControll {
     @Post("/modifyUserInfo")
     @Sms()
     async modifyUserInfo(@Body() token: { user: string }, @Body() data: Partial<Uart.UserInfo>) {
+        if (data.tel && this.Util.RegexTel(data.tel)) {
+            const u = await this.UserService.getUser(data.tel as any)
+            if (u && u.user !== token.user) {
+                return {
+                    code: 0,
+                    msg: "手机号已被使用,请输入新的手机号"
+                }
+            }
+        }
         return {
             code: 200,
             data: await this.UserService.modifyUserInfo(token.user, lodash.omit(data, "user"))

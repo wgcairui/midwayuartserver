@@ -72,19 +72,11 @@ export class AuthController {
   @Get("/hash")
   @Validate()
   async hash(@Query(ALL) data: loginHash) {
-    const user = await this.userService.getUser(data.user)
-    if (user) {
-      const hash = await this.Util.Secret_JwtSign({ key: user.creatTime, time: Date.now() })
-      this.RedisService.getClient().set(data.user, hash, "EX", 120)
-      return {
-        code: 200,
-        hash
-      }
-    } else {
-      return {
-        code: 0,
-        msg: "没有此用户"
-      }
+    const hash = await this.Util.Secret_JwtSign({ key: data.user, time: Date.now() })
+    this.RedisService.getClient().set(data.user, hash, "EX", 120)
+    return {
+      code: 200,
+      hash
     }
   }
 
@@ -95,14 +87,8 @@ export class AuthController {
   @Post("/login")
   @Validate()
   async login(@Body(ALL) accont: login) {
-    const user = await this.userService.getUser(accont.user)
-    if (!user) {
-      return {
-        code: 0,
-        msg: 'user null'
-      }
-    }
-    const hash = await this.RedisService.getClient().get(user.user)
+    
+    const hash = await this.RedisService.getClient().get(accont.user)
     if (!hash) {
       return {
         code: 1,
@@ -111,6 +97,20 @@ export class AuthController {
     }
     // 解密hash密码
     const decryptPasswd = AES.decrypt(accont.passwd, hash!).toString(enc.Utf8)
+    // 
+    let user = await this.userService.getUser(accont.user)
+    //
+    if (!user) {
+      user = await this.userService.syncPesivUser(accont.user, decryptPasswd)
+      console.log({user});
+      
+      if (!user) {
+        return {
+          code: 0,
+          msg: 'user null'
+        }
+      }
+    }
     // 比对校验密码
     const PwStat = await this.userService.BcryptComparePasswd(accont.user, decryptPasswd)
 
@@ -249,13 +249,17 @@ export class AuthController {
   @Post("/wplogin")
   @Validate()
   async wplogin(@Body(ALL) accont: wplogin) {
-    const user = await this.userService.getUser(accont.user)
+    let user = await this.userService.getUser(accont.user)
     if (!user) {
-      return {
-        code: 0,
-        msg: '用户未注册,请使用微信注册'
+      user = await this.userService.syncPesivUser(accont.user, accont.passwd)
+      if (!user) {
+        return {
+          code: 0,
+          msg: '用户未注册,请使用微信注册'
+        }
       }
     }
+
     if (!await this.userService.BcryptComparePasswd(accont.user, accont.passwd)) {
       return {
         code: 0,

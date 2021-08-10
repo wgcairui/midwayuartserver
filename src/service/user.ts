@@ -13,6 +13,29 @@ import * as lodash from "lodash"
 import axios from "axios"
 import { SHA384 } from "crypto-js"
 
+interface pesiv_userInfo {
+  user_name: string
+  user_pwd: string
+  salt: string
+  real_name: string
+  telephone: string
+  email: string
+}
+
+interface pesiv_dev {
+  DevName: string
+  DeviceCode: string
+}
+
+interface pesivData {
+  code: number,
+  data: {
+    u: pesiv_userInfo,
+    devs: pesiv_dev[]
+  }
+}
+
+
 
 @Provide()
 export class UserService {
@@ -61,7 +84,7 @@ export class UserService {
   async BcryptComparePasswd(user: string, decryptPasswd: string) {
     const { passwd, rgtype } = await this.getUser(user)
     if (rgtype === 'pesiv') {
-      
+
       try {
         const { salt } = await this.saltModel.findOne({ user })
         const p = SHA384(decryptPasswd + salt).toString().toLocaleUpperCase()
@@ -71,6 +94,97 @@ export class UserService {
       }
     } else {
       return this.Util.BcryptCompare(decryptPasswd, passwd)
+    }
+  }
+
+  /**
+   * 同步百事服用户信息
+   * @param user 
+   * @returns 
+   */
+  async syncPesivUser(user: string, pw: string) {
+    try {
+      const { status, data } = await axios.get<pesivData>(`http://www.pesiv.com:7001/pesiv/user?user=${user}`);
+      /* console.log({
+        status,
+        ...data,
+        user,
+        pw,
+        spw: SHA384(pw + data.data.u.salt).toString().toLocaleUpperCase(),
+        a: status === 200,
+        b: data.code === 200,
+        c: data.data.u.user_pwd === SHA384(pw + data.data.u.salt).toString().toLocaleUpperCase()
+      }); */
+
+      // 如果数据返回正确且密码正确,迁移pesiv数据
+      if (status === 200 && data.code === 200 && data.data.u.user_pwd === SHA384(pw + data.data.u.salt).toString().toLocaleUpperCase()) {
+        const { u, devs } = data.data;
+        // 创建用户信息
+        const userinfo = {
+          user: u.user_name,
+          name: u.real_name || u.user_name.slice(u.user_name.length - 6),
+          passwd: u.user_pwd,
+          rgtype: "pesiv",
+          userGroup: "user",
+          status: true,
+          creatTime: new Date()
+        } as Partial<Uart.UserInfo>;
+
+        // 判断用户电话
+        if ((u.telephone && /^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/.test(u.telephone)) || /^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/.test(u.real_name)) {
+          const tel = String(u.telephone || u.real_name) as any;
+          if (await this.getUser(tel)) {
+            console.error(userinfo, '用户手机号码重复');
+          } else {
+            userinfo.tel = tel
+          }
+        }
+        // 判断用户邮箱
+        if ((u.email && /\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/.test(u.email)) || /\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/.test(u.real_name)) {
+          userinfo.mail = u.email || u.real_name;
+        }
+        // pesiv用户密码盐值
+        const saltinfo = {
+          user,
+          salt: u.salt
+        };
+        // 保存盐值
+        await this.saltModel.create(saltinfo);
+        // 保存用户
+        const ru = await this.userModel.create(userinfo as any)
+        // 初始化用户配置
+        await this.initUserAlarmSetup(ru.user);
+        // 写入日志
+        await this.loguserModel.create({ user: ru.user, type: 'pesiv迁移', address: '', msg: '' });
+        // 判断用户是否挂载设备
+        if (devs && devs.length > 0) {
+          const pdev = devs.filter(el => el.DeviceCode.length === 12);
+          // 构造用户ups信息
+          const mountDev: Uart.TerminalMountDevs = {
+            pid: 0,
+            mountDev: 'UPS',
+            protocol: 'Pesiv卡',
+            Type: "UPS"
+          };
+          // 迭代用户绑定设备
+          for (const dev of pdev) {
+            const code = dev.DeviceCode.toLocaleUpperCase()
+            // 添加到用户绑定
+            await this.addUserTerminal(ru.user, code);
+            // 添加到注册信息
+            await this.Device.addRegisterTerminal(code, "pesiv");
+            // 修改卡名称
+            await this.modifyTerminal(ru.user, code, dev.DevName);
+            // 添加挂载信息
+            await this.addTerminalMountDev(ru.user, code, mountDev);
+          }
+        }
+        return ru;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
     }
   }
 
@@ -334,7 +448,9 @@ export class UserService {
     if (bind.UTs.includes(mac)) {
       const model = getModelForClass(Terminal)
       return await model.updateOne({ DevMac: mac }, { $set: { name } }).lean()
-    } else throw new Error('mac Error')
+    } else {
+      throw new Error('mac Error')
+    }
   }
 
   /**

@@ -3,7 +3,7 @@ import { Application } from '@midwayjs/koa';
 import * as body from 'koa-body';
 import { ILifeCycle } from "@midwayjs/core"
 import * as typegoose from "@midwayjs/typegoose"
-import * as task from '@midwayjs/task'
+import * as task from "@midwayjs/task"
 import { join } from "path"
 
 @Configuration({
