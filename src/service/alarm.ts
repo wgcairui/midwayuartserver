@@ -7,6 +7,7 @@ import { Wx } from "../util/wx"
 import { Mail } from "../util/mail"
 import { alarm } from "../interface"
 import { TencetMap } from "./tencetMap"
+import { SmsResult } from "../interface"
 
 const enum Config {
     /**
@@ -18,6 +19,8 @@ const enum Config {
      */
     wpId = "wx38800d0139103920"
 }
+
+
 
 @Provide()
 export class Alarm {
@@ -188,39 +191,43 @@ export class Alarm {
             const dev = ter.mountDevs.find(el => el.pid === pid)
             console.log(user, ter, dev);
 
+            const result = {
+                wx: null as null | Uart.WX.wxRequest,
+                sms: null as null | SmsResult,
+                mail: null as null | Uart.logMailSend
+            }
+
             if (user.wxid) {
-                return {
-                    type: 'wx',
-                    data: await this.Wx.SendsubscribeMessageDevAlarm({
-                        touser: user.wxid,
-                        template_id: Config.TemplateIdUniversal,
-                        miniprogram: {
-                            appid: Config.wpId,
-                            pagepath: "/pages/index/alarm/alarm",
+                const param: Uart.WX.wxsubscribeMessage = {
+                    touser: user.wxid,
+                    template_id: Config.TemplateIdUniversal,
+                    miniprogram: {
+                        appid: Config.wpId,
+                        pagepath: "/pages/index/alarm/alarm",
+                    },
+                    data: {
+                        first: {
+                            value: `[ ${ter.name}-${dev.mountDev} ] 运行异常`,
+                            color: "#F56C6C"
                         },
-                        data: {
-                            first: {
-                                value: `[ ${ter.name}-${dev.mountDev} ] 运行异常`,
-                                color: "#F56C6C"
-                            },
-                            device: {
-                                value: `${ter.name}-${dev.mountDev}`,
-                                color: "#173177"
-                            },
-                            time: {
-                                value: this.Util.parseTime(alarm[0].timeStamp),
-                                color: "#173177"
-                            },
-                            remark: {
-                                value: alarm.map(el => {
-                                    const str = el.tag === 'ups' ? '' : (el.tag === "Threshold" ? [(el.contant as Uart.Threshold).min, (el.contant as Uart.Threshold).max].join('~') : '');
-                                    return `${el.argument} ${el.data.parseValue} ${str ? `,参考值: [ ${str} ]` : ''}`
-                                }).join('\n'),
-                                color: "#F56C6C"
-                            }
+                        device: {
+                            value: `${ter.name}-${dev.mountDev}`,
+                            color: "#173177"
+                        },
+                        time: {
+                            value: this.Util.parseTime(alarm[0].timeStamp),
+                            color: "#173177"
+                        },
+                        remark: {
+                            value: alarm.map(el => {
+                                const str = el.tag === 'ups' ? '' : (el.tag === "Threshold" ? [(el.contant as Uart.Threshold).min, (el.contant as Uart.Threshold).max].join('~') : '');
+                                return `${el.argument} ${el.data.parseValue} ${str ? `,参考值: [ ${str} ]` : ''}`
+                            }).join('\n'),
+                            color: "#F56C6C"
                         }
-                    })
+                    }
                 }
+                result.wx = await this.Wx.SendsubscribeMessageDevAlarm(param)
             }
             if (user.tels) {
                 const remind = alarm.length === 1 ? `${alarm[0].argument}[${alarm[0].data.parseValue}]` : `${alarm.map(el => el.argument).slice(0, 2).join(',')}等告警`
@@ -232,16 +239,13 @@ export class Alarm {
                     time: this.Util.parseTime(alarm[0].timeStamp),
                     remind
                 })
-                return {
-                    type: 'sms',
-                    data: await this.Sms.send({
-                        "RegionId": "cn-hangzhou",
-                        "PhoneNumbers": user.tels.join(','),
-                        "SignName": "雷迪司科技湖北有限公司",
-                        "TemplateCode": 'SMS_200701342',
-                        TemplateParam
-                    })
-                }
+                result.sms = await this.Sms.send({
+                    "RegionId": "cn-hangzhou",
+                    "PhoneNumbers": user.tels.join(','),
+                    "SignName": "雷迪司科技湖北有限公司",
+                    "TemplateCode": 'SMS_200701342',
+                    TemplateParam
+                })
             }
             if (user.mails) {
                 const body = `<p><strong>尊敬的${user.name}</strong></p>
@@ -258,13 +262,13 @@ export class Alarm {
                 <hr />
                 <p>&nbsp;</p>
                 <p>扫码或点击程序码使用微信小程序查看</p>
-                <a href="weixin://dl/business/?t=203U27hghyu" target="_blank"><img src="https://www.ladishb.com/admin/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></a>
+                <a href="weixin://dl/business/?t=203U27hghyu" target="_blank"><img src="https://www.ladishb.com/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></a>
                 <p>&nbsp;</p>`
-                return {
-                    type: "mail",
-                    data: await this.Mail.send(user.mails.join(","), "Ladis透传平台", "设备告警", body)
-                }
+
+                result.mail = await this.Mail.send(user.mails.join(","), "Ladis透传平台", "设备告警", body)
             }
+
+            return result
         }
     }
 

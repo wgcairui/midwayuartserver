@@ -1,4 +1,4 @@
-import { Provide, Controller, Post, Validate, ALL, Body, Inject } from "@midwayjs/decorator"
+import { Provide, Controller, Post, Get, Validate, ALL, Body, Inject } from "@midwayjs/decorator"
 import { crc } from "../dto/open";
 import { Util } from "../util/util"
 import { Sms } from "../util/sms"
@@ -54,6 +54,7 @@ export class OpenControll {
      * @returns 
      */
     @Post("/protocol")
+    @Get("/protocol")
     async protocol() {
         return await this.Device.getProtocols()
     }

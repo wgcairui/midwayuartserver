@@ -36,15 +36,15 @@ export class SmsSend {
     public timeStamp?: number
 
     @prop()
-    public tels: string
+    public tels: string[]
 
-    @prop()
+    @prop({ _id: false })
     public sendParams: smssendParams
 
-    @prop()
-    public Success:Success
+    @prop({ _id: false })
+    public Success: Success
 
-    @prop({ type: Schema.Types.Mixed })
+    @prop({ type: Schema.Types.Mixed, _id: false })
     public Error: any
 }
 
@@ -74,13 +74,13 @@ export class MailSend {
     @prop()
     public mails: string[]
 
-    @prop()
+    @prop({ _id: false })
     public sendParams: mailsendParams
 
-    @prop({ type: Schema.Types.Mixed })
+    @prop({ type: Schema.Types.Mixed, _id: false })
     public Success: any
 
-    @prop({ type: Schema.Types.Mixed })
+    @prop({ type: Schema.Types.Mixed, _id: false })
     public Error: any
 }
 
@@ -137,7 +137,7 @@ export class UserRequst {
     @prop()
     public type: string
 
-    @prop({ type: Schema.Types.Mixed })
+    @prop({ type: Schema.Types.Mixed, _id: false })
     public argument: any
 }
 
@@ -206,10 +206,10 @@ export class Terminals {
     @prop()
     public msg: string
 
-    @prop({ type: Schema.Types.Mixed, })
+    @prop({ type: Schema.Types.Mixed, _id: false })
     public query: any
 
-    @prop({ type: Schema.Types.Mixed })
+    @prop({ type: Schema.Types.Mixed, _id: false })
     public result: any
 }
 

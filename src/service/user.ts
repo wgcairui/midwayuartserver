@@ -149,7 +149,7 @@ export class UserService {
           salt: u.salt
         };
         // 保存盐值
-        await this.saltModel.create(saltinfo);
+        await this.saltModel.updateOne({ user: saltinfo.user }, { $set: { salt: saltinfo.salt } }, { upsert: true })
         // 保存用户
         const ru = await this.userModel.create(userinfo as any)
         // 初始化用户配置
@@ -184,6 +184,8 @@ export class UserService {
         return null;
       }
     } catch (e) {
+      console.log({ e });
+
       return null;
     }
   }

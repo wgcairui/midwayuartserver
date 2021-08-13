@@ -53,33 +53,13 @@ export class Sms {
         params.PhoneNumbers = tels.join(',')
         // console.log(params);
         return await this.sms.request<SmsResult>('SendSms', params, { method: 'POST' }).then(el => {
-            /* const data: Uart.logSmsSend = {
-                tels,
-                sendParams: params,
-                Success: el
-            }
-            new LogSmsSend(data).save() */
             this.logs.saveSms({ tels, sendParams: params, Success: el })
             return el
         }).catch(e => {
             console.log(e);
-
-            /* const data: Uart.logSmsSend = {
-                tels,
-                sendParams: params,
-                Error: e
-            } 
-            new LogSmsSend(data).save()*/
             this.logs.saveSms({ tels, sendParams: params, Error: e })
             return e
         })
-        // 如果发送成功,号码发送次数+1
-        /* if (result.ok && params.TemplateCode !== 'SMS_190275627') {
-            tels.forEach(tel => {
-                const n = CacheAlarmSendNum.get(tel)
-                CacheAlarmSendNum.set(tel, n ? n + 1 : 1)
-            })
-        } */
     }
 
     /**
