@@ -1,4 +1,4 @@
-import { Provide, Scope, ScopeEnum, Config, Init,  Inject, App } from "@midwayjs/decorator"
+import { Provide, Scope, ScopeEnum, Config, Init, Inject, App, TaskLocal } from "@midwayjs/decorator"
 import { Application } from "@midwayjs/koa"
 import * as redis from "ioredis"
 import { Device } from "../service/device"
@@ -36,12 +36,20 @@ export class RedisService {
        */
     userSetup: Map<string, Map<string, userSetupMap>>
 
+    /**
+     * 衍射dtu
+     */
+    terminalMap: Map<string, Uart.Terminal>
+
+
     @Init()
     async init() {
         this.redisService = new redis(this.redisConfig)
         this.protocolInstructMap = new Map()
         this.userSetup = new Map()
+        this.terminalMap = new Map()
         //  this.clear()
+        this.initTerminalMap()
     }
 
     getClient() {
@@ -61,6 +69,15 @@ export class RedisService {
         console.log('clear all', all);
         if (all.length > 0) await redis.del(all)
 
+    }
+
+    /**
+     * 每分钟更新一次终端信息
+     */
+    @TaskLocal("* * * * *")
+    async initTerminalMap() {
+        const terminals = await this.Device.getTerminals() as any
+        this.terminalMap = new Map(terminals.map(el => [el.DevMac, el]))
     }
 
     /**

@@ -31,7 +31,7 @@ export class Clean {
             CleanClientresultsTimeOut: await this.CleanClientresultsTimeOut(),
             timeStamp: Date.now()
         }
-       await this.CleanDtuBusy()
+        await this.CleanDtuBusy()
         count.useTime = Date.now() - now
         console.log(`${new Date().toString()} ### end clean Data.....`, count);
         this.logs.saveClean(count)
@@ -159,9 +159,10 @@ export class Clean {
             await ColltionMode.deleteMany({ parentId: { $in: statIds } })
         }
         // 更新标签
+        console.log(`cleanData allids length:${allids.length}`);
 
         for (let all of chunk(allids, 1e5)) {
-            await ColltionMode.updateMany({ _id: { $in: all.map(el => Types.ObjectId(el)) } }, { $inc: { "__v": 1 } }).exec()
+            await ColltionMode.updateMany({ parentId: { $in: all } }, { $inc: { "__v": 1 } })
         }
 
         console.timeEnd('CleanClientresults')

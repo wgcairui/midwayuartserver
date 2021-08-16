@@ -72,9 +72,13 @@ export class ApiControll {
     @Validate()
     @Post("/loguartterminaldatatransfinites")
     async loguartterminaldatatransfinites(@Body(ALL) data: date) {
+        const alarms = await this.UserService.getUserAlarm(data.token.user, data.getStart(), data.getEnd(), { mac: 1, isOk: 1, pid: 1, devName: 1, tag: 1, msg: 1, timeStamp: 1 })
         return {
             code: 200,
-            data: await this.UserService.getUserAlarm(data.token.user, data.getStart(), data.getEnd(), { mac: 1, isOk: 1, pid: 1, devName: 1, tag: 1, msg: 1, timeStamp: 1 })
+            data: alarms.map(el => {
+                el.mac = this.RedisService.terminalMap.get(el.mac)?.name || el.mac
+                return el
+            })
         }
     }
 

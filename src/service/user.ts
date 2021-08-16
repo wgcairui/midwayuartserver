@@ -179,6 +179,12 @@ export class UserService {
             await this.addTerminalMountDev(ru.user, code, mountDev);
           }
         }
+
+        await new Promise<void>(resolve => {
+          setTimeout(() => {
+            resolve()
+          }, 2000);
+        })
         return ru;
       } else {
         return null;
