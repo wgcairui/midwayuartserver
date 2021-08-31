@@ -52,7 +52,7 @@ export class ProtocolParse {
      */
     private async parse232(IntructResult: Uart.IntructQueryResult[], protocol: string): Promise<Promise<Uart.queryResultArgument>[]> {
         const InstructMap = await this.RedisService.getProtocolInstruct(protocol)
-        
+
         return IntructResult
             // 刷选出指令正确的查询，避免出错
             // 通过InstructMap.has(el.content)确认指令是系统所包含的
@@ -104,7 +104,7 @@ export class ProtocolParse {
                 } else {
                     // 结果对象需要满足对应操作指令,是此协议中的指令,数据长度和结果中声明的一致
                     const FunctionCode = parseInt(el.content.slice(2, 4))
-                    return (el.buffer.data[1] === FunctionCode && el.buffer.data[2] + 5 === el.buffer.data.length)
+                    return (el.buffer.data[0] === R.pid && el.buffer.data[1] === FunctionCode && el.buffer.data[2] + 5 === el.buffer.data.length)
                 }
             } else return false
 
@@ -112,9 +112,10 @@ export class ProtocolParse {
         //console.log(ResultFilter);
         // 根据协议指令解析类型的不同,转换裁减Array<number>为Array<number>,把content换成指令名称
         const ParseInstructResultType = ResultFilter.map(async el => {
-            el.content = await this.RedisService.getContentToInstructName(el.content)!
-            const instructs = InstructMap.get(el.content)!
+            const content = await this.RedisService.getContentToInstructName(el.content)!
+            const instructs = InstructMap.get(content)!
             const data = el.buffer.data.slice(instructs.shift ? instructs.shiftNum : 3, instructs.pop ? el.buffer.data.length - instructs.popNum : el.buffer.data.length - 2)
+            let bufferData: number[] = []
             switch (instructs.resultType) {
                 case 'bit2':
                     // 把结果字段中的10进制转换为2进制,翻转后补0至8位,代表modbus线圈状态
@@ -125,19 +126,22 @@ export class ProtocolParse {
                     // 2,把连续的几个数组拼接起来，转换为数字
                     // 例子：[1,0,0,0,1],[0,1,1,1,1]补0为[0,0,0,1,0,0,0,1],[0,0,0,0,1,1,1,1],数组顺序不变，每个数组内次序翻转
                     // [1,0,0,0,1,0,0,0],[1,1,1,1,0,0,0,0],然后把二维数组转为一维数组
-                    el.buffer.data = data.map(el2 => el2.toString(2).padStart(8, '0').split('').reverse().map(el3 => Number(el3))).flat()
+                    bufferData = data.map(el2 => el2.toString(2).padStart(8, '0').split('').reverse().map(el3 => Number(el3))).flat()
                     break
                 default:
-                    el.buffer.data = data
+                    bufferData = data
                     break
             }
-            return el
+            return {
+                content,
+                bufferData
+            }
         })
         //console.log(ParseInstructResultType);
         // 把转换处理后的数据根据协议指令对应的解析对象生成结果对象数组,赋值result属性
-        return (await Promise.all(ParseInstructResultType)).map(el => {
-            const instructs = InstructMap.get(el.content)!
-            const buffer = Buffer.from(el.buffer.data)
+        return (await Promise.all(ParseInstructResultType)).map(({ content, bufferData }) => {
+            const instructs = InstructMap.get(content)!
+            const buffer = Buffer.from(bufferData)
             return instructs.formResize.map(async el2 => {
                 // 申明结果
                 const result: Uart.queryResultArgument = { name: el2.name, value: '0', parseValue: '0', unit: el2.unit, issimulate: el2.isState }

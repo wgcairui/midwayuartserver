@@ -54,6 +54,8 @@ export class WxPublic {
 
         // 进入事件处理流程
         if (Event) {
+            console.log('wx推送:进入事件处理流程');
+
             switch (Event) {
                 // 关注公众号
                 case "subscribe":
@@ -69,18 +71,25 @@ export class WxPublic {
                             * 通过判断有这个用户和用户还没有绑定公众号
                             * 
                             */
+
+                            /**
+                             * 修改策略,同一用户公众号可绑定多个平台用户,和uniid解绑
+                             */
                             if ("Ticket" in body && body.EventKey) {
+
                                 const { EventKey, FromUserName } = body
                                 // EventKey是用户的数据库文档id字符串
                                 const user = await this.UserService.getIdUser(EventKey.replace("qrscene_", ""))
+                                console.log(`用户${user?.user}通过网页扫码关注`);
                                 // 如果有用户和用户还没有绑定公众号
                                 if (user && !user.wxId) {
-                                    const { unionid, headimgurl } = wxUser
+                                    const { headimgurl } = wxUser
                                     // 如果用户没有绑定微信或绑定的微信是扫码的微信
-                                    if (!user.userId || user.userId === unionid) {
-                                        await this.UserService.modifyUserInfo(user.user, { userId: unionid, wxId: FromUserName, avanter: headimgurl })
-                                        return this.TextMessege(body, `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`)
-                                    } else {
+                                    //if (!user.userId || user.userId === unionid) {
+                                    //if(!user.userId)
+                                    await this.UserService.modifyUserInfo(user.user, { wxId: FromUserName, avanter: headimgurl })
+                                    return this.TextMessege(body, `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`)
+                                    /* } else {
                                         console.error(
                                             {
                                                 event: 'scan绑定公证号',
@@ -89,7 +98,7 @@ export class WxPublic {
                                             }
                                         );
 
-                                    }
+                                    } */
                                 }
                             }
                     }
@@ -97,13 +106,20 @@ export class WxPublic {
                 // 取消关注
                 case "unsubscribe":
                     {
-                        const wxUser = await this.UserService.getWxUser(body.FromUserName)
-                        const user = await this.UserService.getUser(wxUser.unionid)
+                        /**
+                         * 解绑存在一种无法避免的边界情况
+                         * 当用户公众号和小程序不是同一个主体绑定时,userId会是后一个绑定主体的unionid
+                         * 此种情况会导致解绑的时候找不到用户
+                         */
+                        // const wxUser = await this.UserService.getWxUser(body.FromUserName)
+                        const users = await this.UserService.userModel.find({ wxId: body.FromUserName }).lean()//.getUser(wxUser.unionid)
+
+                        console.log(`解除用户-${users.map(el => el.user).join(",")}-的公众号绑定`);
                         // 如果有用户,解绑用户的公众号关联
-                        if (user) {
+                        users.forEach(user => {
                             this.UserService.modifyUserInfo(user.user, { wxId: '' })
-                        }
-                        this.UserService.delWxUser(FromUserName)
+                        })
+                        await this.UserService.delWxUser(FromUserName)
                     }
                     break
 
@@ -119,12 +135,12 @@ export class WxPublic {
                             // EventKey是用户的数据库文档id字符串
                             const user = await this.UserService.getIdUser(EventKey)
                             if (user && !user.wxId) {
-                                const { unionid, headimgurl } = await this.Wx.MP.getUserInfo(FromUserName)
+                                const { headimgurl } = await this.Wx.MP.getUserInfo(FromUserName)
                                 // 如果用户没有绑定微信或绑定的微信是扫码的微信
-                                if (!user.userId || user.userId === unionid) {
-                                    await this.UserService.modifyUserInfo(user.user, { userId: unionid, wxId: FromUserName, avanter: headimgurl })
-                                    return this.TextMessege(body, `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`)
-                                } else {
+                                //if (!user.userId || user.userId === unionid) {
+                                await this.UserService.modifyUserInfo(user.user, { wxId: FromUserName, avanter: headimgurl })
+                                return this.TextMessege(body, `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`)
+                                /* } else {
                                     console.error(
                                         {
                                             event: 'scan绑定公证号',
@@ -133,7 +149,7 @@ export class WxPublic {
                                         }
                                     );
 
-                                }
+                                } */
                             }
                         }
                     }

@@ -104,6 +104,14 @@ export class Device {
     }
 
     /**
+   * 获取all协议告警配置
+   */
+    async getAlarmProtocols() {
+        const model = this.getModel(DevConstant)
+        return await model.find().lean()
+    }
+
+    /**
      * 获取指定的协议
      * @param protocol 
      * @returns 
