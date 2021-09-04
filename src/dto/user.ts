@@ -107,6 +107,9 @@ export class mac extends Api {
 export class macPid extends mac {
     @Rule(RuleType.number().required())
     pid: number
+
+    @Rule(RuleType.allow())
+    interVal?: number
 }
 
 @Rule(macPid)

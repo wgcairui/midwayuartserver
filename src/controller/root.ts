@@ -322,6 +322,7 @@ export class RootControll {
     async updateProtocol(@Body() protocol: Uart.protocol) {
         const d = await this.Device.updateProtocol(protocol)
         this.RedisService.setProtocolInstruct(protocol.Protocol)
+        this.SocketUart.UpdateCacheProtocol(protocol.Protocol)
         return {
             code: 200,
             data: d
@@ -340,6 +341,7 @@ export class RootControll {
     async setProtocol(@Body() Type: number, @Body() ProtocolType: string, @Body() Protocol: string, @Body() instruct: Uart.protocolInstruct[]) {
         const d = await this.Device.setProtocol(Type, ProtocolType, Protocol, instruct)
         this.RedisService.setProtocolInstruct(Protocol)
+        this.SocketUart.UpdateCacheProtocol(Protocol)
         return {
             code: 200,
             data: d

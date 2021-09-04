@@ -106,6 +106,14 @@ export class SocketUart {
         return this.proMap.get(protocol)
     }
 
+    /**
+     * 更新缓存协议
+     * @param protocol 
+     */
+    UpdateCacheProtocol(protocol: string) {
+        return this.proMap.delete(protocol)
+    }
+
 
     /**
      * 根据socket.id获取节点信息
@@ -193,11 +201,12 @@ export class SocketUart {
     /**
      * 根据终端缓存终端
      * @param mac
+     * @param interVal 查询间隔
      */
-    async setTerminalMountDevCache(mac: string) {
+    async setTerminalMountDevCache(mac: string, interVal?: number) {
         const { mountDevs, DevMac, mountNode } = await this.Device.getTerminal(mac)
         if (mountNode !== "test" && mountDevs) {
-            const Interval = await this.Device.getMountDevInterval(mac)
+            const Interval = interVal || await this.Device.getMountDevInterval(mac)
             mountDevs.forEach(mountDev => {
                 this.cache.set(DevMac + mountDev.pid, { ...mountDev, TerminalMac: DevMac, Interval, mountNode })
             })

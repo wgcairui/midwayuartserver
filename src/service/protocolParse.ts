@@ -110,6 +110,10 @@ export class ProtocolParse {
 
         })
         //console.log(ResultFilter);
+        /* if(R.mac === '714046271275'){
+            console.log(InstructMap,ResultFilter);
+            
+        } */
         // 根据协议指令解析类型的不同,转换裁减Array<number>为Array<number>,把content换成指令名称
         const ParseInstructResultType = ResultFilter.map(async el => {
             const content = await this.RedisService.getContentToInstructName(el.content)!
