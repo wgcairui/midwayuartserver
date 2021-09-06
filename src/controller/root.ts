@@ -589,6 +589,20 @@ export class RootControll {
     }
 
     /**
+  * 获取指定用户告警配置
+  * @param user 
+  * @param filter 
+  * @returns 
+  */
+    @Post("/getUserAlarmSetup")
+    async getUserAlarmSetup(@Body() user: string) {
+        return {
+            code: 200,
+            data: await this.UserService.getUserAlarmSetup(user)
+        }
+    }
+
+    /**
    * 获取all用户告警配置
    * @param user 
    * @param filter 
@@ -997,6 +1011,31 @@ export class RootControll {
         return {
             code: 200,
             data: await this.Clean.clean()
+        }
+    }
+
+    /**
+   * 固定发送设备操作指令
+   * @param query 
+   * @param item 
+   * @returns 
+   */
+    @Post("/SendProcotolInstructSet")
+    async SendProcotolInstructSet(@Body() query: Uart.instructQuery) {
+        const protocol = await this.Device.getProtocol(query.protocol)
+        // 携带事件名称，触发指令查询
+        const Query: Uart.instructQuery = {
+            protocol: query.protocol,
+            DevMac: query.DevMac,
+            pid: query.pid,
+            type: protocol.Type,
+            events: 'oprate' + Date.now() + query.DevMac,
+            content: query.content
+        }
+        return {
+            code: 200,
+            data: await this.SocketUart.InstructQuery(Query),
+            msg: 'success'
         }
     }
 }
