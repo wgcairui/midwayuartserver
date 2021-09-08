@@ -97,6 +97,7 @@ export class ProtocolParse {
             // 如果程序重启后接受到数据，缓存中可能还没有指令对照
             if (instructName) {
                 const protocolInstruct = InstructMap.get(instructName)!
+
                 // 如果是非标协议且含有后处理脚本，由脚本校验结果buffer
                 if (protocolInstruct.noStandard && protocolInstruct.scriptEnd) {
                     const Fun = this.Util.ParseFunctionEnd(protocolInstruct.scriptEnd)
@@ -160,9 +161,21 @@ export class ProtocolParse {
                     case "hex":
                     case "short":
                         // 如果是浮点数则转换为带一位小数点的浮点数
-                        const num = this.Util.ParseCoefficient(el2.bl, buffer.readIntBE(start - 1, len))
-                        const str = num.toString()
-                        result.value = /\./.test(str) ? num.toFixed(1) : str
+                        try {
+                            const num = this.Util.ParseCoefficient(el2.bl, buffer.readIntBE(start - 1, len))
+                            const str = num.toString()
+                            result.value = /\./.test(str) ? num.toFixed(1) : str
+                        } catch (error) {
+                            result.value = '0'
+                            console.error({
+                                msg: '解析结果长度错误',
+                                instructs,
+                                content,
+                                bufferData,
+                                RedisService
+                            });
+
+                        }
                         break;
                     // 处理单精度浮点数
                     case "float":
