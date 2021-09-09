@@ -293,6 +293,64 @@ class mountDev {
     public bindDev?: string;
 }
 
+class iccidInfo {
+    /**
+     * 状态
+     */
+    @prop({ default: false })
+    public statu: boolean
+    /**
+     * 语音套餐总量，以分钟为单位
+     */
+    @prop()
+    public voiceTotal: number
+    /**
+     * 	资源失效日期
+     */
+    @prop()
+    public expireDate: string
+    /**
+     * 资源名称
+     */
+    @prop()
+    public resName: string
+    /**
+     * 资源类型编码。6700001代表流量
+     */
+    @prop()
+    public resourceType: string
+    /**
+     * 资源使用量，流量单位为KB
+     */
+    @prop()
+    public flowUsed: number
+    /**
+     * 资源剩余量，流量单位为KB
+     */
+    @prop()
+    public restOfFlow: number
+    /**
+     * 短信使用量。以条为单位
+     */
+    @prop()
+    public smsUsed: number
+    /**
+     * 资源生效日期
+     */
+    @prop()
+    public validDate: string
+    /**
+     * 语音使用量，以分钟为单位
+     */
+    @prop()
+    public voiceUsed: number
+    /**
+     * 资源总量 ，流量单位为KB
+     */
+    @prop()
+    public flowResource: number
+}
+
 /**
  * 终端列表
  */
@@ -355,6 +413,10 @@ export class Terminal {
 
     @prop({ type: mountDev, _id: false, default: [] })
     public mountDevs: mountDev[]
+
+    @prop({ type: iccidInfo, _id: false })
+    public iccidInfo: iccidInfo
+
 }
 
 

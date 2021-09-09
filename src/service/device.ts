@@ -52,7 +52,7 @@ export class Device {
      */
     async setTerminal(mac: string, doc: Partial<Uart.Terminal>) {
         const model = this.getModel(Terminal)
-        return await model.updateOne({ DevMac: mac }, { $set: { ...doc as any } }).lean()
+        return await model.updateOne({ DevMac: mac }, { $set: { ...doc } }).lean()
     }
 
     /**

@@ -360,6 +360,50 @@ export class Alarm {
     }
 
     /**
+     * 物联卡即将失效提醒
+     * @param u 
+     * @param mac 
+     * @param iccid 
+     * @param expire 失效时间
+     */
+    async IccidExpire(u: string, mac: string, iccid: string, expire: string | number) {
+        const user = await this.getUser(u)
+        const ter = await this.getTerminal(mac)
+        if (user && user.wxId) {
+            await this.Wx.SendsubscribeMessageDevAlarm({
+                touser: user.wxId,
+                template_id: Config.TemplateIdUniversal,
+                data: {
+                    first: {
+                        value: `[ ${iccid} ] 即将失效`,
+                        color: "#303133"
+                    },
+                    device: {
+                        value: `${ter.name}`,
+                        color: "#303133"
+                    },
+                    time: {
+                        value: this.Util.parseTime(expire),
+                        color: "#303133"
+                    },
+                    remark: {
+                        value: `${iccid}即将失效,请尽快处理`,
+                        color: "#303133"
+                    }
+                }
+            })
+        }
+        if (user && user.mail) {
+            const body = `<p><strong>尊敬的${u}</strong></p>
+            <hr />
+            <p><strong>您的4G DTU <em>${ter.name}</em> 使用的物联卡 ${iccid} 即将失效</strong></p>
+            <p><strong>告警时间:&nbsp; </strong>${this.Util.parseTime(expire)}</p>
+           `
+            await this.Mail.send(user.mail, "Ladis透传平台", "ICCID即将失效", body)
+        }
+    }
+
+    /**
      * 根据mac获取用户告警号码和邮箱,wx
      * @param mac 
      * @returns 

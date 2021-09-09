@@ -17,6 +17,8 @@
     "check": "luckyeye"
   },
   "dependencies": {
+    "@alicloud/dyiotapi20171111": "^1.0.0",
+    "@alicloud/openapi-client": "^0.3.4",
     "@alicloud/pop-core": "^1.7.10",
     "@cairui/wx-sdk": "^1.0.6",
     "@midwayjs/bootstrap": "^2.12.3",
@@ -58,7 +60,7 @@
     "jest": "^26.4.0",
     "mwts": "^1.0.5",
     "ts-jest": "^26.2.0",
-    "types-uart": "^1.1.3"
+    "types-uart": "^1.1.6"
   },
   "engines": {
     "node": ">=14.0.0"

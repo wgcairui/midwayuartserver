@@ -10,6 +10,8 @@ import { Application as SocketApp } from "@midwayjs/socketio"
 import { date, IdDate, macDate, registerDev } from "../dto/root"
 import { SocketUart } from "../service/socketUart"
 import { Clean } from '../task/clean'
+import { DyIot } from "../util/dyiot"
+import { UpdateIccid } from "../task/updateIccid"
 
 @Provide()
 @Controller("/api/root", { middleware: ['root'] })
@@ -41,6 +43,12 @@ export class RootControll {
 
     @Inject()
     private SocketUart: SocketUart
+
+    @Inject()
+    DyIot: DyIot
+
+    @Inject()
+    UpdateIccid: UpdateIccid
 
     @App(MidwayFrameworkType.WS_IO)
     private SocketApp: SocketApp
@@ -1036,6 +1044,74 @@ export class RootControll {
             code: 200,
             data: await this.SocketUart.InstructQuery(Query),
             msg: 'success'
+        }
+    }
+
+    /**
+     * 解绑复机
+     * @param iccid 
+     * @returns 
+     */
+    @Post("/IotDoIotUnbindResume")
+    async IotDoIotUnbindResume(@Body() iccid: string) {
+        const res = await this.DyIot.DoIotUnbindResume(iccid)
+        return {
+            code: res.code === 'OK' ? 200 : 0,
+            data: res.data
+        }
+    }
+
+    /**
+     * 查询物联网卡的明细信息
+     * @param iccid 
+     * @returns 
+     */
+    @Post("/IotQueryCardInfo")
+    async IotQueryCardInfo(@Body() iccid: string) {
+        const res = await this.DyIot.QueryCardInfo(iccid)
+        return {
+            code: res.code === 'OK' ? 200 : 0,
+            data: res.cardInfo
+        }
+    }
+
+    /**
+    * 查询物联网卡的流量信息
+    * @param iccid 
+    * @returns 
+    */
+    @Post("/IotQueryCardFlowInfo")
+    async IotQueryCardFlowInfo(@Body() iccid: string) {
+        const res = await this.DyIot.QueryCardFlowInfo(iccid)
+        return {
+            code: res.code === 'OK' ? 200 : 0,
+            data: res.cardFlowInfos.cardFlowInfo[0]
+        }
+    }
+
+    /**
+     * 查询物联网卡当前时间有效套餐的列表
+     * @param iccid 
+     * @returns 
+     */
+    @Post("/IotQueryIotCardOfferDtl")
+    async IotQueryIotCardOfferDtl(@Body() iccid: string) {
+        const res = await this.DyIot.QueryIotCardOfferDtl(iccid)
+        return {
+            code: res.code === 'OK' ? 200 : 0,
+            data: res.cardOfferDetail.detail
+        }
+    }
+
+    /**
+     * 更新所有4G dtu iccid信息
+     * @returns 
+     */
+    @Post("/UpdateIccids")
+    async UpdateIccids() {
+        return {
+            code: 200,
+            data: await this.UpdateIccid.up()
         }
     }
 }
