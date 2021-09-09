@@ -161,12 +161,6 @@ export class ProtocolParse {
                     // 处理ascii
                     case 'utf8':
                         result.value = buffer.slice(start, len).toString()
-                        console.log({
-                            result,
-                            buffer,
-                            bufferN
-                        });
-
                         break
                     // 处理整形
                     case "hex":
