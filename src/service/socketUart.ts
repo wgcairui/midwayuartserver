@@ -261,8 +261,10 @@ export class SocketUart {
                     let content = ""
                     switch (ProtocolInstruct.resultType) {
                         case "utf8":
-                            content = ProtocolInstruct.name
-                            break
+                            if (Protocol.Type === 232) {
+                                content = ProtocolInstruct.name
+                                break
+                            }
                         /* case "HX":
                             content = tool.HX(Query.pid, ProtocolInstruct.name)
                             break; */

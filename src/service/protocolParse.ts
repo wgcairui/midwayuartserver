@@ -139,12 +139,13 @@ export class ProtocolParse {
             }
             return {
                 content,
-                bufferData
+                bufferData,
+                bufferN: el.buffer.data
             }
         })
         //console.log(ParseInstructResultType);
         // 把转换处理后的数据根据协议指令对应的解析对象生成结果对象数组,赋值result属性
-        return (await Promise.all(ParseInstructResultType)).map(({ content, bufferData }) => {
+        return (await Promise.all(ParseInstructResultType)).map(({ content, bufferData, bufferN }) => {
             const instructs = InstructMap.get(content)!
             const buffer = Buffer.from(bufferData)
             return instructs.formResize.map(async el2 => {
@@ -156,6 +157,16 @@ export class ProtocolParse {
                     // 处理
                     case 'bit2':
                         result.value = buffer[start - 1].toString()
+                        break
+                    // 处理ascii
+                    case 'utf8':
+                        result.value = buffer.slice(start, len).toString()
+                        console.log({
+                            result,
+                            buffer,
+                            bufferN
+                        });
+
                         break
                     // 处理整形
                     case "hex":
@@ -172,7 +183,8 @@ export class ProtocolParse {
                                 instructs,
                                 content,
                                 bufferData,
-                                RedisService
+                                R,
+                                IntructResult
                             });
 
                         }
