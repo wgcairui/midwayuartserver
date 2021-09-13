@@ -160,7 +160,7 @@ export class ProtocolParse {
                         break
                     // 处理ascii
                     case 'utf8':
-                        result.value = buffer.slice(start, len).toString()
+                        result.value = buffer.slice(start - 1, start + len - 1).toString()
                         break
                     // 处理整形
                     case "hex":

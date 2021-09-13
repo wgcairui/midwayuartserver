@@ -151,15 +151,16 @@ export class RedisService {
      * 设置用户的告警配置缓存
      * @param user 用户名称
      * @param protocol 设备协议名称
+     * @param forcedUpdate 强制更新用户缓存配置,特别是在后台修改协议配置的时候
      */
-    async setUserSetup(user: string, protocol: string) {
+    async setUserSetup(user: string, protocol: string, forcedUpdate: boolean = false) {
         // 获取用户个性化配置实例
         const UserSetup = await (await this.App.getApplicationContext().getAsync(UserService)).getUserAlarmProtocol(user, protocol)
         // 协议参数阀值,状态
         const Constant = await this.Device.getAlarmProtocol(protocol)
         const cache = this.userSetup.get(user) || this.userSetup.set(user, new Map()).get(user)!
         // 如果缓存没有协议，新建缓存
-        if (!cache.has(protocol)) {
+        if (forcedUpdate || !cache.has(protocol)) {
             cache.set(protocol, {
                 Threshold: new Map(Constant.Threshold.map(el => [el.name, el])),
                 AlarmStat: new Map(Constant.AlarmStat.map(el => [el.name, el]))
