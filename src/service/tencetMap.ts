@@ -82,8 +82,7 @@ export class TencetMap {
             }
             return result_1;
         } catch (e) {
-            console.log(e);
-            throw new Error(e);
+            console.log(e.message);
         }
     }
 

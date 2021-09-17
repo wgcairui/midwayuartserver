@@ -177,6 +177,7 @@ export class ProtocolParse {
                                 instructs,
                                 content,
                                 bufferData,
+                                bufferN,
                                 R,
                                 IntructResult
                             });
