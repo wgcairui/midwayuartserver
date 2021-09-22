@@ -41,8 +41,19 @@ export class ProtocolParse {
         this.RedisService.clearQueryTerminaluseTime(mac, pid)
     }
 
+    /**
+     * 
+     * @param regx 
+     * @returns 
+     */
     private getProtocolRegx(regx: string) {
-        return regx.split("-").map(el => parseInt(el))
+        const [s, len] = regx.split("-").map(el => parseInt(el))
+        const start = s - 1
+        return {
+            start: start,
+            end: start + len,
+            step: len
+        }
     }
 
     /**
@@ -72,8 +83,8 @@ export class ProtocolParse {
                 return instructs.formResize.map(async el2 => {
 
 
-                    const [start] = this.getProtocolRegx(el2.regx!)
-                    const value = parseStr[start - 1]
+                    const { start } = this.getProtocolRegx(el2.regx!)
+                    const value = parseStr[start]
                     return { name: el2.name, value, parseValue: el2.isState ? await this.RedisService.parseUnit(el2.unit!, value) : value, unit: el2.unit, issimulate: el2.isState } as any
                 });
             })
@@ -103,18 +114,38 @@ export class ProtocolParse {
                     const Fun = this.Util.ParseFunctionEnd(protocolInstruct.scriptEnd)
                     return Fun(el.content, el.buffer.data) as Boolean
                 } else {
-                    // 结果对象需要满足对应操作指令,是此协议中的指令,数据长度和结果中声明的一致
+
+                    // 返回数据的pid
+                    const pid = el.buffer.data[0]
+                    // 查询指令的类型
                     const FunctionCode = parseInt(el.content.slice(2, 4))
-                    return (el.buffer.data[0] === R.pid && el.buffer.data[1] === FunctionCode && el.buffer.data[2] + 5 === el.buffer.data.length)
+                    // 返回数据的类型
+                    const ResFunctionCode = el.buffer.data[1]
+                    // 返回数据标明的长度
+                    const ResLength = el.buffer.data[2]
+                    // 最大解析数据长度是否对应返回数据长度
+                    const { end } = this.getProtocolRegx(protocolInstruct.formResize[protocolInstruct.formResize.length - 1].regx!)
+                    /**
+                     * 返回数据和查询指令对比
+                     * pid需一致
+                     * 数据类型需一致
+                     * 解析数据长度需要<=实际数据长度
+                     * 数据实际长度和数据标识长度需一致
+                     */
+                    return (pid === R.pid && ResFunctionCode === FunctionCode && ResLength + 1 >= end && ResLength === el.buffer.data.length - 5)
                 }
             } else return false
 
         })
-        //console.log(ResultFilter);
-        /* if(R.mac === '714046271275'){
-            console.log(InstructMap,ResultFilter);
-            
-        } */
+
+        if (ResultFilter.length < IntructResult.length) {
+            const s = ResultFilter.map(el => el.content)
+            console.log({
+                msg: '485校验出错',
+                ins: IntructResult.filter(el => !s.includes(el.content))
+            });
+
+        }
         // 根据协议指令解析类型的不同,转换裁减Array<number>为Array<number>,把content换成指令名称
         const ParseInstructResultType = ResultFilter.map(async el => {
             const content = await this.RedisService.getContentToInstructName(el.content)!
@@ -152,27 +183,27 @@ export class ProtocolParse {
                 // 申明结果
                 const result: Uart.queryResultArgument = { name: el2.name, value: '0', parseValue: '0', unit: el2.unit, issimulate: el2.isState }
                 // 每个数据的结果地址
-                const [start, len] = this.getProtocolRegx(el2.regx!)
+                const { start, end, step } = this.getProtocolRegx(el2.regx!)
                 switch (instructs.resultType) {
                     // 处理
                     case 'bit2':
-                        result.value = buffer[start - 1].toString()
+                        result.value = buffer[start].toString()
                         break
                     // 处理ascii
                     case 'utf8':
-                        result.value = buffer.slice(start - 1, start + len - 1).toString()
+                        result.value = buffer.slice(start, end).toString()
                         break
                     // 处理整形
                     case "hex":
                     case "short":
                         // 如果是浮点数则转换为带一位小数点的浮点数
                         try {
-                            const num = this.Util.ParseCoefficient(el2.bl, buffer.readIntBE(start - 1, len))
+                            const num = this.Util.ParseCoefficient(el2.bl, buffer.readIntBE(start, step))
                             const str = num.toString()
                             result.value = /\./.test(str) ? num.toFixed(1) : str
                         } catch (error) {
                             result.value = '0'
-                            console.error({
+                            /* console.error({
                                 msg: '解析结果长度错误',
                                 instructs,
                                 content,
@@ -180,13 +211,12 @@ export class ProtocolParse {
                                 bufferN,
                                 R,
                                 IntructResult
-                            });
-
+                            }); */
                         }
                         break;
                     // 处理单精度浮点数
                     case "float":
-                        result.value = this.Util.HexToSingle(buffer.slice(start - 1, start + len - 1)).toFixed(2)
+                        result.value = this.Util.HexToSingle(buffer.slice(start, end)).toFixed(2)
                         break;
                 }
                 result.parseValue = result.issimulate ? await this.RedisService.parseUnit(result.unit!, result.value) : result.value

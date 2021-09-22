@@ -6,7 +6,8 @@
     "lib": [
       "es2018",
       "ESNext.AsyncIterable",
-      "ES2019.Array"
+      "ES2019.Array",
+      "DOM"
     ],
     "moduleResolution": "node",
     "experimentalDecorators": true,

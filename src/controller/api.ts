@@ -9,6 +9,7 @@ import { Sms } from "../decorator/smsValidation"
 import { Util } from "../util/util"
 import { SocketUart } from "../service/socketUart"
 import * as lodash from "lodash"
+import { toDataURL } from "qrcode"
 
 @Provide()
 @Controller("/api", { middleware: ['token'] })
@@ -795,6 +796,19 @@ export class ApiControll {
         return {
             code: 200,
             data: await this.Device.getRegisterDev(id)
+        }
+    }
+
+    /**
+     * 转换字符串到二维码
+     * @param code 
+     * @returns 
+     */
+    @Post("/qr")
+    async qr(@Body() code: string) {
+        return {
+            code: 200,
+            data: await toDataURL(code)
         }
     }
 }
