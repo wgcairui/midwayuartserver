@@ -11,6 +11,7 @@ import { SocketUser } from "../service/socketUser"
 import { SocketUart } from "../service/socketUart"
 import { UserService } from "../service/user"
 import { alarm } from "../interface"
+import axios from "axios"
 
 @Provide()
 @Controller("/api/node", { middleware: ['nodeHttp'] })
@@ -110,7 +111,20 @@ export class NodeControll {
      */
     @Post("/queryData")
     async queryData(@Body() data: Uart.queryResult) {
-
+        // 如果设备是百事服卡且未注册,自动注册设备型号
+        if (data.mountDev === 'pesiv' && !this.RedisService.terminalMap.has(data.mac)) {
+            await this.Device.addRegisterTerminal(data.mac, "pesiv")
+            // 构造用户ups信息
+            const mountDev: Uart.TerminalMountDevs = {
+                pid: 0,
+                mountDev: 'UPS',
+                protocol: 'Pesiv卡',
+                Type: "UPS"
+            };
+            await this.UserService.addTerminalMountDev("root", data.mac, mountDev)
+            this.RedisService.initTerminalMap()
+            console.info(`Pesiv卡:${data.mac}未注册,将自动注册到设备库`)
+        }
         // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
         if (data.mac && !await this.RedisService.hasParseSet(data.mac + data.pid)) {
             // 标记数据正在处理
@@ -132,6 +146,32 @@ export class NodeControll {
 
             // 处理数据
             const parse = await this.ProtocolParse.parse(data)
+
+            // 数据转发配置
+            {
+                this.UserService.getBindMacUser(data.mac).then(async user => {
+                    if (user) {
+                        const { proxy } = await this.UserService.getUser(user)
+                        if (proxy) {
+                            axios.post(proxy, {
+                                mac: data.mac,
+                                timestamp: data.timeStamp,
+                                data: parse
+                            }).catch(_ => {
+                                console.error(
+                                    {
+                                        msg: "proxy Error",
+                                        mac: data.mac,
+                                        user,
+                                        proxy
+                                    }
+                                );
+
+                            })
+                        }
+                    }
+                })
+            }
 
             // 如果设备有用户绑定则进入检查流程
 

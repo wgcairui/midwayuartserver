@@ -76,7 +76,7 @@ export class RedisService {
      */
     @TaskLocal("* * * * *")
     async initTerminalMap() {
-        const terminals = await this.Device.getTerminals() as any
+        const terminals = await this.Device.getTerminals() as any as Uart.Terminal[]
         this.terminalMap = new Map(terminals.map(el => [el.DevMac, el]))
     }
 

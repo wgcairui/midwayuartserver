@@ -62,7 +62,7 @@
     "jest": "^26.4.0",
     "mwts": "^1.0.5",
     "ts-jest": "^26.2.0",
-    "types-uart": "^1.1.6"
+    "types-uart": "^1.1.7"
   },
   "engines": {
     "node": ">=14.0.0"

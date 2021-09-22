@@ -54,6 +54,9 @@ export class Users {
 
     @prop()
     public openId: string
+
+    @prop()
+    public proxy?: string
 }
 
 
