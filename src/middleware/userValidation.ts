@@ -32,7 +32,12 @@ export class token implements IWebMiddleware {
                     })
 
                 } else {
-                    ctx.throw('token null')
+                    ctx.body = {
+                        code: 0,
+                        data: 'token null'
+                    }
+                    return
+                    // ctx.throw('token null')
                     // throw new Error('token null')
                 }
                 await next()

@@ -193,12 +193,12 @@ export class NodeSocket {
             if (!active) {
                 const onTime = await this.RedisService.getMacOnlineTime(mac)
                 const ofTime = await this.RedisService.getMacOfflineTime(mac)
-                console.log({
+                /* console.log({
                     type: "terminalOff",
                     active,
                     onTime,
                     ofTime
-                });
+                }); */
 
                 if (onTime && ofTime && ofTime < onTime) this.Alarm.macOnOff_line(mac, "离线")
                 this.RedisService.setMacOfflineTime(mac)
