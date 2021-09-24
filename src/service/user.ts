@@ -172,7 +172,7 @@ export class UserService {
             // 添加到用户绑定
             await this.addUserTerminal(ru.user, code);
             // 添加到注册信息
-            await this.Device.addRegisterTerminal(code, "pesiv");
+            await this.Device.addRegisterTerminal(code, "pwsiv");
             // 修改卡名称
             await this.modifyTerminal(ru.user, code, dev.DevName);
             // 添加挂载信息

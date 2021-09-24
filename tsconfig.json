@@ -9,6 +9,7 @@
       "ES2019.Array",
       "DOM"
     ],
+    
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -18,7 +19,8 @@
     "stripInternal": true,
     "skipLibCheck": false,
     "pretty": true,
-    "declaration": true,
+    "declaration": false,
+    "removeComments": true,
     "typeRoots": [
       "./typings",
       "./node_modules/@types"

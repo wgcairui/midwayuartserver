@@ -7,6 +7,7 @@ import { RedisService } from "../service/redis"
 import { SocketUart } from "../service/socketUart"
 import { SocketUser } from "../service/socketUser"
 import { HF } from "../util/hf"
+import { UserService } from "../service/user"
 
 @Provide()
 @WSController('/node')
@@ -34,6 +35,9 @@ export class NodeSocket {
 
     @Inject()
     HF: HF
+
+    @Inject()
+    UserService: UserService
 
     @App(MidwayFrameworkType.WS_IO)
     app: Application
@@ -141,6 +145,21 @@ export class NodeSocket {
     async terminalOn(data: string | string[], reline = false) {
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
+            // 如果是pesiv节点的设备和设备未注册,自动注册设备信息
+            // 如果设备是百事服卡且未注册,自动注册设备型号
+            if (node.Name === 'pwsiv' && typeof data === "string" && !this.RedisService.terminalMap.has(data)) {
+                await this.Device.addRegisterTerminal(data, node.Name)
+                // 构造用户ups信息
+                const mountDev: Uart.TerminalMountDevs = {
+                    pid: 0,
+                    mountDev: 'UPS',
+                    protocol: 'Pesiv卡',
+                    Type: "UPS"
+                };
+                await this.UserService.addTerminalMountDev("root", data, mountDev)
+                this.RedisService.initTerminalMap()
+                console.info(`Pesiv卡:${data}未注册,将自动注册到设备库`)
+            }
             const date = new Date()
             this.Device.setStatTerminal(data)
             // 迭代macs,从busy列表删除,写入日志,在线记录更新
