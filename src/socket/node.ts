@@ -82,7 +82,6 @@ export class NodeSocket {
             this.ctx.leave(node.Name)
             this.ctx.leave(node.IP)
             this.RedisService.delSocketSid(this.ctx.id)
-            console.log(`${new Date().toLocaleTimeString()}## 节点：${node.Name}断开连接，清除定时操作`);
             this.ctx.disconnect();
             const macs = (await this.Device.getTerminals({ DevMac: 1, mountNode: 1 })).filter(el => el.mountNode === node.Name).map(el => el.DevMac)
             // 批量设置终端离线
@@ -156,7 +155,6 @@ export class NodeSocket {
                 this.RedisService.initTerminalMap()
                 console.info(`Pesiv卡:${data}未注册,将自动注册到设备库`)
             }
-            const date = new Date()
             this.Device.setStatTerminal(data)
             // 迭代macs,从busy列表删除,写入日志,在线记录更新
             this.Device.getTerminal(data, { DevMac: 1 }).then(els => {
@@ -186,7 +184,6 @@ export class NodeSocket {
                     }
                 })
             })
-            console.info(`${date.toLocaleTimeString()}##${node.Name} DTU:/${data}/ 已上线,模式:${reline}`);
         }
     }
 
@@ -201,7 +198,6 @@ export class NodeSocket {
         if (node) {
             this.Device.setStatTerminal(mac, false)
             this.SocketUser.sendMacUpdate(mac)
-            console.error(`${new Date().toLocaleTimeString()}##${node.Name} DTU:${mac} 已${active ? '主动' : '被动'}离线`);
             this.RedisService.delDtuWorkBus(mac)
             if (!active) {
                 const onTime = await this.RedisService.getMacOnlineTime(mac)
