@@ -84,17 +84,13 @@ export class NodeSocket {
             this.RedisService.delSocketSid(this.ctx.id)
             console.log(`${new Date().toLocaleTimeString()}## 节点：${node.Name}断开连接，清除定时操作`);
             this.ctx.disconnect();
-            console.log('socket disconnected Stat:', this.ctx?.disconnected);
             const macs = (await this.Device.getTerminals({ DevMac: 1, mountNode: 1 })).filter(el => el.mountNode === node.Name).map(el => el.DevMac)
             // 批量设置终端离线
             await this.Device.setStatTerminal(macs, false)
-            console.log("del");
-
             await this.SocketUart.delNodeCache(node.Name)
-            console.log('log');
 
             // 添加日志
-            await this.log.saveNode({ type: "断开", ID: this.ctx.id, IP: node.IP, Name: node.Name })
+            //await this.log.saveNode({ type: "断开", ID: this.ctx.id, IP: node.IP, Name: node.Name })
             macs.forEach(mac => {
                 this.log.saveTerminal({ NodeIP: node.IP, NodeName: node.Name, TerminalMac: mac, type: "节点断开" })
             })
@@ -176,14 +172,12 @@ export class NodeSocket {
                             if (typeof data == 'string') {
                                 const onTime = await this.RedisService.getMacOnlineTime(t.DevMac)
                                 const ofTime = await this.RedisService.getMacOfflineTime(t.DevMac)
-                                console.log({ type: "terminalOn", reline, onTime, ofTime });
                                 /**
                                  * 要么是新的设备,没有上下线记录
                                  * 要么必须有上下线时间且下线时间大于上次上线时间
                                  */
                                 if ((!ofTime && !onTime) || (ofTime && ofTime > onTime)) {
                                     this.Alarm.macOnOff_line(t.DevMac, "上线")
-                                    console.log(`${t.DevMac} 发送上线信息`);
                                 }
                             }
                         }
@@ -212,13 +206,6 @@ export class NodeSocket {
             if (!active) {
                 const onTime = await this.RedisService.getMacOnlineTime(mac)
                 const ofTime = await this.RedisService.getMacOfflineTime(mac)
-                /* console.log({
-                    type: "terminalOff",
-                    active,
-                    onTime,
-                    ofTime
-                }); */
-
                 if (onTime && ofTime && ofTime < onTime) this.Alarm.macOnOff_line(mac, "离线")
                 this.RedisService.setMacOfflineTime(mac)
             }
@@ -260,17 +247,12 @@ export class NodeSocket {
             const hash = mac + pid
             const Query = this.SocketUart.cache.get(hash)
             if (Query) {
-                console.log('------全部指令超时', timeOut, Query.TerminalMac, Query.pid, Query.mountDev);
-                // console.log(`${hash} 查询超时次数:${timeOut},查询间隔：${QueryTerminal.Interval}`);
-                // 如果查询间隔小于五分钟则每次查询间隔修改为+10000
-                // if (Query.Interval < 3e5) Query.Interval += 10000
                 // 如果超时次数>10和短信发送状态为false
                 if (timeOut > 10) {
                     this.Device.setStatTerminalDevs(mac, pid, false)
                     this.SocketUser.sendMacUpdate(mac)
                     // 把查询超时间隔修改为1分钟
                     Query.Interval = 6e4
-                    console.log(`${hash}/${Query.mountDev} 查询超时次数:${timeOut},查询间隔：${Query.Interval}`);
                     if (!await this.RedisService.hasTimeOutMonutDevSmsSend(hash)) {
                         this.RedisService.setMacOfflineTime(mac)
                         const terminal = await this.Device.getTerminal(mac)
@@ -303,7 +285,6 @@ export class NodeSocket {
     @OnWSMessage("ready")
     @WSEmit("nodeInfo")
     async ready() {
-        console.log('ready');
         // 迭代所有设备,加入缓存
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
@@ -320,7 +301,6 @@ export class NodeSocket {
     @OnWSMessage("deviceopratesuccess")
     @OnWSMessage("dtuopratesuccess")
     dtuOprateSuccess(events: string, result: Uart.ApolloMongoResult) {
-        console.log({ events, result });
         this.SocketUart.event.emit(events, result)
     }
 }

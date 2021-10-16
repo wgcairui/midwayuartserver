@@ -40,8 +40,7 @@ export class WxPublic {
     @Post("/")
     async wxPublic() {
         const body: Uart.WX.wxValidation | Uart.WX.WxEvent = await parseStringPromise(this.ctx.request.body).then(el => this.parseXmlObj(el) as any);
-        console.log(body);
-        this.logs.saveWxEvent(body)
+         this.logs.saveWxEvent(body)
         // 微信校验接口
         if ('signature' in body) {
             const { signature, timestamp, nonce, echostr } = body
@@ -54,7 +53,7 @@ export class WxPublic {
 
         // 进入事件处理流程
         if (Event) {
-            console.log('wx推送:进入事件处理流程');
+            // console.log('wx推送:进入事件处理流程');
 
             switch (Event) {
                 // 关注公众号
@@ -80,7 +79,6 @@ export class WxPublic {
                                 const { EventKey, FromUserName } = body
                                 // EventKey是用户的数据库文档id字符串
                                 const user = await this.UserService.getIdUser(EventKey.replace("qrscene_", ""))
-                                console.log(`用户${user?.user}通过网页扫码关注`);
                                 // 如果有用户和用户还没有绑定公众号
                                 if (user && !user.wxId) {
                                     const { headimgurl } = wxUser
@@ -111,10 +109,7 @@ export class WxPublic {
                          * 当用户公众号和小程序不是同一个主体绑定时,userId会是后一个绑定主体的unionid
                          * 此种情况会导致解绑的时候找不到用户
                          */
-                        // const wxUser = await this.UserService.getWxUser(body.FromUserName)
-                        const users = await this.UserService.userModel.find({ wxId: body.FromUserName }).lean()//.getUser(wxUser.unionid)
-
-                        console.log(`解除用户-${users.map(el => el.user).join(",")}-的公众号绑定`);
+                        const users = await this.UserService.userModel.find({ wxId: body.FromUserName }).lean()
                         // 如果有用户,解绑用户的公众号关联
                         users.forEach(user => {
                             this.UserService.modifyUserInfo(user.user, { wxId: '' })

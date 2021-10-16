@@ -81,12 +81,12 @@ export class Alarm {
                         }
                     })
                 }
-            } else if (user.tels) {
+            } else if (user.tels && user.tels.length > 0) {
                 return {
                     type: 'sms',
                     data: await this.Sms.SmsDTUDevTimeOut(user.tels, { pid, devName, event, name: user.name, DTU: ter.name })
                 }
-            } else if (user.mails) {
+            } else if (user.mails && user.mails.length > 0) {
                 const body = `<p><strong>尊敬的${user.name}</strong></p>
                 <hr />
                 <p><strong>您的DTU <em>${ter.name}</em> ${pid ? '挂载的 ' + devName : ''} 告警</strong></p>
