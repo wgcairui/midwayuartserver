@@ -65,8 +65,7 @@ export class RedisService {
         const nodes = await redis.keys("sid*")
         /* const on = await redis.keys("OnlineTime*")
         const off = await redis.keys("OfflineTime") */
-        const all = [...nodes]//, ...on, ...off]
-        console.log('clear all', all);
+        const all = [...nodes]
         if (all.length > 0) await redis.del(all)
 
     }
@@ -129,7 +128,7 @@ export class RedisService {
             // 缓存协议方法
             this.protocolInstructMap.set(protocol, ins)
         } catch (error) {
-            console.log(Protocol);
+            console.log({ msg: "设置协议解析错误", error, Protocol });
         }
     }
 

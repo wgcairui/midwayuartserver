@@ -446,4 +446,7 @@ export class wxsubscribeMessage {
 
     @prop({ type: Schema.Types.Mixed })
     public result: any
+
+    @prop({ default: Date.now() })
+    public timeStamp?: number
 }

@@ -189,8 +189,6 @@ export class Alarm {
         if (user) {
             const ter = await this.getTerminal(mac)
             const dev = ter.mountDevs.find(el => el.pid === pid)
-            console.log(user, ter, dev);
-
             const result = {
                 wx: null as null | Uart.WX.wxRequest,
                 sms: null as null | SmsResult,
@@ -221,7 +219,7 @@ export class Alarm {
                         remark: {
                             value: alarm.map(el => {
                                 const str = el.tag === 'ups' ? '' : (el.tag === "Threshold" ? [(el.contant as Uart.Threshold).min, (el.contant as Uart.Threshold).max].join('~') : '');
-                                return `${el.argument} ${el.data.parseValue} ${str ? `,参考值: [ ${str} ]` : ''}`
+                                return `${el.argument} ${el.data.parseValue} ${str && str.trim().length > 0 ? `,参考值: [ ${str} ]` : ''}`
                             }).join('\n'),
                             color: "#F56C6C"
                         }
@@ -321,7 +319,7 @@ export class Alarm {
      * @param pid 
      */
     async macOnOff_line(mac: string, type: "上线" | "离线") {
-        console.info(`${new Date().toLocaleString()} send macOnOff_line ${mac}`)
+        // console.info(`${new Date().toLocaleString()} send macOnOff_line ${mac}`)
         const user = await this.getMactoUser(mac)
         if (user && user.wxid) {
             const ter = await this.getTerminal(mac)

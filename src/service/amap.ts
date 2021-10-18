@@ -33,7 +33,6 @@ export class Amap {
     async GPS2autonavi(loctions: string | string[], coordsys: "gps" | 'mapbar' | 'baidu' = "gps") {
         if (!loctions || loctions === '') return ['']
         const result = await this.fecth<Uart.AMap.convert>('assistant/coordinate/convert', { locations: loctions, coordsys })
-        // console.log({ GPS2autonavi: result, locations: loctions, coordsys });
         return result.status === '1' ? result.locations.split(";") : ['']
     }
 

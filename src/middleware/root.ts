@@ -17,7 +17,6 @@ export class root implements IWebMiddleware {
 
             const util = await ctx.requestContext.getAsync(Util)
             const user = await util.Secret_JwtVerify<Uart.UserInfo>(token.split("%20").reverse()[0].trim()).catch(err => {
-                console.log({ token, err });
                 ctx.throw('token error')
             });
             if (!['root', 'admin'].includes(user.userGroup)) ctx.throw('user error')

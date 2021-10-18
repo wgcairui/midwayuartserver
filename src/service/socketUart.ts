@@ -161,7 +161,6 @@ export class SocketUart {
      */
     @TaskLocal("1 * * * *")
     async clear_nodeMap() {
-        console.log(`${new Date().toLocaleString()}===clear_nodeMap`);
         this.nodeMap.forEach(node => {
             this.getCtx(node.Name).emit("nodeInfo", node.Name)
         })
@@ -173,7 +172,7 @@ export class SocketUart {
      * 
      * 每天3点重置一次指令缓存
      */
-    @TaskLocal("* 3 * * *")
+    @TaskLocal("0 3 * * *")
     async clear_Cache() {
         console.log(`${new Date().toLocaleString()}===clear_Cache`);
         const nodes = await this.Device.getNodes()
@@ -238,16 +237,7 @@ export class SocketUart {
     private async _SendQueryIntruct(Query: mountDevEx) {
         const mac = Query.TerminalMac
         // 判断挂载设备是否空闲和是否在线
-        /* console.log({
-            mac,
-            pid: Query.pid,
-            name: Query.mountDev,
-            a: await this.RedisService.hasDtuWorkBus(mac),
-            b: await this.Device.getStatTerminal(mac)
-        }); */
-
         if (!await this.RedisService.hasDtuWorkBus(mac) && await this.Device.getStatTerminal(mac)) {
-            // console.log("send" + mac, Query.Interval, this.Event.getClientDtuMountDev(Query.TerminalMac, Query.pid));
             // 获取设备协议
             const Protocol = await this.cacheProtocol(Query.protocol)
             // 获取协议指令生成缓存

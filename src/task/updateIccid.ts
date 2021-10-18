@@ -46,17 +46,6 @@ export class UpdateIccid {
                     // 剩余每天可使用的量
                     const afterUse = data.restOfFlow / hasExpireDate
 
-                    /* console.log({
-                        ee: data.expireDate,
-                        expireDate,
-                        hasExpireDate,
-                        dayUse,
-                        afterUse,
-                        t: expireDate - now < 864e5 * 3,
-                        m: ter.DevMac
-                    }); */
-
-
                     // 如果剩余量不足,修改查询间隔,避免超出使用流量
                     if (afterUse < dayUse) {
                         const interVal = (await this.Device.getMountDevInterval(ter.DevMac)) * Math.ceil(afterUse / dayUse)
@@ -74,8 +63,6 @@ export class UpdateIccid {
                         }
                     }
                 }
-            } else {
-                console.log({ ...info, iccid: ter.ICCID });
             }
         }
         console.log('更新ICCIDs success', terminalsFilter.length);

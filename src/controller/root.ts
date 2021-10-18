@@ -851,6 +851,21 @@ export class RootControll {
     }
 
     /**
+     * 获取wx告警推送
+     * @param start 
+     * @param end 
+     * @returns 
+     */
+    @Post("/logwxsubscribes")
+    @Validate()
+    async logwxsubscribes(@Body(ALL) data: date) {
+        return {
+            code: 200,
+            data: await this.logs.logwxsubscribes(data.getStart(), data.getEnd())
+        }
+    }
+
+    /**
      * 获取定时清理记录
      * @param start 
      * @param end 

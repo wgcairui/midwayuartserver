@@ -102,8 +102,6 @@ export class AuthController {
     //
     if (!user) {
       user = await this.userService.syncPesivUser(accont.user, decryptPasswd)
-      console.log({user});
-      
       if (!user) {
         return {
           code: 0,
@@ -173,8 +171,6 @@ export class AuthController {
     await this.RedisService.setCode2Session(seesion.openid, seesion.session_key)
     // 检查unionid是否为已注册用户,
     const user = await this.userService.getUser(seesion.unionid)
-    // console.log({seesion,user});
-
     if (user) {
       await this.userService.updateUserLoginlog(user.user, this.ctx.ip, 'wx_login')
       // 如果没有小程序id,更新

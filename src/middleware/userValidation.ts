@@ -18,7 +18,6 @@ export class token implements IWebMiddleware {
                     const util = await ctx.requestContext.getAsync(Util)
 
                     const user = await util.Secret_JwtVerify<Uart.UserInfo>(token.split("%20").reverse()[0].trim()).catch(err => {
-                        console.log({ token, err });
                         throw new Error('token error')
                     });
                     ctx.request.body.token = {

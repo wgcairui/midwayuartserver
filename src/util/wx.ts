@@ -80,8 +80,6 @@ export class Wx {
      * @returns 
      */
     async SendsubscribeMessageDevAlarm(postData: Uart.WX.wxsubscribeMessage) {
-        console.log('发送微信推送')
-
         return this.MP.SendsubscribeMessageDevAlarm(postData).then(el => {
             this.logs.saveWxsubscribeMessage({ ...postData, result: el })
             return el

@@ -46,7 +46,6 @@ export class ProtocolCheck {
     public async check(user: string, query: Uart.queryResult, result: Uart.queryResultArgument[]) {
         const AlarmEvents: alarm[] = []
         const setup = await this.RedisService.getUserSetup(user, query.protocol)
-        // console.log('check',result,setup);
         if (setup.Threshold.size > 0) {
             this.checkThreshold(result, setup.Threshold).forEach(el => {
                 el.alarm = true
@@ -75,32 +74,10 @@ export class ProtocolCheck {
                 }
             })
         }
-        // console.log(result);
         const cu = await this.checkUPS(query)
         if (cu) AlarmEvents.push(cu)
-        // AlarmEvents.push(...this.checkSmsSend(query, result).map(el => Promise.resolve(el)))
         return { alarm: AlarmEvents, result }
     }
-
-    /**
-     * 告警恢复
-     *  检查参数，如果没有带alarm，则去掉告警缓存
-     * @param query 设备参数集
-     */
-    /* private checkSmsSend(query: Uart.queryResult, result: Uart.queryResultArgument[]) {
-        return result
-            .filter(el => !el.alarm)
-            .map(el => {
-                const tags = query.mac + query.pid + el.name
-                const n = this.CacheAlarmNum.get(tags)
-                if (n && n >= 20) {
-                    console.log('### 检查短信 checkSmsSend', el, this.CacheAlarmNum);
-                    this.CacheAlarmNum.set(tags, 0)
-                    const alias = this.getProtocolAlias(query.mac, query.pid, query.protocol, el.name)
-                    return this.sendAlarm(query, `[告警恢复]${alias}`, el, false);
-                } return undefined
-            })
-    } */
 
     /**
      * 检查参数阈值
@@ -192,7 +169,7 @@ export class ProtocolCheck {
                                 0x47: '控制板与通讯板MCU通信故障',
                                 0x48: '控制板韧体版本不兼容'
                             }
-                            const event = hashtable[Buffer.from(kk,"hex").toJSON().data[0]]
+                            const event = hashtable[Buffer.from(kk, "hex").toJSON().data[0]]
                             console.log(`### 发送其他故障消息:${Query.mac}/${Query.pid}/${Query.mountDev}, event:QFS(${event})`);
                             return {
                                 argument: event || '未知错误',
@@ -212,118 +189,4 @@ export class ProtocolCheck {
         }
     }
 
-    /**
-     * 发送告警日志
-     * 使用同一个签名和同一个短信模板ID，对同一个手机号码发送短信通知，支持50条/日（如您是在发短信通知时提示业务限流，建议根据以上业务调整接口调用时间）
-     * 发送告警推送,短信,邮件
-     * @param query 设备参数解析对象
-     * @param event 告警事件
-     * @param tag 告警标签
-     * @param validation 检查发送告警频次,默认达到十次才发生
-     */
-    /* private sendAlarm(query: Uart.queryResult, event: string, tag: Partial<Uart.queryResultArgument>, validation: boolean = true) {
-        // 创建tag
-        const tags = query.mac + query.pid + tag.name;
-        // 缓存告警记录
-        const n = this.CacheAlarmNum.get(tags) || 0;
-        this.CacheAlarmNum.set(tags, n + 1);
-        console.log('### 告警发送 sendSmsAlarm', query.mac, query.pid, query.mountDev, event, tag, n);
-        if (!validation || n === 10) {
-            this.ctx.SendUserAlarm({ mac: query.mac, msg: event })
-            // 是否有邮件
-            this.SendMailAlarm(query.mac, query.pid, event, tag, query.timeStamp)
-            this.SmsDTUDevAlarm(query.mac, query.pid, query.mountDev, event, query.timeStamp)
-
-            return {
-                mac: query.mac,
-                pid: query.pid,
-                devName: query.mountDev,
-                protocol: query.protocol,
-                timeStamp: query.timeStamp,
-                tag: tag.name!,
-                msg: event
-            } as Uart.uartAlarmObject
-        }
-    } */
-
-    /**
-     * @method 发送告警邮件
-     * @param mac 设备mac
-     * @param pid 设备pid
-     * @param event 告警事件
-     * @param tag 标签
-     * @param timeStamp 时间戳 
-     */
-    /* private SendMailAlarm(mac: string, pid: number | string, event: string, tag: Partial<Uart.queryResultArgument>, timeStamp: number) {
-        const info = getDtuInfo(mac)
-        const mails = (info.userInfo?.mails || []).filter(mail => Tool.RegexMail(mail))
-        if (mails.length > 0) {
-            const Dev = this.ctx.getClientDtuMountDev(mac, pid)
-            const setup = this.userSetup.get(info.user.user)!.get(Dev.protocol)!
-            const ck = setup.Threshold.get(tag.name!)
-            const str = ck ? `min=${ck.min} max=${ck.max}` : ''
-            const body = `<p><strong>尊敬的${info.user.name}</strong></p>
-      <hr />
-      <p><strong>您的DTU <em>${info.terminalInfo.name}</em> 挂载的 ${Dev.mountDev} 告警</strong></p>
-      <p><strong>告警时间:&nbsp; </strong>${parseTime(timeStamp)}</p>
-      <p><strong>告警事件:</strong>&nbsp; ${event}</p>
-      <p><strong>参考值: </strong>&nbsp;${str}</p>
-      <p>您可登录 <a title="透传服务平台" href="https://uart.ladishb.com" target="_blank" rel="noopener">LADS透传服务平台</a> 查看处理(右键选择在新标签页中打开)</p>
-      <hr />
-      <p>&nbsp;</p>
-      <p>扫码或点击程序码使用微信小程序查看</p>
-      <a href="weixin://dl/business/?t=203U27hghyu" target="_blank"><img src="https://www.ladishb.com/admin/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></a>
-      <p>&nbsp;</p>`
-            return Send(mails.join(","), "Ladis透传平台", "设备告警", body)
-        }
-        //SendMailAlarm(userInfo.mails, `尊敬的${userInfo.user},您的DTU${query.mac}挂载的${query.mountDev}于${new Date().toLocaleString()}告警,关键词` + event);
-
-    } */
-
-    /**
-     * 发送设备告警记录
-     * @param mac 
-     * @param pid 
-     * @param devName 设备名称 
-     * @param remind 备注信息
-     */
-    /* private SmsDTUDevAlarm = (mac: string, pid: string | number, devName: string, remind: string, timeStamp: number) => {
-        const info = getDtuInfo(mac)
-        const { wxId } = this.ctx.Cache.CacheUser.get(info.user.user)!
-        // 时间参数,长度限制20字节
-        const time = new Date(timeStamp)
-        const d = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`
-        console.log({ wxId });
-
-        if (wxId) {
-            const Dev = info.terminalInfo.mountDevs.find(el => el.pid == pid)!
-            const content = `${info.terminalInfo.name}/${pid}/${Dev.mountDev} 运行故障，故障信息:${remind}`
-            wxUtil.SendsubscribeMessageDevAlarmPublic(wxId, Date.now(), content, Dev.mountDev, info.terminalInfo.name, remind).then(SendsubscribeMessageDevAlarmPublic => {
-                console.log({ SendsubscribeMessageDevAlarmPublic });
-
-            })
-            // wxUtil.SendsubscribeMessageDevAlarm(wxId, d, content, (info.terminalInfo.name + '/' + Dev.mountDev).slice(0, 20), info.terminalInfo.DevMac + '-' + Dev.pid, Dev.Type + '运行异常')
-        } else {
-            const tels = (info.userInfo?.tels || []).filter(tel => Tool.RegexTel(tel))
-            if (tels.length > 0) {
-
-                const TemplateParam = JSON.stringify({
-                    name: info.user.name,
-                    DTU: info.terminalInfo.name,
-                    pid: pid,
-                    devname: devName,
-                    time: d,
-                    remind
-                })
-                const params: params = {
-                    "RegionId": "cn-hangzhou",
-                    "PhoneNumbers": tels.join(','),
-                    "SignName": "雷迪司科技湖北有限公司",
-                    "TemplateCode": 'SMS_200701342',
-                    TemplateParam
-                }
-                return SendSms(params)
-            }
-        }
-    } */
 }

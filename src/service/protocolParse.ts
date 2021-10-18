@@ -79,7 +79,6 @@ export class ProtocolParse {
                     .replace(/(#)/g, "")
                     // 如果是utf8,分隔符为' '
                     .split(instructs.isSplit ? " " : "");
-                // console.log({ cont:el.content,parseStr, parseStrlen: parseStr.length, ins: instructs.formResize.length });
                 return instructs.formResize.map(async el2 => {
 
 
@@ -174,7 +173,6 @@ export class ProtocolParse {
                 bufferN: el.buffer.data
             }
         })
-        //console.log(ParseInstructResultType);
         // 把转换处理后的数据根据协议指令对应的解析对象生成结果对象数组,赋值result属性
         return (await Promise.all(ParseInstructResultType)).map(({ content, bufferData, bufferN }) => {
             const instructs = InstructMap.get(content)!

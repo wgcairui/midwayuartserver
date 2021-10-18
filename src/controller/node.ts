@@ -75,7 +75,6 @@ export class NodeControll {
 
                 if (temp.length > 0) {
                     temp.push({ uptime: Date.now() })
-                    // console.log(terminal,Object.assign({}, ...temp));
                     this.Device.setTerminal(DevMac, Object.assign({}, ...temp))
                 } else {
                     this.Device.setTerminal(DevMac, { uptime: new Date() as any })
@@ -170,16 +169,7 @@ export class NodeControll {
             {
                 const alarmTag = await this.RedisService.hasArgumentAlarmLog(data.mac + data.pid)
 
-                if (a.length > 0) {/* 
-                    console.log({
-                        typeof: '新的告警',
-                        arguments: a[0].argument,
-                        value: a[0].data.value,
-                        con: a[0].contant,
-    
-                        a: a.length,
-                        alarmTag
-                    }); */
+                if (a.length > 0) {
                     // 如果没有告警标记
                     if (!alarmTag) {
                         // 添加告警标志

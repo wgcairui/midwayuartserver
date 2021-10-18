@@ -229,4 +229,14 @@ export class Logs {
         return this.getModel(DataClean).find({ timeStamp: { $lte: end, $gte: start } }).lean()
     }
 
+    /**
+     * 获取wx告警推送
+     * @param start 
+     * @param end 
+     * @returns 
+     */
+     logwxsubscribes(start: number, end: number) {
+        return this.getModel(wxsubscribeMessage).find({ timeStamp: { $lte: end, $gte: start } }).lean()
+    }
+
 }

@@ -105,17 +105,6 @@ export class UserService {
   async syncPesivUser(user: string, pw: string) {
     try {
       const { status, data } = await axios.get<pesivData>(`http://www.pesiv.com:7001/pesiv/user?user=${user}`);
-      /* console.log({
-        status,
-        ...data,
-        user,
-        pw,
-        spw: SHA384(pw + data.data.u.salt).toString().toLocaleUpperCase(),
-        a: status === 200,
-        b: data.code === 200,
-        c: data.data.u.user_pwd === SHA384(pw + data.data.u.salt).toString().toLocaleUpperCase()
-      }); */
-
       // 如果数据返回正确且密码正确,迁移pesiv数据
       if (status === 200 && data.code === 200 && data.data.u.user_pwd === SHA384(pw + data.data.u.salt).toString().toLocaleUpperCase()) {
         const { u, devs } = data.data;
