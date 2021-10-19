@@ -221,11 +221,12 @@ export class NodeSocket {
     async instructTimeOut(mac: string, pid: number, instruct: string[]) {
         const node = await this.SocketUart.getNode(this.ctx.id)
         if (node) {
-            console.log('部分指令超时', mac, pid, instruct);
+            // console.log('部分指令超时', mac, pid, instruct);
             this.Device.setStatTerminalDevs(mac, pid)
             this.SocketUser.sendMacUpdate(mac)
             const EX = this.SocketUart.cache.get(mac + pid)
             if (EX) EX.Interval += 500 * instruct.length
+            this.SocketUser.sendRootSocketMessage(`部分指令超时,mac:${mac}/pid:${pid}/instruct:${instruct.join(",")}`)
             // console.log({ EX });
         }
     }

@@ -54,5 +54,15 @@ export class SocketUser {
         }
     }
 
+    /**
+     * 给root用户推送告警信息
+     * @param msg 
+     * @param type 消息类型
+     * @param user 
+     */
+    sendRootSocketMessage(msg: string, type: string = "message", user: string = "root") {
+        this.app.of("/web").in(user).emit("message", msg)
+    }
+
 
 }
