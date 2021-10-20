@@ -1,59 +1,65 @@
-import { Rule, RuleType } from "@midwayjs/decorator"
-import { Types } from "mongoose"
+import { Rule, RuleType } from '@midwayjs/decorator';
+import { Types } from 'mongoose';
 
 /**
  * 日期参数
  */
 export class date {
-    @Rule(RuleType.string().allow())
-    start?: string
+  @Rule(RuleType.string().allow())
+  start?: string;
 
-    @Rule(RuleType.string().allow())
-    end?: string
+  @Rule(RuleType.string().allow())
+  end?: string;
 
-    getStart() {
-        return new Date(this.start).getTime()
-    }
+  getStart() {
+    return new Date(this.start).getTime();
+  }
 
-    getEnd() {
-        return new Date(this.end).getTime()
-    }
+  getEnd() {
+    return new Date(this.end).getTime();
+  }
 }
 
 @Rule(date)
 export class macDate extends date {
-    @Rule(RuleType.string())
-    mac: string
+  @Rule(RuleType.string())
+  mac: string;
+}
+
+@Rule(date)
+export class userDate extends date {
+  @Rule(RuleType.string())
+  user: string;
 }
 
 @Rule(date)
 export class IdDate extends date {
-    @Rule(RuleType.string().allow())
-    id?: string
+  @Rule(RuleType.string().allow())
+  id?: string;
 
-    getId() {
-        return Types.ObjectId(this.id)
-    }
+  getId() {
+    return Types.ObjectId(this.id);
+  }
 }
 
 export class mountDev {
-    @Rule(RuleType.string())
-    Type: string
+  @Rule(RuleType.string())
+  Type: string;
 
-    @Rule(RuleType.string())
-    mountDev: string;
+  @Rule(RuleType.string())
+  mountDev: string;
 
-    @Rule(RuleType.string())
-    protocol: string;
+  @Rule(RuleType.string())
+  protocol: string;
 
-    @Rule(RuleType.number())
-    pid: number;
+  @Rule(RuleType.number())
+  pid: number;
 }
 
 export class registerDev {
-    @Rule(RuleType.array())
-    ids: string[]
+  @Rule(RuleType.array())
+  ids: string[];
 
-    @Rule(mountDev)
-    mountDev: Uart.TerminalMountDevs
+  @Rule(mountDev)
+  mountDev: Uart.TerminalMountDevs;
 }

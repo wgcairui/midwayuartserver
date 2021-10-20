@@ -1,511 +1,527 @@
-import { Provide, Scope, ScopeEnum, Config, Init, Inject, App, TaskLocal } from "@midwayjs/decorator"
-import { Application } from "@midwayjs/koa"
-import * as redis from "ioredis"
-import { Device } from "../service/device"
-import { UserService } from '../service/user'
+import {
+  Provide,
+  Scope,
+  ScopeEnum,
+  Config,
+  Init,
+  Inject,
+  App,
+  TaskLocal,
+} from '@midwayjs/decorator';
+import { Application } from '@midwayjs/koa';
+import * as redis from 'ioredis';
+import { Device } from '../service/device';
+import { UserService } from '../service/user';
 
 interface userSetupMap {
-    Threshold: Map<string, Uart.Threshold>,
-    AlarmStat: Map<string, Uart.ConstantAlarmStat>,
+  Threshold: Map<string, Uart.Threshold>;
+  AlarmStat: Map<string, Uart.ConstantAlarmStat>;
 }
-
-
 
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class RedisService {
+  @App()
+  App: Application;
 
-    @App()
-    App: Application
+  @Inject()
+  private Device: Device;
 
-    @Inject()
-    private Device: Device
+  @Config('redis')
+  private redisConfig: redis.RedisOptions;
 
-    @Config('redis')
-    private redisConfig: redis.RedisOptions
+  redisService: redis.Redis;
 
+  /**
+   *  缓存协议方法
+   */
+  protocolInstructMap: Map<string, Map<string, Uart.protocolInstruct>>;
+  /**
+   * 用于配置
+   */
+  userSetup: Map<string, Map<string, userSetupMap>>;
 
-    redisService: redis.Redis
+  /**
+   * 衍射dtu
+   */
+  terminalMap: Map<string, Uart.Terminal>;
 
-    /**
-      *  缓存协议方法
-      */
-    protocolInstructMap: Map<string, Map<string, Uart.protocolInstruct>>
-    /**
-       * 用于配置
-       */
-    userSetup: Map<string, Map<string, userSetupMap>>
+  @Init()
+  async init() {
+    this.redisService = new redis(this.redisConfig);
+    this.protocolInstructMap = new Map();
+    this.userSetup = new Map();
+    this.terminalMap = new Map();
+    //  this.clear()
+    this.initTerminalMap();
+  }
 
-    /**
-     * 衍射dtu
-     */
-    terminalMap: Map<string, Uart.Terminal>
+  getClient() {
+    return this.redisService;
+  }
 
-
-    @Init()
-    async init() {
-        this.redisService = new redis(this.redisConfig)
-        this.protocolInstructMap = new Map()
-        this.userSetup = new Map()
-        this.terminalMap = new Map()
-        //  this.clear()
-        this.initTerminalMap()
-    }
-
-    getClient() {
-        return this.redisService
-    }
-
-    /**
-     * 执行清理工作
-     */
-    async clear() {
-        const redis = this.redisService
-        // 清理节点映射
-        const nodes = await redis.keys("sid*")
-        /* const on = await redis.keys("OnlineTime*")
+  /**
+   * 执行清理工作
+   */
+  async clear() {
+    const redis = this.redisService;
+    // 清理节点映射
+    const nodes = await redis.keys('sid*');
+    /* const on = await redis.keys("OnlineTime*")
         const off = await redis.keys("OfflineTime") */
-        const all = [...nodes]
-        if (all.length > 0) await redis.del(all)
+    const all = [...nodes];
+    if (all.length > 0) await redis.del(all);
+  }
 
-    }
+  /**
+   * 每分钟更新一次终端信息
+   */
+  @TaskLocal('* * * * *')
+  async initTerminalMap() {
+    const terminals =
+      (await this.Device.getTerminals()) as any as Uart.Terminal[];
+    this.terminalMap = new Map(terminals.map(el => [el.DevMac, el]));
+  }
 
-    /**
-     * 每分钟更新一次终端信息
-     */
-    @TaskLocal("* * * * *")
-    async initTerminalMap() {
-        const terminals = await this.Device.getTerminals() as any as Uart.Terminal[]
-        this.terminalMap = new Map(terminals.map(el => [el.DevMac, el]))
-    }
+  /**
+   * 添加参数告警发送状态
+   * @param key
+   * @returns
+   */
+  addArgumentAlarmLog(key: string) {
+    return this.redisService.setex('ArgumentAlarm' + key, 60 * 60 * 24, '1');
+  }
 
-    /**
-     * 添加参数告警发送状态
-     * @param key 
-     * @returns 
-     */
-    addArgumentAlarmLog(key: string) {
-        return this.redisService.setex('ArgumentAlarm' + key, 60 * 60 * 24, '1')
-    }
+  /**
+   * 判断参数告警发送状态
+   * @param key
+   * @returns
+   */
+  async hasArgumentAlarmLog(key: string) {
+    return Boolean(await this.redisService.exists('ArgumentAlarm' + key));
+  }
 
-    /**
-     * 判断参数告警发送状态
-     * @param key 
-     * @returns 
-     */
-    async hasArgumentAlarmLog(key: string) {
-        return Boolean(await this.redisService.exists('ArgumentAlarm' + key))
-    }
+  /**
+   * 删除参数告警发送状态
+   * @param key
+   * @returns
+   */
+  delArgumentAlarmLog(key: string) {
+    return this.redisService.del('ArgumentAlarm' + key);
+  }
 
-    /**
-     * 删除参数告警发送状态
-     * @param key 
-     * @returns 
-     */
-    delArgumentAlarmLog(key: string) {
-        return this.redisService.del('ArgumentAlarm' + key)
-    }
-
-    /**
+  /**
    * 获取协议解析结果
    * @param protocol 设备协议
    */
-    async getProtocolInstruct(protocol: string) {
-        const instructMap = this.protocolInstructMap.get(protocol)
-        if (!instructMap) {
-            await this.setProtocolInstruct(protocol)
-        }
-        return this.protocolInstructMap.get(protocol)!
+  async getProtocolInstruct(protocol: string) {
+    const instructMap = this.protocolInstructMap.get(protocol);
+    if (!instructMap) {
+      await this.setProtocolInstruct(protocol);
     }
-    /** 
-     * 设置协议解析
-     * @param protocol 设备协议 
-     */
-    async setProtocolInstruct(protocol: string) {
-        const Protocol = await this.Device.getProtocol(protocol)
-        try {
-            const ins = new Map(Protocol.instruct.map(el => [el.name, el]))
-            // 缓存协议方法
-            this.protocolInstructMap.set(protocol, ins)
-        } catch (error) {
-            console.log({ msg: "设置协议解析错误", error, Protocol });
-        }
+    return this.protocolInstructMap.get(protocol)!;
+  }
+  /**
+   * 设置协议解析
+   * @param protocol 设备协议
+   */
+  async setProtocolInstruct(protocol: string) {
+    const Protocol = await this.Device.getProtocol(protocol);
+    try {
+      const ins = new Map(Protocol.instruct.map(el => [el.name, el]));
+      // 缓存协议方法
+      this.protocolInstructMap.set(protocol, ins);
+    } catch (error) {
+      console.log({ msg: '设置协议解析错误', error, Protocol });
     }
+  }
 
-    /**
+  /**
    * 获取用户告警配置
    * @param user 用户名称
    * @param protocol 设备协议名称
    */
-    async getUserSetup(user: string, protocol: string) {
-        const setup = this.userSetup.get(user)?.get(protocol)
-        if (!setup) {
-            return this.setUserSetup(user, protocol)
-        } else {
-            return setup
-        }
+  async getUserSetup(user: string, protocol: string) {
+    const setup = this.userSetup.get(user)?.get(protocol);
+    if (!setup) {
+      return this.setUserSetup(user, protocol);
+    } else {
+      return setup;
     }
+  }
 
-    /**
-     * 设置用户的告警配置缓存
-     * @param user 用户名称
-     * @param protocol 设备协议名称
-     * @param forcedUpdate 强制更新用户缓存配置,特别是在后台修改协议配置的时候
-     */
-    async setUserSetup(user: string, protocol: string, forcedUpdate: boolean = false) {
-        // 获取用户个性化配置实例
-        const UserSetup = await (await this.App.getApplicationContext().getAsync(UserService)).getUserAlarmProtocol(user, protocol)
-        // 协议参数阀值,状态
-        const Constant = await this.Device.getAlarmProtocol(protocol)
-        const cache = this.userSetup.get(user) || this.userSetup.set(user, new Map()).get(user)!
-        // 如果缓存没有协议，新建缓存
-        if (forcedUpdate || !cache.has(protocol)) {
-            cache.set(protocol, {
-                Threshold: new Map(Constant.Threshold.map(el => [el.name, el])),
-                AlarmStat: new Map(Constant.AlarmStat.map(el => [el.name, el]))
-            })
-        }
-        // 获取用户+协议 缓存实例
-        const setup = cache.get(protocol)!
-
-        // 
-        setup.Threshold = new Map(Constant.Threshold.map(el => [el.name, el]))
-
-        // 如果用户有阈值设置&&阈值设置有protocol,迭代用户设置加入到缓存
-        UserSetup.Threshold.forEach(el => {
-            setup.Threshold.set(el.name, el)
-        })
-
-        // 如果用户有状态设置&&状态设置有protocol,迭代用户设置加入到缓存
-        setup.AlarmStat = new Map(Constant.AlarmStat.map(el => [el.name, el]))
-        UserSetup.AlarmStat.forEach(el => {
-            setup.AlarmStat.set(el.name, el)
-        })
-
-        return setup
+  /**
+   * 设置用户的告警配置缓存
+   * @param user 用户名称
+   * @param protocol 设备协议名称
+   * @param forcedUpdate 强制更新用户缓存配置,特别是在后台修改协议配置的时候
+   */
+  async setUserSetup(user: string, protocol: string, forcedUpdate = false) {
+    // 获取用户个性化配置实例
+    const UserSetup = await (
+      await this.App.getApplicationContext().getAsync(UserService)
+    ).getUserAlarmProtocol(user, protocol);
+    // 协议参数阀值,状态
+    const Constant = await this.Device.getAlarmProtocol(protocol);
+    const cache =
+      this.userSetup.get(user) ||
+      this.userSetup.set(user, new Map()).get(user)!;
+    // 如果缓存没有协议，新建缓存
+    if (forcedUpdate || !cache.has(protocol)) {
+      cache.set(protocol, {
+        Threshold: new Map(Constant.Threshold.map(el => [el.name, el])),
+        AlarmStat: new Map(Constant.AlarmStat.map(el => [el.name, el])),
+      });
     }
+    // 获取用户+协议 缓存实例
+    const setup = cache.get(protocol)!;
 
-    /**
-     * 设置每个设备查询每个设备查询消耗的时间
-     * @param mac 
-     * @param pid 
-     * @param useTime 
-     * @returns 
-     */
-    addQueryTerminaluseTime(mac: string, pid: number, useTime: number) {
-        return this.redisService.lpush('QueryTerminaluseTime' + mac + pid, useTime)
-    }
+    //
+    setup.Threshold = new Map(Constant.Threshold.map(el => [el.name, el]));
 
-    /**
-     * 获取查询消耗的时间,指定长度
-     * @param mac 
-     * @param pid 
-     * @param length 
-     * @returns 
-     */
-    async getQueryTerminaluseTime(mac: string, pid: number, length: number): Promise<number[]> {
-        const hash = 'QueryTerminaluseTime' + mac + pid
-        const len = await this.redisService.llen(hash)
-        return await this.redisService.lrange(hash, len > length ? len - length : 0, len) as any
-    }
+    // 如果用户有阈值设置&&阈值设置有protocol,迭代用户设置加入到缓存
+    UserSetup.Threshold.forEach(el => {
+      setup.Threshold.set(el.name, el);
+    });
 
-    /**
-     * 清理查询消耗的时间
-     * @param mac 
-     * @param pid 
-     */
-    async clearQueryTerminaluseTime(mac: string, pid: number,) {
-        const hash = 'QueryTerminaluseTime' + mac + pid
-        const len = await this.redisService.llen(hash)
-        return await this.redisService.ltrim(hash, 0, len)
-    }
+    // 如果用户有状态设置&&状态设置有protocol,迭代用户设置加入到缓存
+    setup.AlarmStat = new Map(Constant.AlarmStat.map(el => [el.name, el]));
+    UserSetup.AlarmStat.forEach(el => {
+      setup.AlarmStat.set(el.name, el);
+    });
 
-    /**
-     * 设置用户短信验证码缓存
-     * @param user 用户名
-     * @param code 验证码
-     */
-    setUserSmsCode(user: string, code: number | string) {
-        return this.redisService.setex(user + 'sms', 6 * 60, code)
-    }
+    return setup;
+  }
 
-    /**
-     * 获取用户短信验证码缓存
-     * @param user 用户名
-     */
-    getUserSmsCode(user: string) {
-        return this.redisService.get(user + 'sms')
-    }
+  /**
+   * 设置每个设备查询每个设备查询消耗的时间
+   * @param mac
+   * @param pid
+   * @param useTime
+   * @returns
+   */
+  addQueryTerminaluseTime(mac: string, pid: number, useTime: number) {
+    return this.redisService.lpush('QueryTerminaluseTime' + mac + pid, useTime);
+  }
 
-    /**
-     * 设置设备上线时间
-     * @param mac 
-     * @param time 
-     * @returns 
-     */
-    setMacOnlineTime(mac: string) {
-        return this.redisService.set("OnlineTime" + mac, Date.now())
-    }
+  /**
+   * 获取查询消耗的时间,指定长度
+   * @param mac
+   * @param pid
+   * @param length
+   * @returns
+   */
+  async getQueryTerminaluseTime(
+    mac: string,
+    pid: number,
+    length: number
+  ): Promise<number[]> {
+    const hash = 'QueryTerminaluseTime' + mac + pid;
+    const len = await this.redisService.llen(hash);
+    return (await this.redisService.lrange(
+      hash,
+      len > length ? len - length : 0,
+      len
+    )) as any;
+  }
 
-    /**
-     * 获取设备上线时间
-     * @param mac 
-     * @returns 
-     */
-    async getMacOnlineTime(mac: string) {
-        return Number(await this.redisService.get("OnlineTime" + mac))
-    }
+  /**
+   * 清理查询消耗的时间
+   * @param mac
+   * @param pid
+   */
+  async clearQueryTerminaluseTime(mac: string, pid: number) {
+    const hash = 'QueryTerminaluseTime' + mac + pid;
+    const len = await this.redisService.llen(hash);
+    return await this.redisService.ltrim(hash, 0, len);
+  }
 
-    /**
-     * 删除设备上线记录
-     * @param mac 
-     * @returns 
-     */
-    delMacOnlineTime(mac: string) {
-        return this.redisService.del("OnlineTime" + mac)
-    }
+  /**
+   * 设置用户短信验证码缓存
+   * @param user 用户名
+   * @param code 验证码
+   */
+  setUserSmsCode(user: string, code: number | string) {
+    return this.redisService.setex(user + 'sms', 6 * 60, code);
+  }
 
-    /**
-     * 设置设备下线时间
-     * @param mac 
-     * @param time 
-     * @returns 
-     */
-    setMacOfflineTime(mac: string) {
-        return this.redisService.set("OfflineTime" + mac, Date.now())
-    }
+  /**
+   * 获取用户短信验证码缓存
+   * @param user 用户名
+   */
+  getUserSmsCode(user: string) {
+    return this.redisService.get(user + 'sms');
+  }
 
-    /**
-     * 获取设备下线时间
-     * @param mac 
-     * @returns 
-     */
-    async getMacOfflineTime(mac: string) {
-        return Number(await this.redisService.get("OfflineTime" + mac))
-    }
+  /**
+   * 设置设备上线时间
+   * @param mac
+   * @param time
+   * @returns
+   */
+  setMacOnlineTime(mac: string) {
+    return this.redisService.set('OnlineTime' + mac, Date.now());
+  }
 
-    /**
-     * 删除设备下线记录
-     * @param mac 
-     * @returns 
-     */
-    delMacOfflineTime(mac: string) {
-        return this.redisService.del("OfflineTime" + mac)
-    }
+  /**
+   * 获取设备上线时间
+   * @param mac
+   * @returns
+   */
+  async getMacOnlineTime(mac: string) {
+    return Number(await this.redisService.get('OnlineTime' + mac));
+  }
 
-    /**
-     * 添加设备繁忙状态
-     * @param mac 
-     * @returns 
-     */
-    addDtuWorkBus(mac: string | string[]) {
-        return this.redisService.sadd("DtuWorkBus", [...[mac].flat()])
-    }
+  /**
+   * 删除设备上线记录
+   * @param mac
+   * @returns
+   */
+  delMacOnlineTime(mac: string) {
+    return this.redisService.del('OnlineTime' + mac);
+  }
 
-    /**
-     * 删除设备繁忙状态
-     * @param mac 
-     * @returns 
-     */
-    delDtuWorkBus(mac: string | string[]) {
-        return this.redisService.srem("DtuWorkBus", [...[mac].flat()])
-    }
+  /**
+   * 设置设备下线时间
+   * @param mac
+   * @param time
+   * @returns
+   */
+  setMacOfflineTime(mac: string) {
+    return this.redisService.set('OfflineTime' + mac, Date.now());
+  }
 
-    /**
-     * 是否设备繁忙状态
-     * @param mac 
-     * @returns 
-     */
-    hasDtuWorkBus(mac: string) {
-        return this.redisService.sismember("DtuWorkBus", mac)
-    }
+  /**
+   * 获取设备下线时间
+   * @param mac
+   * @returns
+   */
+  async getMacOfflineTime(mac: string) {
+    return Number(await this.redisService.get('OfflineTime' + mac));
+  }
 
-    /**
-     * 增加设备掉线提醒发送记录次数
-     * @param hash 
-     * @returns 
-     */
-    setTimeOutMonutDevSmsSend(hash: string) {
-        this.redisService.setex("TimeOutMonutDevSmsSend" + hash, 864e5, 1)
+  /**
+   * 删除设备下线记录
+   * @param mac
+   * @returns
+   */
+  delMacOfflineTime(mac: string) {
+    return this.redisService.del('OfflineTime' + mac);
+  }
 
-    }
+  /**
+   * 添加设备繁忙状态
+   * @param mac
+   * @returns
+   */
+  addDtuWorkBus(mac: string | string[]) {
+    return this.redisService.sadd('DtuWorkBus', [...[mac].flat()]);
+  }
 
-    /**
-     * 是否含有设备掉线提醒发送记录次数
-     * @param hash 
-     * @returns 
-     */
-    hasTimeOutMonutDevSmsSend(hash: string) {
-        return this.redisService.exists('TimeOutMonutDevSmsSend' + hash)
-    }
+  /**
+   * 删除设备繁忙状态
+   * @param mac
+   * @returns
+   */
+  delDtuWorkBus(mac: string | string[]) {
+    return this.redisService.srem('DtuWorkBus', [...[mac].flat()]);
+  }
 
-    /**
-     * 获取设备掉线提醒发送记录次数
-     * @param hash 
-     * @returns 
-     */
-    /* getTimeOutMonutDevSmsSend(hash: string) {
+  /**
+   * 是否设备繁忙状态
+   * @param mac
+   * @returns
+   */
+  hasDtuWorkBus(mac: string) {
+    return this.redisService.sismember('DtuWorkBus', mac);
+  }
+
+  /**
+   * 增加设备掉线提醒发送记录次数
+   * @param hash
+   * @returns
+   */
+  setTimeOutMonutDevSmsSend(hash: string) {
+    this.redisService.setex('TimeOutMonutDevSmsSend' + hash, 864e5, 1);
+  }
+
+  /**
+   * 是否含有设备掉线提醒发送记录次数
+   * @param hash
+   * @returns
+   */
+  hasTimeOutMonutDevSmsSend(hash: string) {
+    return this.redisService.exists('TimeOutMonutDevSmsSend' + hash);
+  }
+
+  /**
+   * 获取设备掉线提醒发送记录次数
+   * @param hash
+   * @returns
+   */
+  /* getTimeOutMonutDevSmsSend(hash: string) {
         return this.redisService.hget('TimeOutMonutDevSmsSend'+ hash)
     } */
 
-    /**
-         * 删除设备掉线提醒发送记录次数
-         * @param hash 
-         * @returns 
-         */
-    delTimeOutMonutDevSmsSend(hash: string) {
-        return this.redisService.del('TimeOutMonutDevSmsSend' + hash)
+  /**
+   * 删除设备掉线提醒发送记录次数
+   * @param hash
+   * @returns
+   */
+  delTimeOutMonutDevSmsSend(hash: string) {
+    return this.redisService.del('TimeOutMonutDevSmsSend' + hash);
+  }
+
+  /**
+   * 设置查询指令和实际指令的映射
+   * @param content 查询指令
+   * @param ProtocolInstructName 实际指令
+   * @returns
+   */
+  setContentToInstructName(content: string, ProtocolInstructName: string) {
+    return this.redisService.set(
+      'ContentToInstructName' + content,
+      ProtocolInstructName
+    );
+  }
+
+  /**
+   * 获取查询指令和实际指令的映射
+   * @param content 查询指令
+   * @returns
+   */
+  getContentToInstructName(content: string) {
+    return this.redisService.get('ContentToInstructName' + content);
+  }
+
+  /**
+   * 判断查询指令和实际指令的映射
+   * @param content 查询指令
+   * @returns
+   */
+  hasContentToInstructName(content: string) {
+    return this.redisService.exists('ContentToInstructName' + content);
+  }
+
+  /**
+   * 删除查询指令和实际指令的映射
+   * @param content 查询指令
+   * @returns
+   */
+  delContentToInstructName(content: string) {
+    return this.redisService.del('ContentToInstructName' + content);
+  }
+
+  /**
+   *
+   * @param unit 协议参数单位
+   * @val 值
+   */
+  async parseUnit(unit: string, val: string) {
+    const hash = 'Unit_' + unit + val;
+    if (!(await this.redisService.exists(hash))) {
+      const arr = unit
+        .replace(/(\{|\}| )/g, '')
+        .split(',')
+        .map(el => el.split(':'));
+      //.map(el => ({ [el[0]]: el[1] }));
+      for (const [key, v] of arr) {
+        await this.redisService.set('Unit_' + unit + key, v);
+      }
     }
+    return await this.redisService.get(hash);
+  }
 
-    /**
-     * 设置查询指令和实际指令的映射
-     * @param content 查询指令
-     * @param ProtocolInstructName 实际指令 
-     * @returns 
-     */
-    setContentToInstructName(content: string, ProtocolInstructName: string) {
-        return this.redisService.set('ContentToInstructName' + content, ProtocolInstructName)
-    }
+  /**
+   * 设置ip和地址的映射
+   * @param ip
+   * @param loction
+   * @returns
+   */
+  setloctionIp(ip: string, loction: string) {
+    return this.redisService.set(ip, loction);
+  }
 
-    /**
-     * 获取查询指令和实际指令的映射
-     * @param content 查询指令
-     * @returns 
-     */
-    getContentToInstructName(content: string) {
-        return this.redisService.get('ContentToInstructName' + content)
-    }
+  /**
+   * 获取ip和地址的映射
+   * @param ip
+   * @returns
+   */
+  getloctionIp(ip: string) {
+    return this.redisService.get(ip);
+  }
 
-    /**
-     * 判断查询指令和实际指令的映射
-     * @param content 查询指令
-     * @returns 
-     */
-    hasContentToInstructName(content: string) {
-        return this.redisService.exists('ContentToInstructName' + content)
-    }
+  /**
+   * 保存小程序用户获取到的session
+   * @param openId
+   * @param session
+   */
+  setCode2Session(openId: string, session: string) {
+    return this.redisService.setex(openId, 8e4, session);
+  }
 
-    /**
-     * 删除查询指令和实际指令的映射
-     * @param content 查询指令
-     * @returns 
-     */
-    delContentToInstructName(content: string) {
-        return this.redisService.del('ContentToInstructName' + content)
-    }
+  /**
+   * 获取小程序用户的session
+   * @param openId
+   * @param session
+   */
+  getCode2Session(openId: string) {
+    return this.redisService.get(openId);
+  }
 
+  /**
+   * 设备处理进程,失效10s
+   * @param hash
+   * @returns
+   */
+  setParseSet(hash: string) {
+    return this.redisService.setex('parseSet' + hash, 10, 1);
+  }
 
-    /**
-    * 
-    * @param unit 协议参数单位
-    * @val 值
-    */
-    async parseUnit(unit: string, val: string) {
-        const hash = "Unit_" + unit + val
-        if (!await this.redisService.exists(hash)) {
-            const arr = unit
-                .replace(/(\{|\}| )/g, "")
-                .split(",")
-                .map(el => el.split(":"))
-            //.map(el => ({ [el[0]]: el[1] }));
-            for (const [key, v] of arr) {
-                await this.redisService.set("Unit_" + unit + key, v)
-            }
-        }
-        return await this.redisService.get(hash)
-    }
+  /**
+   * del设备处理进程
+   * @param hash
+   * @returns
+   */
+  delParseSet(hash: string) {
+    return this.redisService.del('parseSet' + hash);
+  }
 
-    /**
-     * 设置ip和地址的映射
-     * @param ip 
-     * @param loction 
-     * @returns 
-     */
-    setloctionIp(ip: string, loction: string) {
-        return this.redisService.set(ip, loction)
-    }
+  /**
+   * has设备处理进程
+   * @param hash
+   * @returns
+   */
+  async hasParseSet(hash: string) {
+    return Boolean(await this.redisService.exists('parseSet' + hash));
+  }
 
-    /**
-     * 获取ip和地址的映射
-     * @param ip 
-     * @returns 
-     */
-    getloctionIp(ip: string) {
-        return this.redisService.get(ip)
-    }
+  /**
+   * 设置节点socketId和名称的映射
+   * @param id
+   * @param name
+   * @returns
+   */
+  setSocketSid(id: string, name: string) {
+    return this.redisService.set('sid' + id, name);
+  }
 
-    /**
-     * 保存小程序用户获取到的session
-     * @param openId 
-     * @param session 
-     */
-    setCode2Session(openId: string, session: string) {
-        return this.redisService.setex(openId, 8e4, session)
-    }
+  /**
+   * get节点socketId和名称的映射
+   * @param id
+   * @param name
+   * @returns
+   */
+  getSocketSid(id: string) {
+    return this.redisService.get('sid' + id);
+  }
 
-    /**
-     * 获取小程序用户的session
-     * @param openId 
-     * @param session 
-     */
-    getCode2Session(openId: string) {
-        return this.redisService.get(openId)
-    }
-
-
-    /**
-     * 设备处理进程,失效10s
-     * @param hash 
-     * @returns 
-     */
-    setParseSet(hash: string) {
-        return this.redisService.setex("parseSet" + hash, 10, 1)
-    }
-
-    /**
-     * del设备处理进程
-     * @param hash 
-     * @returns 
-     */
-    delParseSet(hash: string) {
-        return this.redisService.del("parseSet" + hash)
-    }
-
-    /**
-     * has设备处理进程
-     * @param hash 
-     * @returns 
-     */
-    async hasParseSet(hash: string) {
-        return Boolean(await this.redisService.exists("parseSet" + hash))
-    }
-
-    /**
-     * 设置节点socketId和名称的映射
-     * @param id 
-     * @param name 
-     * @returns 
-     */
-    setSocketSid(id: string, name: string) {
-        return this.redisService.set("sid" + id, name)
-    }
-
-    /**
-     * get节点socketId和名称的映射
-     * @param id 
-     * @param name 
-     * @returns 
-     */
-    getSocketSid(id: string) {
-        return this.redisService.get("sid" + id)
-    }
-
-    /**
-     * del节点socketId和名称的映射
-     * @param id 
-     * @returns 
-     */
-    delSocketSid(id: string) {
-        return this.redisService.del("sid" + id)
-    }
+  /**
+   * del节点socketId和名称的映射
+   * @param id
+   * @returns
+   */
+  delSocketSid(id: string) {
+    return this.redisService.del('sid' + id);
+  }
 }

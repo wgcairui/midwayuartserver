@@ -20,29 +20,29 @@ export class ApiAspect implements IMethodAspect {
 } */
 
 interface a1 {
-    a: string
-    b: number
+  a: string;
+  b: number;
 }
 
 interface b1 {
-    c: string
-    d: Date
+  c: string;
+  d: Date;
 }
 
-type c = a1 & b1
+type c = a1 & b1;
 
 const d: c = {
-    a: '',
-    b: 0,
-    c: '',
-    d: new Date()
-}
+  a: '',
+  b: 0,
+  c: '',
+  d: new Date(),
+};
 
-type e = Partial<Record<keyof a1, string>>
+type e = Partial<Record<keyof a1, string>>;
 
-type e2 = Partial<Record<keyof b1,string>>
+type e2 = Partial<Record<keyof b1, string>>;
 
-let ss:e&e2={
-    a:'',
-    b:''
-}
+const ss: e & e2 = {
+  a: '',
+  b: '',
+};
