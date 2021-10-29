@@ -79,7 +79,7 @@ export class ProtocolParse {
           el =>
             InstructMap.has(el.content) &&
             el.buffer.data.findIndex(el2 => el2 === 13) ===
-              el.buffer.data.length - 1
+            el.buffer.data.length - 1
         )
 
         .map(el => {
@@ -243,7 +243,17 @@ export class ProtocolParse {
           switch (instructs.resultType) {
             // 处理
             case 'bit2':
-              result.value = buffer[start].toString();
+              try {
+                result.value = buffer[start].toString();
+              } catch (error) {
+                console.log({
+                  error,
+                  buffer,
+                  instructs,
+                  start, end, step
+                });
+
+              }
               break;
             // 处理ascii
             case 'utf8':

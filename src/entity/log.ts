@@ -33,7 +33,7 @@ class Success {
   options: { allowMixed: 0 },
 })
 export class SmsSend {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -71,7 +71,7 @@ class mailsendParams {
   options: { allowMixed: 0 },
 })
 export class MailSend {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -94,7 +94,7 @@ export class MailSend {
   schemaOptions: { collection: 'log.uartterminaldatatransfinites' },
 })
 export class UartTerminalDataTransfinite {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -133,7 +133,7 @@ export class UartTerminalDataTransfinite {
   options: { allowMixed: 0 },
 })
 export class UserRequst {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -154,7 +154,7 @@ export class UserRequst {
  */
 @modelOptions({ schemaOptions: { collection: 'log.userlogins' } })
 export class UserLogin {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -175,7 +175,7 @@ export class UserLogin {
  */
 @modelOptions({ schemaOptions: { collection: 'log.nodes' } })
 export class Nodes {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -199,7 +199,7 @@ export class Nodes {
   options: { allowMixed: 0 },
 })
 export class Terminals {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -229,7 +229,7 @@ export class Terminals {
  */
 @modelOptions({ schemaOptions: { collection: 'log.datacleans' } })
 export class DataClean {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -250,7 +250,7 @@ export class DataClean {
  */
 @modelOptions({ schemaOptions: { collection: 'log.usebytes' } })
 export class UseBytes {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -268,7 +268,7 @@ export class UseBytes {
  */
 @modelOptions({ schemaOptions: { collection: 'log.dtubusy' } })
 export class DtuBusy {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -289,7 +289,7 @@ export class DtuBusy {
   options: { allowMixed: 0 },
 })
 export class InstructQuery {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -322,7 +322,7 @@ export class InstructQuery {
   options: { allowMixed: 0 },
 })
 export class WXEvent {
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 
   @prop()
@@ -460,6 +460,6 @@ export class wxsubscribeMessage {
   @prop({ type: Schema.Types.Mixed })
   public result: any;
 
-  @prop({ default: Date.now() })
+  @prop({ default: Date.now(), required: true })
   public timeStamp?: number;
 }
