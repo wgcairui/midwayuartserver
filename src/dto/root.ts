@@ -38,7 +38,7 @@ export class IdDate extends date {
   id?: string;
 
   getId() {
-    return Types.ObjectId(this.id);
+    return new Types.ObjectId(this.id);
   }
 }
 

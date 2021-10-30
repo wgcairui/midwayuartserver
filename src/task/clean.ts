@@ -56,7 +56,7 @@ export class Clean {
     const allids: Types.ObjectId[] = [];
     for (let doc = await cur.next(); doc != null; doc = await cur.next()) {
       const tag = doc.mac + doc.pid + doc.tag;
-      const _id = Types.ObjectId(doc._id);
+      const _id = new Types.ObjectId(doc._id);
       allids.push(_id);
       const old = MapUartterminaldatatransfinites.get(tag);
       if (old && old.msg === doc.msg) {
@@ -93,7 +93,7 @@ export class Clean {
     const allids: Types.ObjectId[] = [];
     for (let doc = await cur.next(); doc != null; doc = await cur.next()) {
       const tag = doc.user + doc.type;
-      const _id = Types.ObjectId(doc._id);
+      const _id = new Types.ObjectId(doc._id);
       allids.push(_id);
       const old = MapUserRequst.get(tag);
       // 比较同一个设备连续的告警,告警相同则删除后一个记录
@@ -184,7 +184,7 @@ export class Clean {
       const statIds = statData.map(el => el.parentId);
 
       await sMode.deleteMany({
-        _id: { $in: statIds.map(el => Types.ObjectId(el)) },
+        _id: { $in: statIds.map(el => new Types.ObjectId(el)) },
       });
       await ColltionMode.deleteMany({ parentId: { $in: statIds } });
     }
@@ -226,7 +226,7 @@ export class Clean {
     ).lean();
 
     await sMode.deleteMany({
-      _id: { $in: docs.map(el => Types.ObjectId(el.parentId)) },
+      _id: { $in: docs.map(el => new Types.ObjectId(el.parentId)) },
     });
     const result = await ColltionMode.deleteMany({
       timeStamp: { $lte: lastM },

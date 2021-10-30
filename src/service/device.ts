@@ -345,7 +345,7 @@ export class Device {
    */
   async alarmTerminalResults(id: string) {
     return await this.getModel(TerminalClientResults)
-      .updateOne({ _id: Types.ObjectId(id) }, { $inc: { hasAlarm: 1 } })
+      .updateOne({ _id: new Types.ObjectId(id) }, { $inc: { hasAlarm: 1 } })
       .lean();
   }
 
@@ -356,7 +356,7 @@ export class Device {
    */
   async alarmTerminalResultColletion(id: string) {
     return await this.getModel(TerminalClientResult)
-      .updateOne({ _id: Types.ObjectId(id) }, { $inc: { hasAlarm: 1 } })
+      .updateOne({ _id: new Types.ObjectId(id) }, { $inc: { hasAlarm: 1 } })
       .lean();
   }
 

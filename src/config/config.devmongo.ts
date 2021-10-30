@@ -1,11 +1,12 @@
-import { DefaultConfig } from '@midwayjs/typegoose';
+import { ConnectOptions } from "mongoose";
 
-export const mongoose: DefaultConfig = {
-  uri: 'mongodb://192.168.1.126:27017/UartServer',
+
+export const mongoose = {
+  uri: 'mongodb://127.0.0.1:27017/UartServer',
   options: {
     dbName: 'UartServer',
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true,
-  },
+  }  as ConnectOptions,
 };

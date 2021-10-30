@@ -79,7 +79,7 @@ export class ProtocolParse {
           el =>
             InstructMap.has(el.content) &&
             el.buffer.data.findIndex(el2 => el2 === 13) ===
-            el.buffer.data.length - 1
+              el.buffer.data.length - 1
         )
 
         .map(el => {
@@ -250,9 +250,10 @@ export class ProtocolParse {
                   error,
                   buffer,
                   instructs,
-                  start, end, step
+                  start,
+                  end,
+                  step,
                 });
-
               }
               break;
             // 处理ascii

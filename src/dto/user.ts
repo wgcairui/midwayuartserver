@@ -90,7 +90,7 @@ export class mongoId extends Api {
   id?: string;
 
   getId() {
-    return this.id ? ObjectId(this.id) : null;
+    return this.id ? new ObjectId(this.id) : null;
   }
 }
 

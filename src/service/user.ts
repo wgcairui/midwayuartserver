@@ -360,7 +360,7 @@ export class UserService {
    * @returns
    */
   getIdUser(id: string, filter: filter<Uart.UserInfo> = { _id: 0 }) {
-    return this.userModel.findOne({ _id: ObjectId(id) }, filter).lean();
+    return this.userModel.findOne({ _id: new ObjectId(id) }, filter).lean();
   }
 
   /**
@@ -1077,7 +1077,7 @@ export class UserService {
     };
     await this.layoutModel.create(layout);
     return await this.useraggregModel
-      .updateOne({ _id: ObjectId(_id) }, { $set: { id: _id } })
+      .updateOne({ _id: new ObjectId(_id) }, { $set: { id: _id } })
       .lean();
   }
 
