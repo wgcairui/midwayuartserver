@@ -4,7 +4,7 @@ import { tencetMapConfig } from '../interface';
 
 export const mongoose = {
   uri: `mongodb://${
-    process.env.NODE_Docker === 'docker' ? '127.0.0.1' : 'uart.ladishb.com'
+    process.env.NODE_Docker === 'docker' ? 'mongo' : 'uart.ladishb.com'
   }:27017/UartServer`,
   options: {
     dbName: 'UartServer',
