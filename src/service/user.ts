@@ -642,7 +642,7 @@ export class UserService {
       !isBind ||
       (mountDevs.bindDev &&
         (await model.findOne(
-          { 'mountDevs.bindDev': mountDevs.bindDev },
+          { 'mountDevs.bindDev': mountDevs.bindDev.toLocaleUpperCase() },
           { _id: 1 }
         )))
     ) {
