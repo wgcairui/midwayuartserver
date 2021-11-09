@@ -21,6 +21,7 @@
     "@alicloud/openapi-client": "^0.3.5",
     "@alicloud/pop-core": "^1.7.10",
     "@cairui/wx-sdk": "^1.0.6",
+    "@koa/cors": "^3.1.0",
     "@midwayjs/bootstrap": "^2.12.3",
     "@midwayjs/core": "^2.12.3",
     "@midwayjs/decorator": "^2.12.3",
@@ -43,7 +44,7 @@
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
-    "@midwayjs/cli": "^1.2.85",
+    "@midwayjs/cli": "^1.2.87",
     "@midwayjs/luckyeye": "^1.0.2",
     "@midwayjs/mock": "^2.11.0",
     "@types/bcryptjs": "^2.4.2",

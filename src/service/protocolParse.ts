@@ -79,7 +79,7 @@ export class ProtocolParse {
           el =>
             InstructMap.has(el.content) &&
             el.buffer.data.findIndex(el2 => el2 === 13) ===
-              el.buffer.data.length - 1
+            el.buffer.data.length - 1
         )
 
         .map(el => {
@@ -130,10 +130,10 @@ export class ProtocolParse {
     // 2,检查协议是否是非标协议,如果是非标协议的话且有检查脚本,使用脚本检查结果buffer,返回Boolen
     // 3,检查标准modbus协议,协议返回的控制字符与查询指令一致,结果数据长度与结果中声明的数据长度一致
     //
-    const ResultFilter = IntructResult.filter(async el => {
-      const instructName = await this.RedisService.getContentToInstructName(
-        el.content
-      ); //0300010002
+    const ResultFilter: Uart.IntructQueryResult[] = []
+
+    for (const el of IntructResult) {
+      const instructName = await this.RedisService.getContentToInstructName(el.content); //0300010002
       // 如果程序重启后接受到数据，缓存中可能还没有指令对照
       if (instructName) {
         const protocolInstruct = InstructMap.get(instructName)!;
@@ -141,7 +141,7 @@ export class ProtocolParse {
         // 如果是非标协议且含有后处理脚本，由脚本校验结果buffer
         if (protocolInstruct.noStandard && protocolInstruct.scriptEnd) {
           const Fun = this.Util.ParseFunctionEnd(protocolInstruct.scriptEnd);
-          return Fun(el.content, el.buffer.data) as boolean;
+          if (Fun(el.content, el.buffer.data) as boolean) ResultFilter.push(el)
         } else {
           // 返回数据的pid
           const pid = el.buffer.data[0];
@@ -152,32 +152,32 @@ export class ProtocolParse {
           // 返回数据标明的长度
           const ResLength = el.buffer.data[2];
           // 最大解析数据长度是否对应返回数据长度
-          const { end } = this.getProtocolRegx(
+          /* const { end } = this.getProtocolRegx(
             protocolInstruct.formResize[protocolInstruct.formResize.length - 1]
               .regx!
-          );
+          ); */
           /**
            * 返回数据和查询指令对比
            * pid需一致
            * 数据类型需一致
            * 解析数据长度需要<=实际数据长度
-           * 数据实际长度和数据标识长度需一致
+           * 数据实际长度和数据标识长度需一致&& ResLength + 1 >= end
            */
-          return (
-            pid === R.pid &&
-            ResFunctionCode === FunctionCode &&
-            ResLength + 1 >= end &&
-            ResLength === el.buffer.data.length - 5
-          );
+          if (pid === R.pid && ResFunctionCode === FunctionCode && ResLength === el.buffer.data.length - 5) {
+            ResultFilter.push(el)
+          }
         }
-      } else return false;
-    });
+      }
+    }
 
     if (ResultFilter.length < IntructResult.length) {
       const s = ResultFilter.map(el => el.content);
+      const f = IntructResult.filter(el => !s.includes(el.content)).map(el => ({ content: el.content, buffer: Buffer.from(el.buffer.data).toString('hex') }))
       console.log({
+        R,
         msg: '485校验出错',
-        ins: IntructResult.filter(el => !s.includes(el.content)),
+        s,
+        f
       });
     }
     // 根据协议指令解析类型的不同,转换裁减Array<number>为Array<number>,把content换成指令名称

@@ -5,6 +5,8 @@ import { ILifeCycle } from '@midwayjs/core';
 import * as typegoose from '@midwayjs/typegoose';
 import * as task from '@midwayjs/task';
 import { join } from 'path';
+import * as cors from '@koa/cors';
+
 
 @Configuration({
   conflictCheck: true,
@@ -17,13 +19,19 @@ export class ContainerLifeCycle implements ILifeCycle {
 
   async onReady() {
     this.app.proxy = true;
-    this.app.use(
-      body({
-        multipart: true,
-        formidable: {
-          maxFileSize: 1024 * 1024 * 100 * 100,
-        },
-      })
-    );
+    this.app
+      .use(
+        body({
+          multipart: true,
+          formidable: {
+            maxFileSize: 1024 * 1024 * 100 * 100,
+          },
+        })
+      )
+      .use(
+        cors({
+          origin: "*"
+        })
+      )
   }
 }
