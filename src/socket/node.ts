@@ -286,6 +286,7 @@ export class NodeSocket {
         tag: '部分指令超时',
         timeStamp: Date.now(),
         msg: instruct.join(','),
+        isOk:true
       });
       // console.log({ EX });
     }

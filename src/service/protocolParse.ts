@@ -171,13 +171,27 @@ export class ProtocolParse {
     }
 
     if (ResultFilter.length < IntructResult.length) {
-      const s = ResultFilter.map(el => el.content);
-      const f = IntructResult.filter(el => !s.includes(el.content)).map(el => ({ content: el.content, buffer: Buffer.from(el.buffer.data).toString('hex') }))
+      const ok = ResultFilter.map(el => el.content);
+      const error = IntructResult.filter(el => !ok.includes(el.content)).map(el => {
+        // 返回数据的pid
+        const pid = el.buffer.data[0];
+        // 查询指令的类型
+        const FunctionCode = parseInt(el.content.slice(2, 4));
+        // 返回数据的类型
+        const ResFunctionCode = el.buffer.data[1];
+        // 返回数据标明的长度
+        const ResLength = el.buffer.data[2];
+
+        const len = el.buffer.data.length - 5
+
+        return { content: el.content, buffer: Buffer.from(el.buffer.data).toString('hex'), pid, FunctionCode, ResFunctionCode, ResLength, len }
+      })
       console.log({
-        R,
         msg: '485校验出错',
-        s,
-        f
+        R,
+
+        ok,
+        error
       });
     }
     // 根据协议指令解析类型的不同,转换裁减Array<number>为Array<number>,把content换成指令名称
