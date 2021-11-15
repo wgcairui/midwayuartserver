@@ -190,6 +190,12 @@ export class RedisService {
       setup.AlarmStat.set(el.name, el);
     });
 
+    setup.AlarmStat.forEach((el, key) => {
+      if (el.alarmStat.length === 0) setup.AlarmStat.delete(key)
+    })
+
+
+
     return setup;
   }
 
