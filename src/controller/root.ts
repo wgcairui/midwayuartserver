@@ -1246,4 +1246,19 @@ export class RootControll {
       data: await this.UpdateIccid.up(),
     };
   }
+
+  /**
+   * 删除绑定设备
+   * @param user
+   * @param mac
+   * @returns
+   */
+  @Post('/delUserTerminal')
+  async delUserTerminal(@Body() user: string, mac: string) {
+    return {
+      code: 200,
+      data: await this.UserService.delUserTerminal(user, mac),
+    };
+  }
+
 }
