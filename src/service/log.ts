@@ -32,12 +32,22 @@ export class Logs {
   }
 
   /**
+   * 创建插入文档
+   * @param cl 
+   * @param doc 
+   * @returns 
+   */
+  creatDoc<D extends { [x: string]: any, timeStamp?: number }, T>(cl: AnyParamConstructor<T>, doc: D) {
+    return getModelForClass(cl).create({ ...doc, timeStamp: Date.now() })
+  }
+
+  /**
    * 保存节点操作日志
    * @param doc
    * @returns
    */
   async saveNode(doc: Uart.logNodes) {
-    return await this.getModel(Nodes).create(doc);
+    return await this.creatDoc(Nodes,doc)//.creatDoc(Nodes,doc);
   }
 
   /**
@@ -46,7 +56,7 @@ export class Logs {
    * @returns
    */
   async saveTerminal(doc: Uart.logTerminals) {
-    return await this.getModel(Terminals).create(doc as any);
+    return await this.creatDoc(Terminals,doc)//.creatDoc(Terminals,doc);
   }
 
   /**
@@ -56,7 +66,7 @@ export class Logs {
    */
   async saveDataTransfinite(doc: Uart.uartAlarmObject) {
     // this.SocketUser.sendMacAlarm(doc.mac, doc)
-    return await this.getModel(UartTerminalDataTransfinite).create(doc as any);
+    return await this.creatDoc(UartTerminalDataTransfinite,doc)//.creatDoc(UartTerminalDataTransfinite,doc);
   }
 
   /**
@@ -65,14 +75,14 @@ export class Logs {
    * @returns
    */
   async saveDtuBusy(doc: Uart.logDtuBusy) {
-    return await this.getModel(DtuBusy).create(doc);
+    return await this.creatDoc(DtuBusy,doc);
   }
 
   /**
    * 保存邮箱发送记录
    */
   async saveMail(doc: Uart.logMailSend) {
-    return await this.getModel(MailSend).create(doc as any);
+    return await this.creatDoc(MailSend,doc);
   }
 
   /**
@@ -81,7 +91,7 @@ export class Logs {
    * @returns
    */
   async saveSms(doc: Uart.logSmsSend) {
-    return await this.getModel(SmsSend).create(doc);
+    return await this.creatDoc(SmsSend,doc);
   }
 
   /**
@@ -93,7 +103,7 @@ export class Logs {
    * @returns
    */
   saveUserRequst(user: string, userGroup: string, type: string, argument: any) {
-    return this.getModel(UserRequst).create({
+    return this.creatDoc(UserRequst,{
       user,
       userGroup,
       type,
@@ -107,7 +117,7 @@ export class Logs {
    * @returns
    */
   saveClean(doc: any) {
-    return this.getModel(DataClean).create(doc);
+    return this.creatDoc(DataClean,doc);
   }
 
   /**
@@ -116,7 +126,7 @@ export class Logs {
    * @returns
    */
   async saveWxEvent(doc: Uart.WX.wxValidation | Uart.WX.WxEvent) {
-    return await this.getModel(WXEvent).create(doc as any);
+    return await this.creatDoc(WXEvent,doc);
   }
 
   /**
@@ -125,7 +135,7 @@ export class Logs {
   async saveWxsubscribeMessage(
     doc: Uart.WX.wxsubscribeMessage & { result: Uart.WX.wxRequest }
   ) {
-    return await this.getModel(wxsubscribeMessage).create(doc as any);
+    return await this.creatDoc(wxsubscribeMessage,{ ...doc, timeStamp: Date.now() });
   }
 
   /**
