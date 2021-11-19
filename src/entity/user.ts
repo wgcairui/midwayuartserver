@@ -1,12 +1,12 @@
 import { modelOptions, prop } from '@typegoose/typegoose';
+import { Schema } from 'mongoose';
 import { DevConstant } from './protocol';
 
-@modelOptions({ schemaOptions: { collection: 'users' } })
+@modelOptions({ schemaOptions: { collection: 'users', }, options: { allowMixed: 0 } })
 export class Users {
   @prop()
   public avanter: string;
-
-  @prop({ default: 'web', enum: ['wx', 'web', 'app', 'pesiv'] })
+  @prop({ default: 'web', type: Schema.Types.Mixed })
   public rgtype!: Uart.registerType;
 
   @prop({ unique: true })

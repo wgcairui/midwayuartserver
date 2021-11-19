@@ -825,7 +825,7 @@ export class UserService {
     user: string,
     mac: string,
     pid: number,
-    name: string,
+    name: string|string[],
     start: number,
     end: number
   ) {
@@ -834,7 +834,8 @@ export class UserService {
       return null;
     } else {
       const model = getModelForClass(TerminalClientResult);
-      return await model
+      if(typeof name === 'string'){
+        return await model
         .find(
           {
             mac,
@@ -845,6 +846,18 @@ export class UserService {
           { 'result.$': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
         )
         .lean();
+      }else{
+        return await model
+        .find(
+          {
+            mac,
+            pid,
+            timeStamp: { $gte: start, $lte: end },
+          },
+          { 'result': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+        )
+        .lean();
+      }
     }
   }
 

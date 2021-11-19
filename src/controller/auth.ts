@@ -23,7 +23,7 @@ import { code2Session, getPhone, registerUser } from '../dto/auth';
  * 登录相关控制器
  */
 @Provide()
-@Controller('/api/auth', { middleware: ['tokenParse'] })
+@Controller('/api/auth')
 export class AuthController {
   @Inject()
   ctx: Context;
@@ -48,9 +48,9 @@ export class AuthController {
    * @param user
    * @returns
    */
-  @Get('/user')
+  @Get('/user', { middleware: ['tokenParse'] })
   async user(@Body() user: Uart.UserInfo) {
-    return { code: user ? 200 : 0, user: user.user };
+    return { code: user ? 200 : 0, user: user.user, userGroup: user?.userGroup };
   }
 
   /**
@@ -58,7 +58,7 @@ export class AuthController {
    * @param user
    * @returns
    */
-  @Get('/userGroup')
+  @Get('/userGroup', { middleware: ['tokenParse'] })
   async userGroup(@Body() user: Uart.UserInfo) {
     return { code: user ? 200 : 0, userGroup: user?.userGroup };
   }

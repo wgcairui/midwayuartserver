@@ -9,7 +9,7 @@ import { Util } from '../util/util';
 export class TokenParse implements IWebMiddleware {
   resolve() {
     return async (ctx: Context, next: IMidwayKoaNext) => {
-      const token = ctx.cookies.get('auth._token.local');
+      const token = ctx.cookies.get('auth._token.local') || (ctx.header.token as string);
       if (token && token !== 'false') {
         const util = await ctx.requestContext.getAsync<Util>('util');
         const user = await util.Secret_JwtVerify(token.split('%20')[1]);

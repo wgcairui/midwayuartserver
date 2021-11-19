@@ -1,4 +1,5 @@
 import { modelOptions, prop, Ref } from '@typegoose/typegoose';
+import { Mixed, Schema } from 'mongoose';
 
 class Devprotocol {
   @prop({ enum: [485, 232], default: 485 })
@@ -43,6 +44,9 @@ class formResize {
   public isState: boolean;
 }
 
+@modelOptions({
+  options: { allowMixed: 0 },
+})
 class instruct {
   @prop()
   public name!: string; // 指令名称--GQS
@@ -65,7 +69,7 @@ class instruct {
   // 后处理脚本
   public scriptEnd: string;
 
-  @prop({ enum: ['utf8', 'hex', 'float', 'short', 'int', 'bit2'] })
+  @prop({ type: Schema.Types.Mixed})
   public resultType: Uart.characterType; // 怎么格式化返回结果
 
   @prop({ default: false })

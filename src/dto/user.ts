@@ -117,8 +117,8 @@ export class macPid extends mac {
 
 @Rule(macPid)
 export class terminalResults extends macPid {
-  @Rule(RuleType.string().required())
-  name: string;
+  @Rule(RuleType.allow().required())
+  name: string| string[];
 
   @Rule(RuleType.string().required())
   datetime: string;
