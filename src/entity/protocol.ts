@@ -1,5 +1,5 @@
 import { modelOptions, prop, Ref } from '@typegoose/typegoose';
-import { Mixed, Schema } from 'mongoose';
+import { Schema } from 'mongoose';
 
 class Devprotocol {
   @prop({ enum: [485, 232], default: 485 })
