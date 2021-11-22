@@ -22,6 +22,7 @@ import { SocketUart } from '../service/socketUart';
 import { Clean } from '../task/clean';
 import { DyIot } from '../util/dyiot';
 import { UpdateIccid } from '../task/updateIccid';
+import { SocketUser } from "../service/socketUser"
 
 @Provide()
 @Controller('/api/root', { middleware: ['root'] })
@@ -58,6 +59,10 @@ export class RootControll {
 
   @Inject()
   UpdateIccid: UpdateIccid;
+
+  @Inject()
+  SocketUser: SocketUser
+
 
   @App(MidwayFrameworkType.WS_IO)
   private SocketApp: SocketApp;
@@ -754,9 +759,14 @@ export class RootControll {
       .map(el => (el.rooms.size > 1 ? [...el.rooms.values()][1] : ''))
       .flat();
     const names = rooms.filter(el => el);
+
+    const wsUsers = [...this.SocketUser.wsMap.keys()]
+
+    console.log(this.SocketUser.wsMap);
+    
     return {
       code: 200,
-      data: await Promise.all(names.map(u => this.UserService.getUser(u))),
+      data: await Promise.all([...names, ...wsUsers].map(u => this.UserService.getUser(u))),
     };
   }
 
@@ -770,7 +780,7 @@ export class RootControll {
   async sendUserSocketInfo(@Body() user: string, @Body() msg: string) {
     return {
       code: 200,
-      data: this.SocketApp.of('/web').in(user).emit('info', msg),
+      data: this.SocketUser.toUserInfo(user, 'info', msg)
     };
   }
 

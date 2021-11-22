@@ -57,6 +57,7 @@ export class NodeSocket {
    */
   @OnWSConnection()
   async connect() {
+    
     const socket = this.ctx;
     const ID = socket.id;
     if (!this.ctx.handshake) return;

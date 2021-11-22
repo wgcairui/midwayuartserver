@@ -554,8 +554,7 @@ export class UserService {
    * @returns
    */
   async modifyTerminal(user: string, mac: string, name: string) {
-    const bind = await this.getUserBind(user);
-    if (bind.UTs.includes(mac)) {
+    if ( this.isBindMac(user,mac)) {
       const model = getModelForClass(Terminal);
       return await model.updateOne({ DevMac: mac }, { $set: { name } }).lean();
     } else {
