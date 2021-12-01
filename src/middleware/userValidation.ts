@@ -23,7 +23,8 @@ export class token implements IWebMiddleware {
               token.split('%20').reverse()[0].trim()
             )
             .catch(err => {
-              throw new Error('token error');
+              ctx.throw('token error')
+              //throw new Error('token error');
             });
           ctx.request.body.token = {
             user: user.user,

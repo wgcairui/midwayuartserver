@@ -295,9 +295,7 @@ export class AuthController {
       }
     }
 
-    if (
-      !(await this.userService.BcryptComparePasswd(accont.user, accont.passwd))
-    ) {
+    if ( !(await this.userService.BcryptComparePasswd(accont.user, accont.passwd))) {
       return {
         code: 0,
         msg: '用户名或密码错误',
@@ -309,6 +307,11 @@ export class AuthController {
         msg: '账号已被其他微信用户绑定,请核对账号是否正确',
       };
     } else {
+      // 如果是测试用户组,不保存wxid
+      if(user.userGroup === 'test'){
+        accont.unionid = ''
+        accont.openid = ''
+      }
       await this.userService.modifyUserInfo(user.user, {
         userId: accont.unionid,
         wpId: accont.openid,

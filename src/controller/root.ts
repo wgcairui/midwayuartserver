@@ -762,7 +762,6 @@ export class RootControll {
 
     const wsUsers = [...this.SocketUser.wsMap.keys()]
 
-    console.log(this.SocketUser.wsMap);
     
     return {
       code: 200,

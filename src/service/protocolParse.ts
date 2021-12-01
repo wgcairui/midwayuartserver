@@ -170,7 +170,7 @@ export class ProtocolParse {
       }
     }
 
-    if (ResultFilter.length < IntructResult.length) {
+   /*  if (ResultFilter.length < IntructResult.length) {
       const ok = ResultFilter.map(el => el.content);
       const error = IntructResult.filter(el => !ok.includes(el.content)).map(el => {
         // 返回数据的pid
@@ -186,6 +186,8 @@ export class ProtocolParse {
 
         return { content: el.content, buffer: Buffer.from(el.buffer.data).toString('hex'), pid, FunctionCode, ResFunctionCode, ResLength, len }
       })
+
+      
       console.log({
         msg: '485校验出错',
         R,
@@ -193,7 +195,7 @@ export class ProtocolParse {
         ok,
         error
       });
-    }
+    } */
     // 根据协议指令解析类型的不同,转换裁减Array<number>为Array<number>,把content换成指令名称
     const ParseInstructResultType = ResultFilter.map(async el => {
       const content = await this.RedisService.getContentToInstructName(

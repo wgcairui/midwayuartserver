@@ -185,10 +185,10 @@ export class NodeControll {
       if (parse.length === 0) {
         const interval = await this.Device.getMountDevInterval(data.mac)
         this.SocketUart.setTerminalMountDevCache(data.mac, interval * 3)
-        console.error({
+        /* console.error({
           msg: '解析数据为空,跳过后续操作',
           data
-        })
+        }) */
         return
 
       }

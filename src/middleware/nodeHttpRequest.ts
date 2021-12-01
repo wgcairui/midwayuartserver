@@ -14,9 +14,13 @@ export class nodeHttp implements IWebMiddleware {
       ).getNodes();
 
       const ip = ctx.ip.split(':').reverse()[0];
-      if (nodes.some(el => el.IP === ip)) {
-        await next();
-      } else throw new Error('nodeData premiss');
+      try {
+        if (nodes.some(el => el.IP === ip)) {
+          await next();
+        } else throw new Error('nodeData premiss');
+      } catch (error) {
+        ctx.throw('nodeData premiss')
+      }
     };
   }
 }
