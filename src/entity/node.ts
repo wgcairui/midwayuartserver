@@ -353,10 +353,10 @@ class iccidInfo {
 @modelOptions({ schemaOptions: { collection: 'terminals' } })
 export class Terminal {
   @prop({ uppercase: true })
-  public DevMac!: string;
+  public DevMac: string;
 
   @prop()
-  public name!: string;
+  public name: string;
 
   @prop()
   public ip: string;

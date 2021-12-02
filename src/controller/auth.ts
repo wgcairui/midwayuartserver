@@ -192,10 +192,19 @@ export class AuthController {
         'wx_login'
       );
       // 如果没有小程序id,更新
-      if (!user.wpId)
+      if (!user.wpId){
         await this.userService.modifyUserInfo(user.user, {
           wpId: seesion.openid,
         });
+      }
+        // 如果是测试用户组,清除wxid
+      if(user.userGroup === 'test'){
+        await this.userService.modifyUserInfo(user.user, {
+          wpId: '',
+          userId:'',
+          wxId:''
+        });
+      }
       return {
         code: 200,
         data: {
@@ -301,17 +310,13 @@ export class AuthController {
         msg: '用户名或密码错误',
       };
     }
-    if (user.userId && user.userId !== accont.unionid) {
+    if (user.userGroup !== 'test' && user.userId && user.userId !== accont.unionid) {
       return {
         code: 0,
         msg: '账号已被其他微信用户绑定,请核对账号是否正确',
       };
     } else {
-      // 如果是测试用户组,不保存wxid
-      if(user.userGroup === 'test'){
-        accont.unionid = ''
-        accont.openid = ''
-      }
+      
       await this.userService.modifyUserInfo(user.user, {
         userId: accont.unionid,
         wpId: accont.openid,
