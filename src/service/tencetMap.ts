@@ -1,4 +1,4 @@
-import { Provide, Config, Inject } from '@midwayjs/decorator';
+import { Provide, Config, Inject, Logger } from '@midwayjs/decorator';
 import axios from 'axios';
 // import { MD5 } from "crypto-js";
 import { URL } from 'url';
@@ -24,7 +24,7 @@ interface result {
 @Provide()
 export class TencetMap {
 
-  @Inject()
+  @Logger()
   console: ILogger;
 
   @Config('tencetMap')

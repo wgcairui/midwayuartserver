@@ -1,4 +1,4 @@
-import { Provide, Init, Inject } from '@midwayjs/decorator';
+import { Provide, Init, Inject, Logger } from '@midwayjs/decorator';
 import { BeAnObject, ReturnModelType } from '@typegoose/typegoose/lib/types';
 import {
   Users,
@@ -88,7 +88,7 @@ export class UserService {
   @Inject()
   Util: Util;
 
-  @Inject()
+  @Logger()
   console: ILogger;
 
 

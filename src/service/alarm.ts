@@ -1,4 +1,4 @@
-import { Provide, Inject } from '@midwayjs/decorator';
+import { Provide, Inject, Logger } from '@midwayjs/decorator';
 import { UserService } from '../service/user';
 import { Device } from '../service/device';
 import { Util } from '../util/util';
@@ -44,7 +44,7 @@ export class Alarm {
   @Inject()
   TencetMap: TencetMap;
 
-  @Inject()
+  @Logger()
   log: ILogger;
 
   async timeOut(

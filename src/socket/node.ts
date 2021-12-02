@@ -8,6 +8,7 @@ import {
   OnWSMessage,
   WSEmit,
   OnWSDisConnection,
+  Logger,
 } from '@midwayjs/decorator';
 import { Context, Application } from '@midwayjs/socketio';
 import { Device } from '../service/device';
@@ -24,7 +25,7 @@ import { ILogger } from '@midwayjs/logger';
 @WSController('/node')
 export class NodeSocket {
 
-  @Inject()
+  @Logger()
   console: ILogger;
 
   @Inject()

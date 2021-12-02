@@ -7,6 +7,7 @@ import {
   TaskLocal,
   App,
   MidwayFrameworkType,
+  Logger,
 } from '@midwayjs/decorator';
 import { Application } from '@midwayjs/socketio';
 import { Util } from '../util/util';
@@ -26,8 +27,8 @@ interface mountDevEx extends Uart.TerminalMountDevs {
 @Scope(ScopeEnum.Singleton)
 export class SocketUart {
 
-  @Inject()
-  console: ILogger;
+  @Logger()
+  logger: ILogger;
 
   @Inject()
   private Util: Util;
@@ -191,7 +192,7 @@ export class SocketUart {
    */
   @TaskLocal('0 3 * * *')
   async clear_Cache() {
-    this.console.info(`${new Date().toLocaleString()}===clear_Cache`);
+    this.logger.info(`${new Date().toLocaleString()}===clear_Cache`);
     const nodes = await this.Device.getNodes();
     this.cache.clear();
     nodes.forEach(node => this.setNodeCache(node.Name));

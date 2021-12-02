@@ -1,4 +1,4 @@
-import { Provide, Controller, Inject, Post, Body } from '@midwayjs/decorator';
+import { Provide, Controller, Inject, Post, Body, Logger } from '@midwayjs/decorator';
 import { Device } from '../service/device';
 import { Util } from '../util/util';
 import { Logs } from '../service/log';
@@ -18,7 +18,7 @@ import { ILogger } from '@midwayjs/logger';
 @Controller('/api/node', { middleware: ['nodeHttp'] })
 export class NodeControll {
 
-  @Inject()
+  @Logger()
   console: ILogger;
 
   @Inject()

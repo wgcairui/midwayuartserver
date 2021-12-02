@@ -1,4 +1,4 @@
-import { Provide, Init, Inject } from '@midwayjs/decorator';
+import { Provide, Init, Inject, Logger } from '@midwayjs/decorator';
 import { getModelForClass } from '@typegoose/typegoose';
 import axios from 'axios';
 import { SecretApp } from '../entity/user';
@@ -79,9 +79,9 @@ interface hf_macInfo extends hfRequst {
  */
 export class HF {
 
-  @Inject()
+  @Logger()
   console: ILogger;
-  
+
   token: string;
   uerId: string;
 

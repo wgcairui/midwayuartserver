@@ -1,4 +1,4 @@
-import { Provide, Inject } from '@midwayjs/decorator';
+import { Provide, Inject, Logger } from '@midwayjs/decorator';
 import axios from 'axios';
 import { RedisService } from '../service/redis';
 import { ILogger } from '@midwayjs/logger';
@@ -12,7 +12,7 @@ type apiType =
 @Provide()
 export class Amap {
 
-  @Inject()
+  @Logger()
   log: ILogger;
 
   @Inject()
