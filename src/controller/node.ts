@@ -12,10 +12,15 @@ import { SocketUart } from '../service/socketUart';
 import { UserService } from '../service/user';
 import { alarm } from '../interface';
 import axios from 'axios';
+import { ILogger } from '@midwayjs/logger';
 
 @Provide()
 @Controller('/api/node', { middleware: ['nodeHttp'] })
 export class NodeControll {
+
+  @Inject()
+  console: ILogger;
+
   @Inject()
   Device: Device;
 
@@ -167,7 +172,7 @@ export class NodeControll {
                   data: parse,
                 })
                 .catch(_ => {
-                  console.error({
+                  this.console.error({
                     msg: 'proxy Error',
                     mac: data.mac,
                     user,
@@ -185,10 +190,10 @@ export class NodeControll {
       if (parse.length === 0) {
         const interval = await this.Device.getMountDevInterval(data.mac)
         this.SocketUart.setTerminalMountDevCache(data.mac, interval * 3)
-        /* console.error({
+        this.console.error({
           msg: '解析数据为空,跳过后续操作',
           data
-        }) */
+        })
         return
 
       }

@@ -1,8 +1,9 @@
-import { Provide, Config } from '@midwayjs/decorator';
+import { Provide, Config, Inject } from '@midwayjs/decorator';
 import axios from 'axios';
 // import { MD5 } from "crypto-js";
 import { URL } from 'url';
 import { tencetMapConfig } from '../interface';
+import { ILogger } from '@midwayjs/logger';
 
 // 腾讯位置服务
 interface result {
@@ -22,6 +23,10 @@ interface result {
  */
 @Provide()
 export class TencetMap {
+
+  @Inject()
+  console: ILogger;
+
   @Config('tencetMap')
   tencetMap: tencetMapConfig;
 

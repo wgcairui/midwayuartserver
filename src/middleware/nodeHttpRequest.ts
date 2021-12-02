@@ -18,8 +18,9 @@ export class nodeHttp implements IWebMiddleware {
         if (nodes.some(el => el.IP === ip)) {
           await next();
         } else {
-          
-          throw new Error('nodeData premiss')
+          const err = new Error('nodeData premiss')
+          ctx.logger.warn(err)
+          throw err
         };
       } catch (error) {
         ctx.throw('nodeData premiss')

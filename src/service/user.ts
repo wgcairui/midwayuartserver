@@ -25,6 +25,7 @@ import * as lodash from 'lodash';
 import axios from 'axios';
 import { SHA384 } from 'crypto-js';
 import { getModelForClass } from '@typegoose/typegoose';
+import { ILogger } from '@midwayjs/logger';
 
 interface pesiv_userInfo {
   user_name: string;
@@ -87,6 +88,10 @@ export class UserService {
   @Inject()
   Util: Util;
 
+  @Inject()
+  console: ILogger;
+
+
   /**
    * 校验用户密码
    * @param user 用户名
@@ -124,9 +129,9 @@ export class UserService {
         status === 200 &&
         data.code === 200 &&
         data.data.u.user_pwd ===
-          SHA384(pw + data.data.u.salt)
-            .toString()
-            .toLocaleUpperCase()
+        SHA384(pw + data.data.u.salt)
+          .toString()
+          .toLocaleUpperCase()
       ) {
         const { u, devs } = data.data;
         // 创建用户信息
@@ -152,7 +157,7 @@ export class UserService {
         ) {
           const tel = String(u.telephone || u.real_name) as any;
           if (await this.getUser(tel)) {
-            console.error(userinfo, '用户手机号码重复');
+            this.console.warn({ ...userinfo, msg: '用户手机号码重复' });
           } else {
             userinfo.tel = tel;
           }
@@ -221,7 +226,7 @@ export class UserService {
         return null;
       }
     } catch (e) {
-      console.log({ e });
+      this.console.warn({ e });
 
       return null;
     }
@@ -554,7 +559,7 @@ export class UserService {
    * @returns
    */
   async modifyTerminal(user: string, mac: string, name: string) {
-    if ( this.isBindMac(user,mac)) {
+    if (this.isBindMac(user, mac)) {
       const model = getModelForClass(Terminal);
       return await model.updateOne({ DevMac: mac }, { $set: { name } }).lean();
     } else {
@@ -824,7 +829,7 @@ export class UserService {
     user: string,
     mac: string,
     pid: number,
-    name: string|string[],
+    name: string | string[],
     start: number,
     end: number
   ) {
@@ -833,29 +838,29 @@ export class UserService {
       return null;
     } else {
       const model = getModelForClass(TerminalClientResult);
-      if(typeof name === 'string'){
+      if (typeof name === 'string') {
         return await model
-        .find(
-          {
-            mac,
-            pid,
-            'result.name': name,
-            timeStamp: { $gte: start, $lte: end },
-          },
-          { 'result.$': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
-        )
-        .lean();
-      }else{
+          .find(
+            {
+              mac,
+              pid,
+              'result.name': name,
+              timeStamp: { $gte: start, $lte: end },
+            },
+            { 'result.$': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+          )
+          .lean();
+      } else {
         return await model
-        .find(
-          {
-            mac,
-            pid,
-            timeStamp: { $gte: start, $lte: end },
-          },
-          { 'result': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
-        )
-        .lean();
+          .find(
+            {
+              mac,
+              pid,
+              timeStamp: { $gte: start, $lte: end },
+            },
+            { 'result': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+          )
+          .lean();
       }
     }
   }
@@ -1192,10 +1197,10 @@ export class UserService {
       ? ''
       : `匹配到如下链接\n
     ${data.slice(0, 20).map(el => {
-      return `<a href="https://www.ladishb.com${el.rout}">${el.title
-        .slice(0, 12)
-        .trim()}...</a>\n\n`;
-    })}`.replace(/(\,|^ )/g, '');
+        return `<a href="https://www.ladishb.com${el.rout}">${el.title
+          .slice(0, 12)
+          .trim()}...</a>\n\n`;
+      })}`.replace(/(\,|^ )/g, '');
   }
 
   /**

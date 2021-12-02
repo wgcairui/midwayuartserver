@@ -10,8 +10,7 @@ import { Logs } from '../service/log';
 export class token implements IWebMiddleware {
   resolve() {
     return async (ctx: Context, next: IMidwayKoaNext) => {
-      const token =
-        ctx.cookies.get('auth._token.local') || (ctx.header.token as string);
+      const token = ctx.cookies.get('auth._token.local') || (ctx.header.token as string);
       if (/^\/api\/guest\/.*/.test(ctx.path)) {
         await next();
       } else {
@@ -23,6 +22,7 @@ export class token implements IWebMiddleware {
               token.split('%20').reverse()[0].trim()
             )
             .catch(err => {
+              ctx.logger.warn(err)
               ctx.throw('token error')
               //throw new Error('token error');
             });

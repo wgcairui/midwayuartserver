@@ -1,6 +1,7 @@
 import { Provide, Inject } from '@midwayjs/decorator';
 import axios from 'axios';
 import { RedisService } from '../service/redis';
+import { ILogger } from '@midwayjs/logger';
 
 type apiType =
   | 'ip'
@@ -10,6 +11,10 @@ type apiType =
 
 @Provide()
 export class Amap {
+
+  @Inject()
+  log: ILogger;
+
   @Inject()
   RedisService: RedisService;
 
@@ -57,7 +62,7 @@ export class Amap {
     });
     const result: T = res.data;
     if (result.status === '0') {
-      console.log(result);
+      this.log.error(result);
     }
     return result;
   }

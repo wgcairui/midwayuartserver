@@ -63,11 +63,6 @@ export class Sms {
         return el;
       })
       .catch(e => {
-        console.log({
-          msg: '短信发送失败',
-          params,
-          e,
-        });
         this.logs.saveSms({ tels, sendParams: params, Error: e });
         return e;
       });

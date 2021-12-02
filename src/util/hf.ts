@@ -1,7 +1,8 @@
-import { Provide, Init } from '@midwayjs/decorator';
+import { Provide, Init, Inject } from '@midwayjs/decorator';
 import { getModelForClass } from '@typegoose/typegoose';
 import axios from 'axios';
 import { SecretApp } from '../entity/user';
+import { ILogger } from '@midwayjs/logger';
 interface hfRequst {
   message: string;
   result: number;
@@ -77,6 +78,10 @@ interface hf_macInfo extends hfRequst {
  * 汉枫IOT Server获取数据方法
  */
 export class HF {
+
+  @Inject()
+  console: ILogger;
+  
   token: string;
   uerId: string;
 
@@ -101,7 +106,7 @@ export class HF {
       });
 
       if (data.data.result) {
-        console.error(
+        this.console.error(
           '汉枫IOT Server 脚本获取token失败,详情:',
           data.data.message
         );

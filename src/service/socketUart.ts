@@ -14,6 +14,7 @@ import { Logs } from './log';
 import { RedisService } from './redis';
 import { Device } from './device';
 import { EventEmitter } from 'events';
+import { ILogger } from '@midwayjs/logger';
 
 interface mountDevEx extends Uart.TerminalMountDevs {
   TerminalMac: string;
@@ -24,6 +25,10 @@ interface mountDevEx extends Uart.TerminalMountDevs {
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class SocketUart {
+
+  @Inject()
+  console: ILogger;
+
   @Inject()
   private Util: Util;
 
@@ -186,7 +191,7 @@ export class SocketUart {
    */
   @TaskLocal('0 3 * * *')
   async clear_Cache() {
-    console.log(`${new Date().toLocaleString()}===clear_Cache`);
+    this.console.info(`${new Date().toLocaleString()}===clear_Cache`);
     const nodes = await this.Device.getNodes();
     this.cache.clear();
     nodes.forEach(node => this.setNodeCache(node.Name));

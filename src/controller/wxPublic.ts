@@ -98,16 +98,6 @@ export class WxPublic {
                   body,
                   `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`
                 );
-                /* } else {
-                                        console.error(
-                                            {
-                                                event: 'scan绑定公证号',
-                                                ...user,
-                                                ...body,
-                                            }
-                                        );
-
-                                    } */
               }
             }
           }
@@ -156,16 +146,6 @@ export class WxPublic {
                   body,
                   `您好:${user.name}\n 欢迎绑定透传账号到微信公众号,我们将会在以后发送透传平台的所有消息至此公众号,请留意新信息提醒!!!\n回复'告警测试'我们将推送一条测试告警信息`
                 );
-                /* } else {
-                                    console.error(
-                                        {
-                                            event: 'scan绑定公证号',
-                                            ...user,
-                                            ...body,
-                                        }
-                                    );
-
-                                } */
               }
             }
           }
