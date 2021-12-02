@@ -70,8 +70,9 @@ export class Alarm {
             },
             data: {
               first: {
-                value: `设备[${ter.name}/${devName}]连接${event}${event === '超时' ? `,请检查设备 ${devName} 连接状态` : ''
-                  }`,
+                value: `设备[${ter.name}/${devName}]连接${event}${
+                  event === '超时' ? `,请检查设备 ${devName} 连接状态` : ''
+                }`,
                 color: '#173177',
               },
               device: {
@@ -103,8 +104,9 @@ export class Alarm {
       } else if (user.mails && user.mails.length > 0) {
         const body = `<p><strong>尊敬的${user.name}</strong></p>
                 <hr />
-                <p><strong>您的DTU <em>${ter.name}</em> ${pid ? '挂载的 ' + devName : ''
-          } 告警</strong></p>
+                <p><strong>您的DTU <em>${ter.name}</em> ${
+          pid ? '挂载的 ' + devName : ''
+        } 告警</strong></p>
                 <p><strong>告警时间:&nbsp; </strong>${this.Util.parseTime()}</p>
                 <p><strong>告警事件:</strong>&nbsp; ${event}</p>
                 <p>您可登录 <a title="透传服务平台" href="https://uart.ladishb.com" target="_blank" rel="noopener">LADS透传服务平台</a> 查看处理(右键选择在新标签页中打开)</p>
@@ -143,8 +145,9 @@ export class Alarm {
             },
             data: {
               first: {
-                value: `设备[${ter.name}]${event}${event === '离线' ? ',请检查设备或网络状态' : ''
-                  }`,
+                value: `设备[${ter.name}]${event}${
+                  event === '离线' ? ',请检查设备或网络状态' : ''
+                }`,
                 color: '#173177',
               },
               device: {
@@ -251,13 +254,14 @@ export class Alarm {
                     el.tag === 'ups'
                       ? ''
                       : el.tag === 'Threshold'
-                        ? [
+                      ? [
                           (el.contant as Uart.Threshold).min,
                           (el.contant as Uart.Threshold).max,
                         ].join('~')
-                        : '';
-                  return `${el.argument} ${el.data.parseValue} ${str && str.trim().length > 0 ? `,参考值: [ ${str} ]` : ''
-                    }`;
+                      : '';
+                  return `${el.argument} ${el.data.parseValue} ${
+                    str && str.trim().length > 0 ? `,参考值: [ ${str} ]` : ''
+                  }`;
                 })
                 .join('\n'),
               color: '#F56C6C',
@@ -271,9 +275,9 @@ export class Alarm {
           alarm.length === 1
             ? `${alarm[0].argument}[${alarm[0].data.parseValue}]`
             : `${alarm
-              .map(el => el.argument)
-              .slice(0, 2)
-              .join(',')}等告警`;
+                .map(el => el.argument)
+                .slice(0, 2)
+                .join(',')}等告警`;
         const TemplateParam = JSON.stringify({
           name: user.name,
           DTU: ter.name,
@@ -293,25 +297,26 @@ export class Alarm {
       if (user.mails) {
         const body = `<p><strong>尊敬的${user.name}</strong></p>
                 <hr />
-                <p><strong>您的DTU <em>${ter.name}</em> 挂载的 ${dev.mountDev
-          } 告警</strong></p>
+                <p><strong>您的DTU <em>${ter.name}</em> 挂载的 ${
+          dev.mountDev
+        } 告警</strong></p>
                 <p><strong>告警时间:&nbsp; </strong>${this.Util.parseTime(
-            alarm[0].timeStamp
-          )}</p>
+                  alarm[0].timeStamp
+                )}</p>
                 ${alarm.map(el => {
-            const str =
-              el.tag === 'ups'
-                ? ''
-                : el.tag === 'AlarmStat'
-                  ? (el.contant as Uart.ConstantAlarmStat).alarmStat
-                  : [
-                    (el.contant as Uart.Threshold).min,
-                    (el.contant as Uart.Threshold).max,
-                  ].join('~');
-            return `<p><strong>告警事件:</strong>&nbsp; ${el.argument}</p>
+                  const str =
+                    el.tag === 'ups'
+                      ? ''
+                      : el.tag === 'AlarmStat'
+                      ? (el.contant as Uart.ConstantAlarmStat).alarmStat
+                      : [
+                          (el.contant as Uart.Threshold).min,
+                          (el.contant as Uart.Threshold).max,
+                        ].join('~');
+                  return `<p><strong>告警事件:</strong>&nbsp; ${el.argument}</p>
                     <p><strong>实际值: </strong>&nbsp;${el.data.parseValue}</p>
                     <p><strong>参考值: </strong>&nbsp;${str}</p>`;
-          })}
+                })}
                 <p>您可登录 <a title="透传服务平台" href="https://uart.ladishb.com" target="_blank" rel="noopener">LADS透传服务平台</a> 查看处理(右键选择在新标签页中打开)</p>
                 <hr />
                 <p>&nbsp;</p>
@@ -387,7 +392,7 @@ export class Alarm {
       const ter = await this.getTerminal(mac);
       const address = ter.jw
         ? (await this.TencetMap.geocoder(ter.jw.split(',').reverse().join(',')))
-          .result.address
+            .result.address
         : (await this.TencetMap.ip(ter.ip)).result.ad_info.city;
 
       return {
@@ -464,11 +469,12 @@ export class Alarm {
     if (user && user.mail) {
       const body = `<p><strong>尊敬的${u}</strong></p>
             <hr />
-            <p><strong>您的4G DTU <em>${ter.name
-        }</em> 使用的物联卡 ${iccid} 即将失效</strong></p>
+            <p><strong>您的4G DTU <em>${
+              ter.name
+            }</em> 使用的物联卡 ${iccid} 即将失效</strong></p>
             <p><strong>告警时间:&nbsp; </strong>${this.Util.parseTime(
-          expire
-        )}</p>
+              expire
+            )}</p>
            `;
       await this.Mail.send(user.mail, 'Ladis透传平台', 'ICCID即将失效', body);
     }

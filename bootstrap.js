@@ -1,6 +1,6 @@
 const WebFramework = require('@midwayjs/koa').Framework;
 const SocketFramework = require('@midwayjs/socketio').Framework;
-const WebSocket = require("@midwayjs/ws").Framework
+const WebSocket = require('@midwayjs/ws').Framework;
 
 const web = new WebFramework().configure({
   port: 9010,
@@ -16,12 +16,8 @@ const socket = new SocketFramework().configure({
 });
 
 const ws = new WebSocket().configure({
-  path:"/ws"
-})
+  path: '/ws',
+});
 
 const { Bootstrap } = require('@midwayjs/bootstrap');
-Bootstrap
-.load(web)
-.load(socket)
-.load(ws)
-.run();
+Bootstrap.load(web).load(socket).load(ws).run();

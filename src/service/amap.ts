@@ -11,7 +11,6 @@ type apiType =
 
 @Provide()
 export class Amap {
-
   @Logger()
   log: ILogger;
 

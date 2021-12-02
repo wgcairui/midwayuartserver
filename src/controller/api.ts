@@ -321,8 +321,8 @@ export class ApiControll {
       msg: !code
         ? '验证码已失效'
         : code !== data.code
-          ? '验证码错误'
-          : 'success',
+        ? '验证码错误'
+        : 'success',
     };
   }
 
@@ -483,13 +483,24 @@ export class ApiControll {
   @Post('/getTerminalDatas')
   @Validate()
   async getTerminalDatas(@Body(ALL) data: terminalResults) {
-    const d = await this.UserService.getTerminalDatas(data.token.user, data.mac, data.pid, data.name, data.getStart(), data.getEnd()) as any as Partial<Uart.queryResultSave[]>;
+    const d = (await this.UserService.getTerminalDatas(
+      data.token.user,
+      data.mac,
+      data.pid,
+      data.name,
+      data.getStart(),
+      data.getEnd()
+    )) as any as Partial<Uart.queryResultSave[]>;
     if (d) {
-
       // 如果参数是数组,刷选出请求的数组
       if (typeof data.name === 'object') {
-        const nameSet = new Set(data.name)
-        d.forEach(el => el.result = el.result.filter(el2 => nameSet.has(el2.name)).map(el3 => ({ name: el3.name, value: el3.value }) as any))
+        const nameSet = new Set(data.name);
+        d.forEach(
+          el =>
+            (el.result = el.result
+              .filter(el2 => nameSet.has(el2.name))
+              .map(el3 => ({ name: el3.name, value: el3.value } as any)))
+        );
       }
       // 如果参数是数组,或结果小于50条,直接返回数据
       if (d.length < 50 || typeof data.name === 'object') {

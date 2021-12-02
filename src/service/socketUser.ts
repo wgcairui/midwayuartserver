@@ -1,4 +1,12 @@
-import { Provide, Inject, App, MidwayFrameworkType, Scope, ScopeEnum, Init } from '@midwayjs/decorator';
+import {
+  Provide,
+  Inject,
+  App,
+  MidwayFrameworkType,
+  Scope,
+  ScopeEnum,
+  Init,
+} from '@midwayjs/decorator';
 import { Application as IO } from '@midwayjs/socketio';
 import { UserService } from '../service/user';
 import { Context as Ws } from '@midwayjs/ws';
@@ -17,12 +25,10 @@ export class SocketUser {
    */
   wsMap: Map<string, Ws>;
 
-
   @Init()
   async init() {
-    this.wsMap = new Map()
+    this.wsMap = new Map();
   }
-
 
   /* @App(MidwayFrameworkType.WS)
     ws: WS */
@@ -63,7 +69,7 @@ export class SocketUser {
     if (user) {
       this.app.of('/web').in(user).emit(events, data);
       if (this.wsMap.has(user)) {
-        this.wsMap.get(user).send(JSON.stringify({ type: events, data }))
+        this.wsMap.get(user).send(JSON.stringify({ type: events, data }));
       }
     }
   }
@@ -77,7 +83,7 @@ export class SocketUser {
   async toUserInfo(user: string, events: string, data: any = {}) {
     this.app.of('/web').in(user).emit(events, data);
     if (this.wsMap.has(user)) {
-      this.wsMap.get(user).send(JSON.stringify({ type: events, data }))
+      this.wsMap.get(user).send(JSON.stringify({ type: events, data }));
     }
   }
 

@@ -69,7 +69,7 @@ class instruct {
   // 后处理脚本
   public scriptEnd: string;
 
-  @prop({ type: Schema.Types.Mixed})
+  @prop({ type: Schema.Types.Mixed })
   public resultType: Uart.characterType; // 怎么格式化返回结果
 
   @prop({ default: false })

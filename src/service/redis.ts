@@ -192,10 +192,8 @@ export class RedisService {
 
     // 刷选处没有值的参数,避免出现任何值都报错的情况
     setup.AlarmStat.forEach((el, key) => {
-      if (el.alarmStat.length === 0) setup.AlarmStat.delete(key)
-    })
-
-
+      if (el.alarmStat.length === 0) setup.AlarmStat.delete(key);
+    });
 
     return setup;
   }

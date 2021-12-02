@@ -18,12 +18,12 @@ export class nodeHttp implements IWebMiddleware {
         if (nodes.some(el => el.IP === ip)) {
           await next();
         } else {
-          const err = new Error('nodeData premiss')
-          ctx.logger.warn(err)
-          throw err
-        };
+          const err = new Error('nodeData premiss');
+          ctx.logger.warn(err);
+          throw err;
+        }
       } catch (error) {
-        ctx.throw('nodeData premiss')
+        ctx.throw('nodeData premiss');
       }
     };
   }

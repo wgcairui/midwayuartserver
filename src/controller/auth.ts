@@ -50,7 +50,11 @@ export class AuthController {
    */
   @Get('/user', { middleware: ['tokenParse'] })
   async user(@Body() user: Uart.UserInfo) {
-    return { code: user ? 200 : 0, user: user.user, userGroup: user?.userGroup };
+    return {
+      code: user ? 200 : 0,
+      user: user.user,
+      userGroup: user?.userGroup,
+    };
   }
 
   /**
@@ -192,17 +196,17 @@ export class AuthController {
         'wx_login'
       );
       // 如果没有小程序id,更新
-      if (!user.wpId){
+      if (!user.wpId) {
         await this.userService.modifyUserInfo(user.user, {
           wpId: seesion.openid,
         });
       }
-        // 如果是测试用户组,清除wxid
-      if(user.userGroup === 'test'){
+      // 如果是测试用户组,清除wxid
+      if (user.userGroup === 'test') {
         await this.userService.modifyUserInfo(user.user, {
           wpId: '',
-          userId:'',
-          wxId:''
+          userId: '',
+          wxId: '',
         });
       }
       return {
@@ -304,19 +308,24 @@ export class AuthController {
       }
     }
 
-    if ( !(await this.userService.BcryptComparePasswd(accont.user, accont.passwd))) {
+    if (
+      !(await this.userService.BcryptComparePasswd(accont.user, accont.passwd))
+    ) {
       return {
         code: 0,
         msg: '用户名或密码错误',
       };
     }
-    if (user.userGroup !== 'test' && user.userId && user.userId !== accont.unionid) {
+    if (
+      user.userGroup !== 'test' &&
+      user.userId &&
+      user.userId !== accont.unionid
+    ) {
       return {
         code: 0,
         msg: '账号已被其他微信用户绑定,请核对账号是否正确',
       };
     } else {
-      
       await this.userService.modifyUserInfo(user.user, {
         userId: accont.unionid,
         wpId: accont.openid,

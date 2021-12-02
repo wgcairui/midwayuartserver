@@ -24,7 +24,6 @@ import { ILogger } from '@midwayjs/logger';
 @Provide()
 @WSController('/node')
 export class NodeSocket {
-
   @Logger()
   console: ILogger;
 
@@ -63,7 +62,6 @@ export class NodeSocket {
    */
   @OnWSConnection()
   async connect() {
-
     const socket = this.ctx;
     const ID = socket.id;
     if (!this.ctx.handshake) return;
@@ -79,7 +77,9 @@ export class NodeSocket {
       // 每个连接加入到名称和ip对应的房间
       this.ctx.join([Node.Name, Node.IP]);
       this.RedisService.setSocketSid(ID, Node.Name);
-      this.console.info(`new socket connect<id: ${ID},IP: ${IP},Name: ${Node.Name}>`);
+      this.console.info(
+        `new socket connect<id: ${ID},IP: ${IP},Name: ${Node.Name}>`
+      );
       // 检查节点是否在缓存中,在的话激活旧的socket,否则创建新的socket
       this.log.saveNode({ ID, IP, type: '上线', Name: Node.Name });
       this.ctx.emit('accont');
@@ -293,7 +293,7 @@ export class NodeSocket {
         tag: '部分指令超时',
         timeStamp: Date.now(),
         msg: instruct.join(','),
-        isOk: true
+        isOk: true,
       });
       // console.log({ EX });
     }

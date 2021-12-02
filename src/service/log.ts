@@ -33,12 +33,15 @@ export class Logs {
 
   /**
    * 创建插入文档
-   * @param cl 
-   * @param doc 
-   * @returns 
+   * @param cl
+   * @param doc
+   * @returns
    */
-  creatDoc<D extends { [x: string]: any, timeStamp?: number }, T>(cl: AnyParamConstructor<T>, doc: D) {
-    return getModelForClass(cl).create({ ...doc, timeStamp: Date.now() })
+  creatDoc<D extends { [x: string]: any; timeStamp?: number }, T>(
+    cl: AnyParamConstructor<T>,
+    doc: D
+  ) {
+    return getModelForClass(cl).create({ ...doc, timeStamp: Date.now() });
   }
 
   /**
@@ -47,7 +50,7 @@ export class Logs {
    * @returns
    */
   async saveNode(doc: Uart.logNodes) {
-    return await this.creatDoc(Nodes,doc)//.creatDoc(Nodes,doc);
+    return await this.creatDoc(Nodes, doc); //.creatDoc(Nodes,doc);
   }
 
   /**
@@ -56,7 +59,7 @@ export class Logs {
    * @returns
    */
   async saveTerminal(doc: Uart.logTerminals) {
-    return await this.creatDoc(Terminals,doc)//.creatDoc(Terminals,doc);
+    return await this.creatDoc(Terminals, doc); //.creatDoc(Terminals,doc);
   }
 
   /**
@@ -66,7 +69,7 @@ export class Logs {
    */
   async saveDataTransfinite(doc: Uart.uartAlarmObject) {
     // this.SocketUser.sendMacAlarm(doc.mac, doc)
-    return await this.creatDoc(UartTerminalDataTransfinite,doc)//.creatDoc(UartTerminalDataTransfinite,doc);
+    return await this.creatDoc(UartTerminalDataTransfinite, doc); //.creatDoc(UartTerminalDataTransfinite,doc);
   }
 
   /**
@@ -75,14 +78,14 @@ export class Logs {
    * @returns
    */
   async saveDtuBusy(doc: Uart.logDtuBusy) {
-    return await this.creatDoc(DtuBusy,doc);
+    return await this.creatDoc(DtuBusy, doc);
   }
 
   /**
    * 保存邮箱发送记录
    */
   async saveMail(doc: Uart.logMailSend) {
-    return await this.creatDoc(MailSend,doc);
+    return await this.creatDoc(MailSend, doc);
   }
 
   /**
@@ -91,7 +94,7 @@ export class Logs {
    * @returns
    */
   async saveSms(doc: Uart.logSmsSend) {
-    return await this.creatDoc(SmsSend,doc);
+    return await this.creatDoc(SmsSend, doc);
   }
 
   /**
@@ -103,7 +106,7 @@ export class Logs {
    * @returns
    */
   saveUserRequst(user: string, userGroup: string, type: string, argument: any) {
-    return this.creatDoc(UserRequst,{
+    return this.creatDoc(UserRequst, {
       user,
       userGroup,
       type,
@@ -117,7 +120,7 @@ export class Logs {
    * @returns
    */
   saveClean(doc: any) {
-    return this.creatDoc(DataClean,doc);
+    return this.creatDoc(DataClean, doc);
   }
 
   /**
@@ -126,7 +129,7 @@ export class Logs {
    * @returns
    */
   async saveWxEvent(doc: Uart.WX.wxValidation | Uart.WX.WxEvent) {
-    return await this.creatDoc(WXEvent,doc);
+    return await this.creatDoc(WXEvent, doc);
   }
 
   /**
@@ -135,7 +138,10 @@ export class Logs {
   async saveWxsubscribeMessage(
     doc: Uart.WX.wxsubscribeMessage & { result: Uart.WX.wxRequest }
   ) {
-    return await this.creatDoc(wxsubscribeMessage,{ ...doc, timeStamp: Date.now() });
+    return await this.creatDoc(wxsubscribeMessage, {
+      ...doc,
+      timeStamp: Date.now(),
+    });
   }
 
   /**

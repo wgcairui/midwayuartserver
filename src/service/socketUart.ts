@@ -26,7 +26,6 @@ interface mountDevEx extends Uart.TerminalMountDevs {
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class SocketUart {
-
   @Logger()
   logger: ILogger;
 
@@ -112,15 +111,12 @@ export class SocketUart {
    */
   private async cacheProtocol(protocol: string) {
     if (!this.proMap.has(protocol)) {
-      const pro = await this.Device.getProtocol(protocol) as Uart.protocol
+      const pro = (await this.Device.getProtocol(protocol)) as Uart.protocol;
       /**
        * 刷选出正在使用的指令
        */
-      pro.instruct = pro.instruct.filter(el => el.isUse)
-      this.proMap.set(
-        protocol,
-        pro
-      );
+      pro.instruct = pro.instruct.filter(el => el.isUse);
+      this.proMap.set(protocol, pro);
     }
     return this.proMap.get(protocol);
   }

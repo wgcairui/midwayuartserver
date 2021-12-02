@@ -1,4 +1,11 @@
-import { Provide, Controller, Inject, Post, Body, Logger } from '@midwayjs/decorator';
+import {
+  Provide,
+  Controller,
+  Inject,
+  Post,
+  Body,
+  Logger,
+} from '@midwayjs/decorator';
 import { Device } from '../service/device';
 import { Util } from '../util/util';
 import { Logs } from '../service/log';
@@ -17,7 +24,6 @@ import { ILogger } from '@midwayjs/logger';
 @Provide()
 @Controller('/api/node', { middleware: ['nodeHttp'] })
 export class NodeControll {
-
   @Logger()
   console: ILogger;
 
@@ -188,14 +194,13 @@ export class NodeControll {
        * 如果解析数据为空,表示数据乱码,把查询时间*3
        */
       if (parse.length === 0) {
-        const interval = await this.Device.getMountDevInterval(data.mac)
-        this.SocketUart.setTerminalMountDevCache(data.mac, interval * 3)
+        const interval = await this.Device.getMountDevInterval(data.mac);
+        this.SocketUart.setTerminalMountDevCache(data.mac, interval * 3);
         this.console.error({
           msg: '解析数据为空,跳过后续操作',
-          data
-        })
-        return
-
+          data,
+        });
+        return;
       }
 
       // 如果设备有用户绑定则进入检查流程

@@ -1,4 +1,4 @@
-import { Provide, Init, Inject, Logger } from '@midwayjs/decorator';
+import { Provide, Init, Logger } from '@midwayjs/decorator';
 import { getModelForClass } from '@typegoose/typegoose';
 import axios from 'axios';
 import { SecretApp } from '../entity/user';
@@ -78,7 +78,6 @@ interface hf_macInfo extends hfRequst {
  * 汉枫IOT Server获取数据方法
  */
 export class HF {
-
   @Logger()
   console: ILogger;
 

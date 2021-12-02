@@ -7,7 +7,6 @@ import * as task from '@midwayjs/task';
 import { join } from 'path';
 import * as cors from '@koa/cors';
 
-
 @Configuration({
   conflictCheck: true,
   imports: [typegoose, task],
@@ -30,8 +29,8 @@ export class ContainerLifeCycle implements ILifeCycle {
       )
       .use(
         cors({
-          origin: "*"
+          origin: '*',
         })
-      )
+      );
   }
 }

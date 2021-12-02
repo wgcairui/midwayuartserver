@@ -91,7 +91,6 @@ export class UserService {
   @Logger()
   console: ILogger;
 
-
   /**
    * 校验用户密码
    * @param user 用户名
@@ -129,9 +128,9 @@ export class UserService {
         status === 200 &&
         data.code === 200 &&
         data.data.u.user_pwd ===
-        SHA384(pw + data.data.u.salt)
-          .toString()
-          .toLocaleUpperCase()
+          SHA384(pw + data.data.u.salt)
+            .toString()
+            .toLocaleUpperCase()
       ) {
         const { u, devs } = data.data;
         // 创建用户信息
@@ -858,7 +857,7 @@ export class UserService {
               pid,
               timeStamp: { $gte: start, $lte: end },
             },
-            { 'result': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+            { result: 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
           )
           .lean();
       }
@@ -1197,10 +1196,10 @@ export class UserService {
       ? ''
       : `匹配到如下链接\n
     ${data.slice(0, 20).map(el => {
-        return `<a href="https://www.ladishb.com${el.rout}">${el.title
-          .slice(0, 12)
-          .trim()}...</a>\n\n`;
-      })}`.replace(/(\,|^ )/g, '');
+      return `<a href="https://www.ladishb.com${el.rout}">${el.title
+        .slice(0, 12)
+        .trim()}...</a>\n\n`;
+    })}`.replace(/(\,|^ )/g, '');
   }
 
   /**

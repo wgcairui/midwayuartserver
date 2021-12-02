@@ -2,7 +2,10 @@ import { modelOptions, prop } from '@typegoose/typegoose';
 import { Schema } from 'mongoose';
 import { DevConstant } from './protocol';
 
-@modelOptions({ schemaOptions: { collection: 'users', }, options: { allowMixed: 0 } })
+@modelOptions({
+  schemaOptions: { collection: 'users' },
+  options: { allowMixed: 0 },
+})
 export class Users {
   @prop()
   public avanter: string;

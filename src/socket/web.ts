@@ -26,9 +26,7 @@ export class WebSocket {
    * 连接事件¸
    */
   @OnWSConnection()
-  async Connection() {
-
-  }
+  async Connection() {}
 
   /**
    * 断开事件

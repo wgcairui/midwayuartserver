@@ -67,7 +67,7 @@ export class Device {
         .lean();
     } else {
       return (await model
-        .find({ DevMac: { $in: macs as any  } }, filter)
+        .find({ DevMac: { $in: macs as any } }, filter)
         .lean()) as any;
     }
   }
