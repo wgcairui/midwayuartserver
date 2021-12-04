@@ -6,7 +6,7 @@ import { fetch, getKey, parseUrl } from './fetch';
  */
 @Provide()
 @Scope(ScopeEnum.Singleton)
-export class WxOpen {
+export class WxOpens {
   secret: Uart.Secret_app;
 
   @Init()

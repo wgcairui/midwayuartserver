@@ -1,8 +1,8 @@
 import { Provide, Scope, ScopeEnum, Inject } from '@midwayjs/decorator';
 import { Logs } from '../service/log';
-import { WxOpen } from '../wx/open_web';
-import { WxApp } from '../wx/weapp';
-import { WxPublic } from '../wx/wxpublic';
+import { WxOpens } from '../wx/open_web';
+import { WxApps } from '../wx/weapp';
+import { WxPublics } from '../wx/wxpublic';
 
 /**
  * 微信开发套件
@@ -15,17 +15,17 @@ export class Wx {
    * 公众号
    */
   @Inject()
-  MP: WxPublic;
+  MP: WxPublics;
   /**
    * 小程序
    */
   @Inject()
-  WP: WxApp;
+  WP: WxApps;
   /**
    * 开放平台
    */
   @Inject()
-  OP: WxOpen;
+  OP: WxOpens;
 
   @Inject()
   logs: Logs;

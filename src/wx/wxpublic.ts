@@ -7,7 +7,7 @@ import { RedisService } from '../service/redis';
  */
 @Provide()
 @Scope(ScopeEnum.Singleton)
-export class WxPublic {
+export class WxPublics {
   @Inject()
   redis: RedisService;
 
@@ -17,7 +17,7 @@ export class WxPublic {
 
   @Init()
   async init() {
-    this.secret = (await getKey('wxopen')) as any;
+    this.secret = (await getKey('wxmp')) as any;
   }
 
   /**
@@ -122,9 +122,8 @@ export class WxPublic {
    * @param next_openid 第一个拉取的OPENID，不填默认从头开始拉取
    */
   private async getUserlist(next_openid?: string) {
-    const url = `https://api.weixin.qq.com/cgi-bin/user/get?access_token=${await this.getToken()}${
-      next_openid ? `&next_openid=${next_openid}` : ''
-    }`;
+    const url = `https://api.weixin.qq.com/cgi-bin/user/get?access_token=${await this.getToken()}${next_openid ? `&next_openid=${next_openid}` : ''
+      }`;
     return await fetch<Uart.WX.userlistPublic>({ url, method: 'GET' });
   }
 

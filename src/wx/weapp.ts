@@ -8,7 +8,7 @@ import { RedisService } from '../service/redis';
  */
 @Provide()
 @Scope(ScopeEnum.Singleton)
-export class WxApp {
+export class WxApps {
   /**
    * 用户session缓存
    */
@@ -21,7 +21,7 @@ export class WxApp {
 
   @Init()
   async init() {
-    this.secret = (await getKey('wxopen')) as any;
+    this.secret = (await getKey('wxwp')) as any;
     this.sessionCache = new Map();
   }
   /**
