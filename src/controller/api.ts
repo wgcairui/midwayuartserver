@@ -38,6 +38,7 @@ import { Util } from '../util/util';
 import { SocketUart } from '../service/socketUart';
 import * as lodash from 'lodash';
 import { toDataURL } from 'qrcode';
+import { CreateApiDoc } from '@midwayjs/swagger';
 
 @Provide()
 @Controller('/api', { middleware: ['token'] })
@@ -73,16 +74,32 @@ export class ApiControll {
    * @param company
    * @returns
    */
+  @(CreateApiDoc()
+    .summary('注册用户')
+    .description('用于网页端注册用户')
+    .param('昵称')
+    .param('账号')
+    .param('密码')
+    .param('手机号')
+    .param('邮箱')
+    .param('组织')
+    .build())
   @Post('/guest/addUser')
   addUser(
-    @Body() name: string,
-    @Body() user: string,
-    @Body() passwd: string,
-    @Body() tel: string,
-    @Body() mail: string,
-    @Body() company: string
+    @Body(ALL)
+    user: Pick<
+      Uart.UserInfo,
+      'user' | 'name' | 'passwd' | 'tel' | 'mail' | 'company'
+    >
   ) {
-    return this.UserService.addUser(name, user, passwd, tel, mail, company);
+    return this.UserService.addUser(
+      user.name,
+      user.user,
+      user.passwd,
+      user.tel as any,
+      user.mail,
+      user.company
+    );
   }
 
   /**
@@ -90,6 +107,7 @@ export class ApiControll {
    * @param token
    * @returns
    */
+  @(CreateApiDoc().summary('获取用户绑定设备').build())
   @Post('/BindDev')
   @Validate()
   async BindDev(@Body(ALL) data: Api) {
@@ -103,6 +121,11 @@ export class ApiControll {
    * 获取用户告警信息
    * @param token
    */
+  @(CreateApiDoc()
+    .summary('获取用户告警信息')
+    .param('开始时间')
+    .param('结束时间')
+    .build())
   @Validate()
   @Post('/loguartterminaldatatransfinites')
   async loguartterminaldatatransfinites(@Body(ALL) data: date) {

@@ -302,6 +302,7 @@ export class Device {
       'mountDevs.online': 1,
       'mountDevs.protocol': 1,
       'mountDevs.pid': 1,
+      iccidInfo: 1,
     })) as unknown as Uart.Terminal;
 
     // 统计挂载的设备协议指令数量
@@ -313,7 +314,18 @@ export class Device {
       })
     );
     // 基数
-    const baseNum = terminal.ICCID ? 1000 : 500;
+    let baseNum = terminal.ICCID ? 1000 : 500;
+    // 如果有有iccidInfo,状态开启且月流量小于500mb,修改基数,
+    if (
+      terminal.iccidInfo &&
+      terminal.iccidInfo.statu &&
+      terminal.iccidInfo.flowResource < 512000
+    ) {
+      // 新的基数= 基数 * (512e3 / 流量总量 )
+      // 例如月流量是30Mb=32e3,512e3/32e3 ~ 17,基数系数变更为17,则单条指令查询事件为17秒
+      baseNum =
+        baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource));
+    }
     // 指令合计数量
     const LensCount =
       MountDevLens.length > 0 ? MountDevLens.reduce((pre, cu) => pre + cu) : 1;

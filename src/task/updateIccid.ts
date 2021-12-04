@@ -50,7 +50,7 @@ export class UpdateIccid {
           // 剩余每天可使用的量
           const afterUse = data.restOfFlow / hasExpireDate;
 
-          // 如果剩余量不足,修改查询间隔,避免超出使用流量
+          // 如果剩余量不足,修改查询间隔,避免超出使用流量,此流程不准确,获取的使用量会懈后
           if (afterUse < dayUse) {
             const interVal =
               (await this.Device.getMountDevInterval(ter.DevMac)) *

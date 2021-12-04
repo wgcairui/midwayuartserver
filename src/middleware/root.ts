@@ -18,7 +18,7 @@ export class root implements IWebMiddleware {
       const util = await ctx.requestContext.getAsync(Util);
       const user = await util
         .Secret_JwtVerify<Uart.UserInfo>(token.split('%20').reverse()[0].trim())
-        .catch(err => {
+        .catch(() => {
           ctx.logger.warn('token error');
           ctx.throw('token error');
         });

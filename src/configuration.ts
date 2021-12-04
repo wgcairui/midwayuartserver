@@ -6,10 +6,11 @@ import * as typegoose from '@midwayjs/typegoose';
 import * as task from '@midwayjs/task';
 import { join } from 'path';
 import * as cors from '@koa/cors';
+import * as swagger from '@midwayjs/swagger';
 
 @Configuration({
   conflictCheck: true,
-  imports: [typegoose, task],
+  imports: [typegoose, task, swagger],
   importConfigs: [join(__dirname, './config')],
 })
 export class ContainerLifeCycle implements ILifeCycle {

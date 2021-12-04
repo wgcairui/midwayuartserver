@@ -32,7 +32,7 @@ export class OpenControll {
    */
   @Post('/crc')
   @Validate()
-  crc(@Body(ALL) { protocolType, pid, instructN, address, value }: crc) {
+  crc(@Body(ALL) { pid, instructN, address, value }: crc) {
     const c = Buffer.allocUnsafe(2);
     c.writeIntBE(address, 0, 2);
     const start = c.slice(0, 2).toString('hex');

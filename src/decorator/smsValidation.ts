@@ -10,7 +10,7 @@ export function Sms(): MethodDecorator {
     descriptor: PropertyDescriptor
   ) => {
     const method = descriptor.value;
-    descriptor.value = async function (...args) {
+    descriptor.value = async function (...args: any) {
       // 指向当前上层框架的上下文对象，上层框架的上下文对象请参考各上层框架文档。
       const ctx: Context = this[REQUEST_OBJ_CTX_KEY];
       // 获取redis实例

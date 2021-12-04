@@ -1,8 +1,8 @@
-import { Provide, Scope, ScopeEnum, Init, Inject } from '@midwayjs/decorator';
-import { wxApp, wxOpen, wxPublic } from '@cairui/wx-sdk';
-import { SecretApp } from '../entity/user';
+import { Provide, Scope, ScopeEnum, Inject } from '@midwayjs/decorator';
 import { Logs } from '../service/log';
-import { getModelForClass } from '@typegoose/typegoose';
+import { WxOpen } from '../wx/open_web';
+import { WxApp } from '../wx/weapp';
+import { WxPublic } from '../wx/wxpublic';
 
 /**
  * 微信开发套件
@@ -14,61 +14,21 @@ export class Wx {
   /**
    * 公众号
    */
-  MP?: wxPublic;
+  @Inject()
+  MP: WxPublic;
   /**
    * 小程序
    */
-  WP?: wxApp;
+  @Inject()
+  WP: WxApp;
   /**
    * 开放平台
    */
-  OP?: wxOpen;
+  @Inject()
+  OP: WxOpen;
 
   @Inject()
   logs: Logs;
-
-  @Init()
-  async init() {
-    await this.initMp();
-    await this.initOp();
-    await this.initWp();
-  }
-
-  private async getKey(type: 'wxopen' | 'wxmp' | 'wxmpValidaton' | 'wxwp') {
-    const model = getModelForClass(SecretApp);
-    return await model.findOne({ type }).lean();
-  }
-
-  /**
-   * 初始化公众号
-   */
-  async initMp() {
-    const mpSecret = await this.getKey('wxmp');
-    if (mpSecret) {
-      this.MP = new wxPublic(mpSecret.appid, mpSecret.secret);
-    }
-  }
-
-  /**
-   * 初始化小程序对象
-   */
-  async initWp() {
-    const wpSecret = await this.getKey('wxwp');
-    if (wpSecret) {
-      this.WP = new wxApp(wpSecret.appid, wpSecret.secret);
-    }
-  }
-
-  /**
-   * 初始化开放平台
-   */
-
-  async initOp() {
-    const opSecret = await this.getKey('wxopen');
-    if (opSecret) {
-      this.OP = new wxOpen(opSecret.appid, opSecret.secret);
-    }
-  }
 
   /**
    *
