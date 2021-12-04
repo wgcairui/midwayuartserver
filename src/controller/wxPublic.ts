@@ -222,7 +222,7 @@ export class WxPublic {
       // 自动回复信息
       return this.TextMessege(
         body,
-        '详情请咨询400-6655778\n\n招商专线18971282941'
+        '详情请咨询400-6655778'
       );
     }
     return 'success';
