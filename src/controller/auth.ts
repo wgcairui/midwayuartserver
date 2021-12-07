@@ -245,6 +245,36 @@ export class AuthController {
   }
 
   /**
+   * 小程序测试试用
+   * @param data 
+   * @returns 
+   */
+  @Get('/trial')
+  async trial(@Query(ALL) data: code2Session) {
+    // 正确的话返回sessionkey
+    const seesion = await this.Wx.WP.UserOpenID(data.js_code);
+    // 存储session
+    await this.RedisService.setCode2Session(
+      seesion.openid,
+      seesion.session_key
+    );
+    // 检查unionid是否为已注册用户,
+    const user = await this.userService.getUser('test');
+    await this.userService.updateUserLoginlog(
+      user.user,
+      this.ctx.ip,
+      'wx_login-'+seesion.openid+'-trail'
+    );
+    return {
+      code: 200,
+      data: {
+        token: await this.userService.getToken(user.user),
+      },
+    };
+
+  }
+
+  /**
    * 解密电话字符串
    * @param data
    */
