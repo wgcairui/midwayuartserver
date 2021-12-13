@@ -193,6 +193,7 @@ export class NodeSocket {
           Type: 'UPS',
         };
         await this.UserService.addTerminalMountDev('root', data, mountDev);
+        await this.Device.setTerminal(data, { PID: 'pesiv' })
         this.RedisService.initTerminalMap();
         this.console.info(`Pesiv卡:${data}未注册,将自动注册到设备库`);
       }

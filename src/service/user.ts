@@ -128,9 +128,9 @@ export class UserService {
         status === 200 &&
         data.code === 200 &&
         data.data.u.user_pwd ===
-          SHA384(pw + data.data.u.salt)
-            .toString()
-            .toLocaleUpperCase()
+        SHA384(pw + data.data.u.salt)
+          .toString()
+          .toLocaleUpperCase()
       ) {
         const { u, devs } = data.data;
         // 创建用户信息
@@ -210,6 +210,7 @@ export class UserService {
             await this.Device.addRegisterTerminal(code, 'pwsiv');
             // 修改卡名称
             await this.modifyTerminal(ru.user, code, dev.DevName);
+            await this.Device.setTerminal(code, { PID: 'pesiv' })
             // 添加挂载信息
             await this.addTerminalMountDev(ru.user, code, mountDev);
           }
@@ -1196,10 +1197,10 @@ export class UserService {
       ? ''
       : `匹配到如下链接\n
     ${data.slice(0, 20).map(el => {
-      return `<a href="https://www.ladishb.com${el.rout}">${el.title
-        .slice(0, 12)
-        .trim()}...</a>\n\n`;
-    })}`.replace(/(\,|^ )/g, '');
+        return `<a href="https://www.ladishb.com${el.rout}">${el.title
+          .slice(0, 12)
+          .trim()}...</a>\n\n`;
+      })}`.replace(/(\,|^ )/g, '');
   }
 
   /**
