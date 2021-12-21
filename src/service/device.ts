@@ -41,7 +41,7 @@ export class Device {
    * 获取all终端
    * @returns
    */
-  async getTerminals(filter: filter<Uart.Terminal> = { _id: 0 }) {
+  async getTerminals(filter: filter<Uart.Terminal> = { }) {
     return await this.getModel(Terminal).find({}, filter).lean();
   }
 

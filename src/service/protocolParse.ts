@@ -79,7 +79,7 @@ export class ProtocolParse {
           el =>
             InstructMap.has(el.content) &&
             el.buffer.data.findIndex(el2 => el2 === 13) ===
-              el.buffer.data.length - 1
+            el.buffer.data.length - 1
         )
 
         .map(el => {
@@ -269,13 +269,15 @@ export class ProtocolParse {
                 result.value = buffer[start].toString();
               } catch (error) {
                 console.log({
-                  error,
+                  error: error.message,
                   buffer,
                   instructs,
                   start,
                   end,
                   step,
                 });
+
+                result.value = undefined
               }
               break;
             // 处理ascii
@@ -294,7 +296,7 @@ export class ProtocolParse {
                 const str = num.toString();
                 result.value = /\./.test(str) ? num.toFixed(1) : str;
               } catch (error) {
-                result.value = '0';
+                result.value = undefined;
                 /* console.error({
                                 msg: '解析结果长度错误',
                                 instructs,
@@ -313,13 +315,14 @@ export class ProtocolParse {
               ).toFixed(2);
               break;
           }
-          result.parseValue = result.issimulate
+          result.parseValue = (result.value && result.issimulate)
             ? await this.RedisService.parseUnit(result.unit!, result.value)
             : result.value;
           return result;
-        });
+        })
       })
-      .flat();
+      .flat()
+
   }
 
   /**

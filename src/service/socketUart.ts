@@ -186,7 +186,7 @@ export class SocketUart {
    *
    * 每天3点重置一次指令缓存
    */
-  @TaskLocal('0 3 * * *')
+  @TaskLocal('0 5 * * *')
   async clear_Cache() {
     this.logger.info(`${new Date().toLocaleString()}===clear_Cache`);
     const nodes = await this.Device.getNodes();

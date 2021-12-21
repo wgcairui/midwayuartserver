@@ -23,6 +23,7 @@ import { Clean } from '../task/clean';
 import { DyIot } from '../util/dyiot';
 import { UpdateIccid } from '../task/updateIccid';
 import { SocketUser } from '../service/socketUser';
+import { macPid } from '../dto/user';
 
 @Provide()
 @Controller('/api/root', { middleware: ['root'] })
@@ -746,6 +747,21 @@ export class RootControll {
       ] as unknown as Uart.TerminalMountDevsEX,
     };
   }
+
+  /**
+ * 获取节点指令发送运行状态
+ * @returns
+ */
+  @Post('/getNodeInstructQueryMac')
+  @Validate()
+  getNodeInstructQueryMac(@Body(ALL) data: macPid) {
+    return {
+      code: 200,
+      data: this.SocketUart.cache.get(data.mac + data.pid),
+
+    };
+  }
+
 
   /**
    * 获取所有连接的socket客户端用户
