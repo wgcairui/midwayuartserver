@@ -60,6 +60,9 @@ export class Users {
 
   @prop()
   public proxy?: string;
+
+  @prop()
+  public remark: string
 }
 
 /**
@@ -74,7 +77,13 @@ export class UserBindDevice {
   public ECs: string[];
 
   @prop({ type: String, default: [] })
+  public ECsShare: string[];
+
+  @prop({ type: String, default: [] })
   public UTs: string[];
+
+  @prop({ type: String, default: [] })
+  public UTsShare: string[];
 }
 
 class aggregation {
@@ -276,6 +285,9 @@ export class UserAlarmSetup {
 
   @prop({ type: [String], default: [] })
   mails: string[];
+
+  @prop({ type: [String], default: [] })
+  wxs: string[];
 
   @prop({ type: DevConstant, _id: false })
   ProtocolSetup: DevConstant[];

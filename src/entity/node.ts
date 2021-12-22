@@ -73,6 +73,9 @@ export class WebSocketTerminal {
 
   @prop()
   public iotStat: string;
+
+  @prop()
+  public signal: number
 }
 
 /**
@@ -411,6 +414,15 @@ export class Terminal {
 
   @prop({ type: iccidInfo, _id: false })
   public iccidInfo: iccidInfo;
+
+  @prop()
+  public signal: number
+
+  @prop()
+  public share: boolean
+
+  @prop()
+  public remark: string
 }
 
 /**

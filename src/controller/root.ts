@@ -23,7 +23,6 @@ import { Clean } from '../task/clean';
 import { DyIot } from '../util/dyiot';
 import { UpdateIccid } from '../task/updateIccid';
 import { SocketUser } from '../service/socketUser';
-import { macPid } from '../dto/user';
 
 @Provide()
 @Controller('/api/root', { middleware: ['root'] })
@@ -754,10 +753,10 @@ export class RootControll {
  */
   @Post('/getNodeInstructQueryMac')
   @Validate()
-  getNodeInstructQueryMac(@Body(ALL) data: macPid) {
+  getNodeInstructQueryMac(@Body() mac: string, @Body() pid: string | number) {
     return {
       code: 200,
-      data: this.SocketUart.cache.get(data.mac + data.pid),
+      data: this.SocketUart.cache.get(mac + pid)?.Interval || 3000,
 
     };
   }

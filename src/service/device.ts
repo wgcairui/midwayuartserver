@@ -346,7 +346,7 @@ export class Device {
    * @param doc
    * @returns
    */
-  async saveTerminalResultColletion(doc: Partial<Uart.queryResultParse>) {
+  async saveTerminalResultColletion(doc: any) {
     return await this.getModel(TerminalClientResult).create(doc as any);
   }
 

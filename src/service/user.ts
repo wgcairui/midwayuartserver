@@ -145,15 +145,7 @@ export class UserService {
         } as Partial<Uart.UserInfo>;
 
         // 判断用户电话
-        if (
-          (u.telephone &&
-            /^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/.test(
-              u.telephone
-            )) ||
-          /^(0|86|17951)?(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/.test(
-            u.real_name
-          )
-        ) {
+        if ((u.telephone && this.Util.RegexTel(u.telephone)) || this.Util.RegexTel(u.real_name)) {
           const tel = String(u.telephone || u.real_name) as any;
           if (await this.getUser(tel)) {
             this.console.warn({ ...userinfo, msg: '用户手机号码重复' });
@@ -163,10 +155,7 @@ export class UserService {
         }
         // 判断用户邮箱
         if (
-          (u.email &&
-            /\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/.test(u.email)) ||
-          /\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/.test(u.real_name)
-        ) {
+          (u.email && this.Util.RegexMail(u.email)) || this.Util.RegexMail(u.real_name)) {
           userinfo.mail = u.email || u.real_name;
         }
         // pesiv用户密码盐值
@@ -241,7 +230,7 @@ export class UserService {
   async isBindMac(user: string, mac: string) {
     const u = await this.getUser(user);
     if (u && ['root', 'admin'].includes(u.userGroup)) return true;
-    const r = await this.userbindModel.findOne({ user, UTs: mac }, { _id: 1 });
+    const r = await this.userbindModel.findOne({ user, $or: [{ UTs: mac }] }, { _id: 1 });
     return r ? true : false;
   }
 
@@ -395,6 +384,7 @@ export class UserService {
         user: u.user,
         tels: u?.tel && this.Util.RegexTel(u.tel) ? [u.tel] : [],
         mails: u?.mail && this.Util.RegexMail(u.mail) ? [u.mail] : [],
+        wxs: u?.wxId ? [u.wxId] : [],
         ProtocolSetup: [],
       });
     } else {
@@ -416,6 +406,7 @@ export class UserService {
       type: '用户注册',
       address: user.address,
       msg: '',
+      creatTime: new Date()
     });
     return u;
   }
@@ -443,8 +434,11 @@ export class UserService {
    * @param user
    * @returns
    */
-  private getUserBind(user: string) {
-    return this.userbindModel.findOne({ user }, { UTs: 1 }).lean();
+  private async getUserBind(user: string) {
+    const bind = await this.userbindModel.findOne({ user }, { UTs: 1, UTsShare: 1 }).lean();
+    return {
+      UTs: [bind?.UTs || [], bind?.UTsShare || []].flat()
+    }
   }
 
   /**
@@ -455,7 +449,7 @@ export class UserService {
     const bind = await this.getUserBind(user);
     return {
       bind,
-      UTs: await this.Device.getTerminal(bind?.UTs || []),
+      UTs: await this.Device.getTerminal(bind.UTs),
       ECs: [],
       AGG: await this.useraggregModel.find({ user }).lean(),
     };
@@ -525,7 +519,7 @@ export class UserService {
   ) {
     const bind = await this.getUserBind(user);
     return this.AlarmModel.find(
-      { mac: { $in: bind?.UTs || [] }, timeStamp: { $gte: start, $lte: end } },
+      { mac: { $in: bind.UTs }, timeStamp: { $gte: start, $lte: end } },
       filter
     ).lean();
   }

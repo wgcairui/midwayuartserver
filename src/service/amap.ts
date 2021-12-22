@@ -23,7 +23,7 @@ export class Amap {
    */
   async IP2loction(ip: string) {
     if (!(await this.RedisService.getloctionIp(ip))) {
-      const result = await this.fecth<Uart.AMap.ip2parameters>('ip', { ip });
+      const result = await this.fecth<any>('ip', { ip });
       const loction = result.rectangle.split(';')[0];
       this.RedisService.setloctionIp(ip, loction);
     }
@@ -40,7 +40,7 @@ export class Amap {
     coordsys: 'gps' | 'mapbar' | 'baidu' = 'gps'
   ) {
     if (!loctions || loctions === '') return [''];
-    const result = await this.fecth<Uart.AMap.convert>(
+    const result = await this.fecth<any>(
       'assistant/coordinate/convert',
       { locations: loctions, coordsys }
     );
@@ -48,7 +48,7 @@ export class Amap {
   }
 
   // axios
-  private async fecth<T extends Uart.AMap.statu>(
+  private async fecth<T extends any>(
     type: apiType,
     data: { [x: string]: string | string[] }
   ) {
@@ -59,7 +59,7 @@ export class Amap {
         ...data,
       },
     });
-    const result: T = res.data;
+    const result: any = res.data;
     if (result.status === '0') {
       this.log.error(result);
     }

@@ -108,6 +108,9 @@ export class Protocols {
 
   @prop({ type: () => instruct })
   public instruct: instruct[];
+
+  @prop()
+  public remark: string
 }
 
 /**

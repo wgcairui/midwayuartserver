@@ -65,8 +65,10 @@ export class NodeControll {
   async dtuInfo(@Body() info: Uart.Terminal) {
     // 获取terminal信息
     const terminal = await this.Device.getTerminal(info.DevMac);
+    console.log({info});
+    
     if (terminal) {
-      const { DevMac, ip, port, AT, PID, ver, Gver, iotStat, jw, uart, ICCID } =
+      const { DevMac, ip, port, AT, PID, ver, Gver, iotStat, jw, uart, ICCID, signal } =
         info;
       // 比较参数，如果有修改则更新数据库
       {
@@ -85,6 +87,8 @@ export class NodeControll {
             temp.push({ uart });
           if (terminal.ICCID !== ICCID && this.Util.RegexICCID(ICCID))
             temp.push({ ICCID });
+          if (terminal.signal !== signal)
+            temp.push({ signal });
         }
 
         if (temp.length > 0) {
