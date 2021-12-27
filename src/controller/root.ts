@@ -785,6 +785,23 @@ export class RootControll {
   }
 
   /**
+   * 获取用户在线状态
+   * @returns
+   */
+  @Post('/getUserOnlineStat')
+  async getUserOnlineStat(@Body() user: string) {
+    const names = (await this.SocketApp.of('/web').fetchSockets())
+      .map(el => (el.rooms.size > 1 ? [...el.rooms.values()][1] : ''))
+      .flat()
+      .filter(el => el);
+
+    return {
+      code: 200,
+      data: names.includes(user) || this.SocketUser.wsMap.has(user)
+    }
+  }
+
+  /**
    * 发送socket消息给用户
    * @param user
    * @param msg
@@ -1283,5 +1300,20 @@ export class RootControll {
       code: 200,
       data: await this.UserService.delUserTerminal(user, mac),
     };
+  }
+
+
+  /**
+   * 修改设备备注
+   * @param mac 
+   * @param remark 
+   * @returns 
+   */
+  @Post("/modifyTerminalRemark")
+  async modifyTerminalRemark(@Body() mac: string, @Body() remark: string) {
+    return {
+      code: 200,
+      data: await this.Device.setTerminal(mac, { remark })
+    }
   }
 }

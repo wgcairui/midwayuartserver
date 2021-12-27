@@ -180,7 +180,7 @@ export class NodeSocket {
       // 如果是pesiv节点的设备和设备未注册,自动注册设备信息
       // 如果设备是百事服卡且未注册,自动注册设备型号
       if (
-        node.Name === 'pwsiv' &&
+        ['pwsiv', 'besiv-1'].includes(node.Name) &&
         typeof data === 'string' &&
         !this.RedisService.terminalMap.has(data)
       ) {

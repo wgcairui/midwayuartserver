@@ -52,8 +52,8 @@ export class AuthController {
   async user(@Body() user: Uart.UserInfo) {
     return {
       code: user ? 200 : 0,
-      user: user.user,
-      userGroup: user?.userGroup,
+      user: user? user.user:'guest',
+      userGroup: user?user.userGroup:'guest',
     };
   }
 
