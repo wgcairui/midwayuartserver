@@ -10,7 +10,7 @@ import {
 } from '@midwayjs/decorator';
 import { Application } from '@midwayjs/koa';
 import * as redis from 'ioredis';
-import { Device } from '../service/device';
+import { Device } from './deviceBase';
 import { UserService } from '../service/user';
 
 interface userSetupMap {

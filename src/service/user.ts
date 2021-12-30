@@ -11,7 +11,7 @@ import {
   Salt,
 } from '../entity/user';
 import { UartTerminalDataTransfinite, UserLogin } from '../entity/log';
-import { Device } from './device';
+import { Device } from './deviceBase';
 import { Sms } from '../util/sms';
 import { Wx } from '../util/wx';
 import { Util } from '../util/util';
@@ -459,10 +459,10 @@ export class UserService {
    * 获取绑定设备所属用户
    * @param mac
    */
-  async getBindMacUser(mac: string) {
+  /* async getBindMacUser(mac: string) {
     const t = await this.userbindModel.findOne({ UTs: mac }).lean();
     return t ? t.user : null;
-  }
+  } */
 
   /**
    * 获取第三方密匙信息

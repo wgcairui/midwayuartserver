@@ -6,20 +6,21 @@ import {
   Body,
   Logger,
 } from '@midwayjs/decorator';
-import { Device } from '../service/device';
+import { Device } from '../service/deviceBase';
 import { Util } from '../util/util';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 import { Alarm } from '../service/alarm';
 import { ProtocolParse } from '../service/protocolParse';
 import { ProtocolCheck } from '../service/protocolCheck';
 import { RedisService } from '../service/redis';
 import * as _ from 'lodash';
-import { SocketUser } from '../service/socketUser';
+import { SocketUser } from '../service/socketUserBase';
 import { SocketUart } from '../service/socketUart';
 import { UserService } from '../service/user';
 import { alarm } from '../interface';
 import axios from 'axios';
 import { ILogger } from '@midwayjs/logger';
+import { getBindMacUser } from '../util/base';
 
 @Provide()
 @Controller('/api/node', { middleware: ['nodeHttp'] })
@@ -65,8 +66,6 @@ export class NodeControll {
   async dtuInfo(@Body() info: Uart.Terminal) {
     // 获取terminal信息
     const terminal = await this.Device.getTerminal(info.DevMac);
-    console.log({info});
-    
     if (terminal) {
       const { DevMac, ip, port, AT, PID, ver, Gver, iotStat, jw, uart, ICCID, signal } =
         info;
@@ -136,6 +135,7 @@ export class NodeControll {
    */
   @Post('/queryData')
   async queryData(@Body() data: Uart.queryResult) {
+    
     // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
     if (
       data.mac &&
@@ -171,7 +171,7 @@ export class NodeControll {
 
       // 数据转发配置
       {
-        this.UserService.getBindMacUser(data.mac).then(async user => {
+        getBindMacUser(data.mac).then(async user => {
           if (user) {
             const { proxy } = await this.UserService.getUser(user);
             if (proxy) {
@@ -271,7 +271,7 @@ export class NodeControll {
     const a: alarm[] = [];
     const r: Uart.queryResultArgument[] = [];
     // 获取设备用户
-    const user = await this.UserService.getBindMacUser(data.mac);
+    const user = await getBindMacUser(data.mac);
     // 获取协议指令条数
     const instructLen = (await this.Device.getProtocol(data.protocol)).instruct
       .map(data => data.formResize.length)

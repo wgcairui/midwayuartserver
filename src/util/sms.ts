@@ -10,7 +10,7 @@ import * as core from '@alicloud/pop-core';
 import { Application } from '@midwayjs/koa';
 import { SecretApp } from '../entity/user';
 import { SmsResult } from '../interface';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 import { getModelForClass } from '@typegoose/typegoose';
 
 interface params {

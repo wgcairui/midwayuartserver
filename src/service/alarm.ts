@@ -1,12 +1,12 @@
 import { Provide, Inject, Logger } from '@midwayjs/decorator';
 import { UserService } from '../service/user';
-import { Device } from '../service/device';
+import { Device } from './deviceBase';
 import { Util } from '../util/util';
 import { Sms } from '../util/sms';
 import { Wx } from '../util/wx';
 import { Mail } from '../util/mail';
 import { alarm } from '../interface';
-import { TencetMap } from './tencetMap';
+import { TencetMap } from './tencetMapBase';
 import { SmsResult } from '../interface';
 import { ILogger } from '@midwayjs/logger';
 

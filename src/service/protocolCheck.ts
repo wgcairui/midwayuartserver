@@ -1,6 +1,6 @@
 import { Provide, Inject, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { RedisService } from '../service/redis';
-import { Device } from '../service/device';
+import { Device } from './deviceBase';
 import { UserService } from '../service/user';
 import { SocketUart } from '../service/socketUart';
 import { alarm } from '../interface';

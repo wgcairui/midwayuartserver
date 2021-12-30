@@ -1,5 +1,5 @@
 import { Provide, Inject, Controller, Post, Body } from '@midwayjs/decorator';
-import { Device } from '../service/device';
+import { Device } from '../service/deviceBase';
 import { UserService } from '../service/user';
 
 @Provide()

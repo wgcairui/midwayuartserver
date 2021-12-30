@@ -9,23 +9,25 @@ import {
   Validate,
   ALL,
 } from '@midwayjs/decorator';
-import { Device } from '../service/device';
+import { Device } from '../service/deviceBase';
 import { UserService } from '../service/user';
 import { RedisService } from '../service/redis';
 import { Util } from '../util/util';
 import { Wx } from '../util/wx';
 import { HF } from '../util/hf';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 import { Application as SocketApp } from '@midwayjs/socketio';
 import { date, IdDate, macDate, registerDev, userDate } from '../dto/root';
 import { SocketUart } from '../service/socketUart';
 import { Clean } from '../task/clean';
 import { DyIot } from '../util/dyiot';
 import { UpdateIccid } from '../task/updateIccid';
-import { SocketUser } from '../service/socketUser';
+import { SocketUser } from '../service/socketUserBase';
+import { loginHash } from '../dto/user';
+import { getBindMacUser } from '../util/base';
 
 @Provide()
-@Controller('/api/root', { middleware: ['root'] })
+@Controller('/api/root', { middleware: ['root', 'modifyTerminal'] })
 export class RootControll {
   @Inject()
   private Device: Device;
@@ -170,7 +172,7 @@ export class RootControll {
   async getTerminals(@Body() filter?: any) {
     const ts = await this.Device.getTerminals(filter);
     for (const t of ts) {
-      (t as any).user = await this.UserService.getBindMacUser(t.DevMac);
+      (t as any).user = await getBindMacUser(t.DevMac);
     }
     return {
       code: 200,
@@ -1093,7 +1095,7 @@ export class RootControll {
    */
   @Post('/initTerminal')
   async initTerminal(@Body() mac: string) {
-    const u = await this.UserService.getBindMacUser(mac);
+    const u = await getBindMacUser(mac);
     if (u) {
       const user = await this.UserService.getUser(u);
       return {
@@ -1314,6 +1316,68 @@ export class RootControll {
     return {
       code: 200,
       data: await this.Device.setTerminal(mac, { remark })
+    }
+  }
+
+
+  /**
+   * 修改user备注
+   * @param user 
+   * @param remark 
+   * @returns 
+   */
+  @Post("/modifyUserRemark")
+  async modifyUserRemark(@Body() user: string, @Body() remark: string) {
+    return {
+      code: 200,
+      data: await this.UserService.modifyUserInfo(user, { remark })
+    }
+  }
+
+  /**
+   * 获取用户信息
+   * @param data
+   * @returns
+   */
+  @Post('/getUser')
+  @Validate()
+  async getUser(@Body(ALL) data: loginHash) {
+    return {
+      code: 200,
+      data: await this.UserService.getUser(data.user, {
+        passwd: 0,
+      }),
+    };
+  }
+
+  /**
+   * 获取用户告警信息
+   * @param token
+   */
+  @Post('/userLoguartterminaldatatransfinites')
+  async userLoguartterminaldatatransfinites(@Body() user: string, @Body() start: number, @Body() end: number) {
+    const alarms = await this.UserService.getUserAlarm(
+      user,
+      start,
+      end
+    );
+    return {
+      code: 200,
+      data: alarms
+    };
+  }
+
+
+  /**
+   * 
+   * @param mac 根据mac获取用户
+   * @returns 
+   */
+  @Post("/getTerminalUser")
+  async getTerminalUser(@Body() mac: string) {
+    return {
+      code: 200,
+      data: await getBindMacUser(mac)
     }
   }
 }

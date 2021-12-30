@@ -1,6 +1,6 @@
 import { Provide } from '@midwayjs/decorator';
 import { Context, IMidwayKoaNext, IWebMiddleware } from '@midwayjs/koa';
-import { Device } from '../service/device';
+import { Device } from '../service/deviceBase';
 
 /**
  * 校验数据来源

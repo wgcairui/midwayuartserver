@@ -9,9 +9,9 @@ import {
 } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { UserService } from '../service/user';
-import { Device } from '../service/device';
+import { Device } from '../service/deviceBase';
 import { RedisService } from '../service/redis';
-import { TencetMap } from '../service/tencetMap';
+import { TencetMap } from '../service/tencetMapBase';
 import {
   date,
   Api,
@@ -41,7 +41,7 @@ import { toDataURL } from 'qrcode';
 import { CreateApiDoc } from '@midwayjs/swagger';
 
 @Provide()
-@Controller('/api', { middleware: ['token'] })
+@Controller('/api', { middleware: ['token', 'modifyTerminal'] })
 export class ApiControll {
   @Inject()
   UserService: UserService;
@@ -157,11 +157,11 @@ export class ApiControll {
       data: await this.UserService.getUser(data.token.user, {
         _id: 0,
         passwd: 0,
-        createdAt: 0,
-        updatedAt: 0,
       }),
     };
   }
+
+
 
   /**
    * 确认用户告警信息
@@ -219,6 +219,13 @@ export class ApiControll {
   @Post('/addUserTerminal')
   @Validate()
   async addUserTerminal(@Body(ALL) data: mac) {
+
+    if (data.token.userGroup === 'test') {
+      return {
+        code: 0,
+        msg: '测试账户无法绑定新设备',
+      };
+    }
     const d = await this.UserService.addUserTerminal(data.token.user, data.mac);
     return {
       code: d ? 200 : 0,
@@ -344,8 +351,8 @@ export class ApiControll {
       msg: !code
         ? '验证码已失效'
         : code !== data.code
-        ? '验证码错误'
-        : 'success',
+          ? '验证码错误'
+          : 'success',
     };
   }
 
@@ -520,9 +527,9 @@ export class ApiControll {
         const nameSet = new Set(data.name);
         d.forEach(
           el =>
-            (el.result = el.result
-              .filter(el2 => nameSet.has(el2.name))
-              .map(el3 => ({ name: el3.name, value: el3.value } as any)))
+          (el.result = el.result
+            .filter(el2 => nameSet.has(el2.name))
+            .map(el3 => ({ name: el3.name, value: el3.value } as any)))
         );
       }
       // 如果参数是数组,或结果小于50条,直接返回数据
@@ -990,5 +997,37 @@ export class ApiControll {
       code: 200,
       data: await toDataURL(code),
     };
+  }
+
+
+  /**
+   * 获取设备对应协议
+   * @param data 
+   */
+  @Post("/getTerminalPidProtocol")
+  async getTerminalPidProtocol(@Body(ALL) data: macPid) {
+    const t = await this.Device.getTerminal(data.mac, { mountDevs: 1 })
+    const m = t.mountDevs?.find(el => el.pid === data.pid)
+    return {
+      code: 200,
+      data: m
+    }
+  }
+
+  /**
+   * 获取协议配置
+   */
+  @Post("/getProtocolSetup")
+  async getProtocolSetup(@Body() protocol: string, @Body() type: Uart.ConstantThresholdType, @Body() user?: string) {
+    const sys = await this.Device.getAlarmProtocol(protocol, { [type]: 1 })
+    const u = user ? await this.UserService.getUserAlarmProtocol(user, protocol) : undefined
+
+    return {
+      code: 200,
+      data: {
+        sys: sys[type],
+        user: u ? u[type] : []
+      }
+    }
   }
 }

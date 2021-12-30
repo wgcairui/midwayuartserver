@@ -1,6 +1,5 @@
 import {
   Provide,
-  Inject,
   App,
   MidwayFrameworkType,
   Scope,
@@ -8,14 +7,12 @@ import {
   Init,
 } from '@midwayjs/decorator';
 import { Application as IO } from '@midwayjs/socketio';
-import { UserService } from '../service/user';
 import { Context as Ws } from '@midwayjs/ws';
+import { getBindMacUser } from '../util/base';
 
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class SocketUser {
-  @Inject()
-  UserService: UserService;
 
   @App(MidwayFrameworkType.WS_IO)
   app: IO;
@@ -25,9 +22,15 @@ export class SocketUser {
    */
   wsMap: Map<string, Ws>;
 
+  /**
+   * 用户订阅
+   */
+  subscribeUsers: Map<string, Set<string>>
+
   @Init()
   async init() {
     this.wsMap = new Map();
+    this.subscribeUsers = new Map()
   }
 
   /* @App(MidwayFrameworkType.WS)
@@ -35,17 +38,27 @@ export class SocketUser {
 
   /**
    *
-   * @param mac 向客户端发送设备变更日志
+   * @param mac 向订阅ˇ端发送设备变更日志
    */
   async sendMacUpdate(mac: string) {
     this.toUser(mac, 'MacUpdate', { mac });
+
+    const users = this.subscribeUsers.get('MacUpdate')
+    if (users && users.size > 0) {
+      this.toUserInfo([...users.values()], 'MacUpdate', { mac })
+    }
   }
 
   /**
    *
-   * @param mac 向客户端发送设备数据更新
+   * @param mac 向订阅端发送设备数据更新
    */
   async sendMacDateUpdate(mac: string, pid: number) {
+    const event = mac + pid
+    const users = this.subscribeUsers.get(mac + pid)
+    if (users && users.size > 0) {
+      this.toUserInfo([...users.values()], event)
+    }
     this.toUser(mac, 'MacDateUpdate' + mac + pid, { mac, pid });
   }
 
@@ -63,9 +76,10 @@ export class SocketUser {
    * @param mac
    * @param events
    * @param data
+   * @deprecated 下个大版本取消操作,全部使用订阅模式
    */
   private async toUser(mac: string, events: string, data: any = {}) {
-    const user = await this.UserService.getBindMacUser(mac);
+    const user = await getBindMacUser(mac);
     if (user) {
       this.app.of('/web').in(user).emit(events, data);
       if (this.wsMap.has(user)) {
@@ -76,16 +90,27 @@ export class SocketUser {
 
   /**
    * 向用户发送socket事件
-   * @param mac
+   * @param user
    * @param events
    * @param data
    */
-  async toUserInfo(user: string, events: string, data: any = {}) {
+  toUserInfo(user: string | string[], events: string, data: any = {}) {
     this.app.of('/web').in(user).emit(events, data);
-    if (this.wsMap.has(user)) {
-      this.wsMap.get(user).send(JSON.stringify({ type: events, data }));
+    if (typeof user === 'string') {
+      if (this.wsMap.has(user)) {
+        this.wsMap.get(user).send(JSON.stringify({ type: events, data }));
+      }
+    } else {
+      user.forEach(u => {
+        if (this.wsMap.has(u)) {
+          this.wsMap.get(u).send(JSON.stringify({ type: events, data }));
+        }
+      })
     }
+
   }
+
+
 
   /**
    * 给root用户推送告警信息

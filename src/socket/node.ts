@@ -11,12 +11,12 @@ import {
   Logger,
 } from '@midwayjs/decorator';
 import { Context, Application } from '@midwayjs/socketio';
-import { Device } from '../service/device';
-import { Logs } from '../service/log';
+import { Device } from '../service/deviceBase';
+import { Logs } from '../service/logBase';
 import { Alarm } from '../service/alarm';
 import { RedisService } from '../service/redis';
 import { SocketUart } from '../service/socketUart';
-import { SocketUser } from '../service/socketUser';
+import { SocketUser } from '../service/socketUserBase';
 import { HF } from '../util/hf';
 import { UserService } from '../service/user';
 import { ILogger } from '@midwayjs/logger';
@@ -64,6 +64,9 @@ export class NodeSocket {
   async connect() {
     const socket = this.ctx;
     const ID = socket.id;
+
+
+
     if (!this.ctx.handshake) return;
     // ip由nginx代理后会变为nginx服务器的ip，重写文件头x-real-ip为远端ip
     const IP: string =

@@ -11,9 +11,9 @@ import {
 } from '@midwayjs/decorator';
 import { Application } from '@midwayjs/socketio';
 import { Util } from '../util/util';
-import { Logs } from './log';
+import { Logs } from './logBase';
 import { RedisService } from './redis';
-import { Device } from './device';
+import { Device } from './deviceBase';
 import { EventEmitter } from 'events';
 import { ILogger } from '@midwayjs/logger';
 
@@ -88,6 +88,7 @@ export class SocketUart {
     // 循环迭代缓存,发送查询指令
     // 设置定时器
     setInterval(() => {
+
       this.cache.forEach(mountDev => {
         // 判断轮询计算结果是否是正整数,是的话发送查询指令
         if (Number.isInteger(this.count / mountDev.Interval)) {
@@ -184,7 +185,7 @@ export class SocketUart {
 
   /**
    *
-   * 每天3点重置一次指令缓存
+   * 每天5点重置一次指令缓存
    */
   @TaskLocal('0 5 * * *')
   async clear_Cache() {
@@ -207,8 +208,10 @@ export class SocketUart {
         __v: 0,
       })
     ).filter(el => el.mountNode === nodeName);
+
     terminals.forEach(async ({ DevMac, mountDevs, mountNode }) => {
-      if (mountNode !== 'test' && mountDevs) {
+      //if (mountNode !== 'test' && mountDevs) {
+      if (mountDevs) {
         const Interval = await this.Device.getMountDevInterval(DevMac);
         mountDevs.forEach(mountDev => {
           this.cache.set(DevMac + mountDev.pid, {
@@ -266,7 +269,7 @@ export class SocketUart {
    */
   private async _SendQueryIntruct(Query: mountDevEx) {
     const mac = Query.TerminalMac;
-    // 判断挂载设备是否空闲和是否在线
+
     if (
       !(await this.RedisService.hasDtuWorkBus(mac)) &&
       (await this.Device.getStatTerminal(mac))

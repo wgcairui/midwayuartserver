@@ -17,6 +17,7 @@ import {
 } from '../entity/log';
 import * as _ from 'lodash';
 import { getModelForClass } from '@typegoose/typegoose';
+import { getModel } from '../util/base';
 //import { SocketUser } from "../service/socketUser"
 
 /**
@@ -24,12 +25,6 @@ import { getModelForClass } from '@typegoose/typegoose';
  */
 @Provide()
 export class Logs {
-  /* @Inject()
-    SocketUser: SocketUser */
-
-  getModel<T>(cl: AnyParamConstructor<T>) {
-    return getModelForClass(cl);
-  }
 
   /**
    * 创建插入文档
@@ -152,7 +147,7 @@ export class Logs {
    * @returns
    */
   async incUseBytes(mac: string, date: string, useBytes: number) {
-    return await this.getModel(UseBytes)
+    return await getModel(UseBytes)
       .updateOne({ mac, date }, { $inc: { useBytes } }, { upsert: true })
       .lean();
   }
@@ -162,14 +157,14 @@ export class Logs {
    * @returns
    */
   getWxEvent() {
-    return this.getModel(WXEvent).find().lean();
+    return getModel(WXEvent).find().lean();
   }
 
   /**
    * 获取设备使用流量
    */
   getUseBtyes(mac: string) {
-    return this.getModel(UseBytes)
+    return getModel(UseBytes)
       .find({ mac }, { date: 1, useBytes: 1, _id: 0 })
       .lean();
   }
@@ -181,7 +176,7 @@ export class Logs {
    * @param end
    */
   getDtuBusy(mac: string, start: number, end: number) {
-    return this.getModel(DtuBusy)
+    return getModel(DtuBusy)
       .find(
         { mac, timeStamp: { $lte: end, $gte: start } },
         { stat: 1, timeStamp: 1, _id: 0 }
@@ -195,7 +190,7 @@ export class Logs {
    * @returns
    */
   logInstructQuery(mac: string) {
-    return this.getModel(InstructQuery).find({ mac }).lean();
+    return getModel(InstructQuery).find({ mac }).lean();
   }
 
   /**
@@ -205,7 +200,7 @@ export class Logs {
    * @returns
    */
   lognodes(start: number, end: number) {
-    return this.getModel(Nodes)
+    return getModel(Nodes)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -217,7 +212,7 @@ export class Logs {
    * @returns
    */
   logterminals(start: number, end: number) {
-    return this.getModel(Terminals)
+    return getModel(Terminals)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -226,7 +221,7 @@ export class Logs {
    * 获取短信日志
    */
   logsmssends(start: number, end: number) {
-    return this.getModel(SmsSend)
+    return getModel(SmsSend)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -235,7 +230,7 @@ export class Logs {
    * 获取邮件日志
    */
   logmailsends(start: number, end: number) {
-    return this.getModel(MailSend)
+    return getModel(MailSend)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -247,7 +242,7 @@ export class Logs {
    * @returns
    */
   loguartterminaldatatransfinites(start: number, end: number) {
-    return this.getModel(UartTerminalDataTransfinite)
+    return getModel(UartTerminalDataTransfinite)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -259,10 +254,10 @@ export class Logs {
    * @returns
    */
   async logterminalAggs(mac: string, start: number, end: number) {
-    const trans = await this.getModel(UartTerminalDataTransfinite)
+    const trans = await getModel(UartTerminalDataTransfinite)
       .find({ timeStamp: { $lte: end, $gte: start }, mac })
       .lean();
-    const ter = await this.getModel(Terminals)
+    const ter = await getModel(Terminals)
       .find({ timeStamp: { $lte: end, $gte: start }, TerminalMac: mac })
       .lean();
     return [...trans, ...ter].map(el =>
@@ -277,10 +272,10 @@ export class Logs {
    * @returns
    */
   async logUserAggs(user: string, start: number, end: number) {
-    const login = await this.getModel(UserLogin)
+    const login = await getModel(UserLogin)
       .find({ timeStamp: { $lte: end, $gte: start }, user })
       .lean();
-    const request = await this.getModel(UserRequst)
+    const request = await getModel(UserRequst)
       .find({ timeStamp: { $lte: end, $gte: start }, user })
       .lean();
     return [
@@ -304,7 +299,7 @@ export class Logs {
    * @returns
    */
   loguserlogins(start: number, end: number) {
-    return this.getModel(UserLogin)
+    return getModel(UserLogin)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -316,7 +311,7 @@ export class Logs {
    * @returns
    */
   loguserrequsts(start: number, end: number) {
-    return this.getModel(UserRequst)
+    return getModel(UserRequst)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -328,7 +323,7 @@ export class Logs {
    * @returns
    */
   logdataclean(start: number, end: number) {
-    return this.getModel(DataClean)
+    return getModel(DataClean)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -340,7 +335,7 @@ export class Logs {
    * @returns
    */
   logwxsubscribes(start: number, end: number) {
-    return this.getModel(wxsubscribeMessage)
+    return getModel(wxsubscribeMessage)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }

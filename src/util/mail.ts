@@ -3,7 +3,7 @@ import { getModelForClass } from '@typegoose/typegoose';
 import { createTransport, Transporter } from 'nodemailer';
 import * as SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { SecretApp } from '../entity/user';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 
 @Provide()
 export class Mail {

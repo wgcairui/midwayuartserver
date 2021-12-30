@@ -1,5 +1,5 @@
 import { Provide, Inject, TaskLocal } from '@midwayjs/decorator';
-import { Device } from '../service/device';
+import { Device } from '../service/deviceBase';
 import { DyIot } from '../util/dyiot';
 import { SocketUart } from '../service/socketUart';
 import { Alarm } from '../service/alarm';

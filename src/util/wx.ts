@@ -1,5 +1,5 @@
 import { Provide, Scope, ScopeEnum, Inject } from '@midwayjs/decorator';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 import { WxOpens } from '../wx/open_web';
 import { WxApps } from '../wx/weapp';
 import { WxPublics } from '../wx/wxpublic';

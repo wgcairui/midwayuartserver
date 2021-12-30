@@ -1,5 +1,5 @@
 import { Provide, Inject, Scope, ScopeEnum } from '@midwayjs/decorator';
-import { Device } from '../service/device';
+import { Device } from './deviceBase';
 import { Util } from '../util/util';
 import { RedisService } from '../service/redis';
 

@@ -1,7 +1,7 @@
 import { Provide } from '@midwayjs/decorator';
 import { Context, IMidwayKoaNext, IWebMiddleware } from '@midwayjs/koa';
 import { Util } from '../util/util';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 
 /**
  * 判断请求是否是

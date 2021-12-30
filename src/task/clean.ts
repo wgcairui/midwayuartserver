@@ -1,6 +1,6 @@
 import { Provide, Inject, TaskLocal } from '@midwayjs/decorator';
-import { Logs } from '../service/log';
-import { Device } from '../service/device';
+import { Logs } from '../service/logBase';
+import { Device } from '../service/deviceBase';
 import {
   DtuBusy,
   UartTerminalDataTransfinite,
@@ -10,6 +10,7 @@ import { TerminalClientResults, TerminalClientResult } from '../entity/node';
 import { QueryCursor, Types } from 'mongoose';
 import { DocumentType } from '@typegoose/typegoose';
 import { chunk } from 'lodash';
+import { getModel } from '../util/base';
 
 /**
  * 每天清理历史记录中重复的数据
@@ -48,7 +49,7 @@ export class Clean {
     console.time('Uartterminaldatatransfinites');
     const MapUartterminaldatatransfinites: Map<string, Uart.uartAlarmObject> =
       new Map();
-    const Mode = this.logs.getModel(UartTerminalDataTransfinite);
+    const Mode = getModel(UartTerminalDataTransfinite);
     const Query = Mode.find({ __v: 0 });
     const cur = Query.cursor();
     const len = await Query.countDocuments();
@@ -85,7 +86,7 @@ export class Clean {
     console.log('清洗请求数据');
     console.time('CleanUserRequst');
     const MapUserRequst: Map<string, Uart.logUserRequst> = new Map();
-    const Mode = this.logs.getModel(UserRequst);
+    const Mode = getModel(UserRequst);
     const Query = Mode.find({ __v: 0 });
     const cur = Query.cursor();
     const len = await Query.countDocuments();
@@ -126,8 +127,8 @@ export class Clean {
     console.time('CleanClientresults');
     const MapClientresults: Map<string, Map<string, string>> = new Map();
     // 文档实例
-    const ColltionMode = this.logs.getModel(TerminalClientResult);
-    const sMode = this.logs.getModel(TerminalClientResults);
+    const ColltionMode = getModel(TerminalClientResult);
+    const sMode = getModel(TerminalClientResults);
 
     const ColltionQuery = ColltionMode.find({ __v: 0 });
     const Colltioncur = ColltionQuery.cursor();
@@ -217,8 +218,8 @@ export class Clean {
     console.log('把所有2个月前的设备结果集删除');
     console.time('CleanClientresultsTimeOut');
     const lastM = Date.now() - 2.592e9 * 4;
-    const ColltionMode = this.logs.getModel(TerminalClientResult);
-    const sMode = this.logs.getModel(TerminalClientResults);
+    const ColltionMode = getModel(TerminalClientResult);
+    const sMode = getModel(TerminalClientResults);
     const len = await ColltionMode.countDocuments();
     const docs = await ColltionMode.find(
       { timeStamp: { $lte: lastM } },
@@ -243,7 +244,7 @@ export class Clean {
     console.time('CleanDtuBusy');
     const BusyMap: Map<string, { _id: Types.ObjectId } & Uart.logDtuBusy> =
       new Map();
-    const Mode = this.logs.getModel(DtuBusy);
+    const Mode = getModel(DtuBusy);
     const cur = Mode.find({ __v: 0 }).cursor();
     const deleteIds: Types.ObjectId[] = [];
     const allIds: Types.ObjectId[] = [];

@@ -11,7 +11,7 @@ import {
 import { crc } from '../dto/open';
 import { Util } from '../util/util';
 import { Sms } from '../util/sms';
-import { Device } from '../service/device';
+import { Device } from '../service/deviceBase';
 
 @Provide()
 @Controller('/api/open')

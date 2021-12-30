@@ -1,7 +1,7 @@
 import { Provide, Controller, Inject, Post } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { Wx } from '../util/wx';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 import { Util } from '../util/util';
 import { UserService } from '../service/user';
 import { parseStringPromise } from 'xml2js';

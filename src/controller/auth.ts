@@ -15,7 +15,7 @@ import { login, loginHash, wplogin, wxlogin } from '../dto/user';
 import { Util } from '../util/util';
 import { RedisService } from '../service/redis';
 import { Wx } from '../util/wx';
-import { Logs } from '../service/log';
+import { Logs } from '../service/logBase';
 import { AES, enc } from 'crypto-js';
 import { code2Session, getPhone, registerUser } from '../dto/auth';
 

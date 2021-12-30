@@ -38,7 +38,7 @@ export class wxlogin {
   state: string;
 }
 
-type Group = 'root' | 'user' | 'guest';
+type Group = 'root' | 'user' | 'guest' | 'test' | 'admin';
 class token {
   @Rule(RuleType.string().required())
   user: string;

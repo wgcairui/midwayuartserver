@@ -1,5 +1,4 @@
 import { Provide } from '@midwayjs/decorator';
-import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
 import { Types } from 'mongoose';
 import {
   NodeClient,
@@ -27,22 +26,20 @@ import {
   DtuBusy,
 } from '../entity/log';
 import { getModelForClass } from '@typegoose/typegoose';
+import { getModel } from '../util/base';
 
 /**
  * 获取设备协议等相关数据的逻辑
  */
 @Provide()
 export class Device {
-  private getModel<T>(cl: AnyParamConstructor<T>) {
-    return getModelForClass(cl);
-  }
 
   /**
    * 获取all终端
    * @returns
    */
-  async getTerminals(filter: filter<Uart.Terminal> = { }) {
-    return await this.getModel(Terminal).find({}, filter).lean();
+  async getTerminals(filter: filter<Uart.Terminal> = {}) {
+    return await getModel(Terminal).find({}, filter).lean();
   }
 
   /* getTerminal(macs: string, filter: filter<Uart.Terminal>): Promise<DocumentDefinition<DocumentType<Terminal>>>
@@ -57,7 +54,7 @@ export class Device {
     macs: T,
     filter: filter<Uart.Terminal> = { _id: 0 }
   ): Promise<T extends string ? Terminal : Terminal[]> {
-    const model = this.getModel(Terminal);
+    const model = getModel(Terminal);
     if (typeof macs === 'string') {
       return await model
         .findOne(
@@ -78,7 +75,7 @@ export class Device {
    * @returns
    */
   async setTerminal(mac: string, doc: Partial<Uart.Terminal>) {
-    const model = this.getModel(Terminal);
+    const model = getModel(Terminal);
     return await model.updateOne({ DevMac: mac }, { $set: { ...doc } }).lean();
   }
 
@@ -87,7 +84,7 @@ export class Device {
    * @returns 获取所以节点运行状态
    */
   getNodeRuns() {
-    const model = this.getModel(NodeRunInfo);
+    const model = getModel(NodeRunInfo);
     return model.find().lean();
   }
 
@@ -97,7 +94,7 @@ export class Device {
    * @returns
    */
   async setNodeRun(NodeName: string, doc: any) {
-    const model = this.getModel(NodeRunInfo);
+    const model = getModel(NodeRunInfo);
     return await model
       .updateOne({ NodeName }, { $set: { ...doc } }, { upsert: true })
       .lean();
@@ -117,10 +114,10 @@ export class Device {
    * 获取单个协议告警配置
    * @param protocol
    */
-  async getAlarmProtocol(protocol: string) {
-    const model = this.getModel(DevConstant);
+  async getAlarmProtocol(protocol: string, filter: filter<Uart.ProtocolConstantThreshold> = { _id: 0 }) {
+    const model = getModel(DevConstant);
     const setup = (await model
-      .findOne({ Protocol: protocol })
+      .findOne({ Protocol: protocol }, filter)
       .lean()) as unknown as Uart.ProtocolConstantThreshold;
     const obj: Uart.ProtocolConstantThreshold = {
       Protocol: protocol,
@@ -138,7 +135,7 @@ export class Device {
    * 获取all协议告警配置
    */
   async getAlarmProtocols() {
-    const model = this.getModel(DevConstant);
+    const model = getModel(DevConstant);
     return await model.find().lean();
   }
 
@@ -151,7 +148,7 @@ export class Device {
     protocol: string,
     filter: filter<Uart.protocol> = { _id: 0 }
   ) {
-    const model = this.getModel(Protocols);
+    const model = getModel(Protocols);
     return await model.findOne({ Protocol: protocol }, filter).lean();
   }
 
@@ -160,7 +157,7 @@ export class Device {
    * @returns
    */
   async getProtocols() {
-    const model = this.getModel(Protocols);
+    const model = getModel(Protocols);
     return await model.find().lean();
   }
 
@@ -171,7 +168,7 @@ export class Device {
    * @param protocol
    */
   async getProtocolAlias(mac: string, pid: number, protocol: string) {
-    const model = this.getModel(DevArgumentAlias);
+    const model = getModel(DevArgumentAlias);
     return await model.findOne({ mac, pid, protocol }).lean();
   }
 
@@ -192,7 +189,7 @@ export class Device {
     alias: string
   ) {
     const data = await this.getProtocolAlias(mac, pid, protocol);
-    const model = this.getModel(DevArgumentAlias);
+    const model = getModel(DevArgumentAlias);
     let result;
     // $数组操作符需要查询匹配到数组数据，否则会报错误
     if (data && data.alias.findIndex(el => el.name === name) !== -1) {
@@ -216,7 +213,7 @@ export class Device {
    * @param name 名称或ip
    */
   async getNode(name: string) {
-    const model = this.getModel(NodeClient);
+    const model = getModel(NodeClient);
     return await model.findOne({ $or: [{ Name: name }, { IP: name }] }).lean();
   }
 
@@ -224,8 +221,8 @@ export class Device {
    * 获取所有的节点信息
    */
   async getNodes() {
-    const model = this.getModel(NodeClient);
-    const tModel = this.getModel(Terminal);
+    const model = getModel(NodeClient);
+    const tModel = getModel(Terminal);
     const nodes = await model.find({}).lean();
     for (const node of nodes) {
       (node as any).count = await tModel.countDocuments({
@@ -244,7 +241,7 @@ export class Device {
    * @param mac
    */
   async getStatTerminal(mac: string) {
-    const t = await this.getModel(Terminal)
+    const t = await getModel(Terminal)
       .findOne({ DevMac: mac }, { online: 1 })
       .lean();
     return Boolean(t.online);
@@ -257,11 +254,11 @@ export class Device {
    */
   async setStatTerminal(mac: string | string[], stat = true) {
     const macs = [mac].flat();
-    await this.getModel(Terminal).updateMany(
+    await getModel(Terminal).updateMany(
       { DevMac: { $in: macs } },
       { $set: { online: stat } }
     );
-    return await this.getModel(Terminal).updateMany(
+    return await getModel(Terminal).updateMany(
       { DevMac: { $in: macs }, 'mountDevs.pid': { $lt: 256 } },
       { $set: { 'mountDevs.$.online': false } }
     );
@@ -272,7 +269,7 @@ export class Device {
    * @param mac
    */
   async getStatTerminalDevs(mac: string, pid: number) {
-    const t = await this.getModel(Terminal)
+    const t = await getModel(Terminal)
       .findOne({ DevMac: mac, 'mountDevs.pid': pid }, { 'mountDevs.$': 1 })
       .lean();
     return Boolean(t?.mountDevs[0]?.online);
@@ -284,7 +281,7 @@ export class Device {
    * @param stat
    */
   async setStatTerminalDevs(mac: string, pid: number, stat = true) {
-    await this.getModel(Terminal).updateOne(
+    await getModel(Terminal).updateOne(
       { DevMac: mac, 'mountDevs.pid': pid },
       { $set: { 'mountDevs.$.online': stat } }
     );
@@ -338,7 +335,7 @@ export class Device {
    * @returns
    */
   async saveTerminalResults(doc: Pick<Uart.queryResult, 'contents'>) {
-    return await this.getModel(TerminalClientResults).create(doc as any);
+    return await getModel(TerminalClientResults).create(doc as any);
   }
 
   /**
@@ -347,7 +344,7 @@ export class Device {
    * @returns
    */
   async saveTerminalResultColletion(doc: any) {
-    return await this.getModel(TerminalClientResult).create(doc as any);
+    return await getModel(TerminalClientResult).create(doc as any);
   }
 
   /**
@@ -356,7 +353,7 @@ export class Device {
    * @returns
    */
   async alarmTerminalResults(id: string) {
-    return await this.getModel(TerminalClientResults)
+    return await getModel(TerminalClientResults)
       .updateOne({ _id: new Types.ObjectId(id) }, { $inc: { hasAlarm: 1 } })
       .lean();
   }
@@ -367,7 +364,7 @@ export class Device {
    * @returns
    */
   async alarmTerminalResultColletion(id: string) {
-    return await this.getModel(TerminalClientResult)
+    return await getModel(TerminalClientResult)
       .updateOne({ _id: new Types.ObjectId(id) }, { $inc: { hasAlarm: 1 } })
       .lean();
   }
@@ -382,7 +379,7 @@ export class Device {
     pid: number,
     doc: Partial<Uart.queryResultSave>
   ) {
-    return await this.getModel(TerminalClientResultSingle)
+    return await getModel(TerminalClientResultSingle)
       .updateOne({ mac, pid }, { $set: { ...(doc as any) } }, { upsert: true })
       .lean();
   }
@@ -404,7 +401,7 @@ export class Device {
     switch (type) {
       case 'Constant':
         const Constant = arg as Uart.DevConstant;
-        await this.getModel(DevConstant).updateOne(
+        await getModel(DevConstant).updateOne(
           { Protocol, ProtocolType },
           { $set: { Constant } },
           { upsert: true }
@@ -412,14 +409,14 @@ export class Device {
         break;
       case 'Threshold':
         const Threshold = arg as Uart.Threshold[];
-        await this.getModel(DevConstant).updateOne(
+        await getModel(DevConstant).updateOne(
           { Protocol, ProtocolType },
           { $set: { Threshold } },
           { upsert: true }
         );
         break;
       case 'ShowTag':
-        await this.getModel(DevConstant).updateOne(
+        await getModel(DevConstant).updateOne(
           { Protocol, ProtocolType },
           { $addToSet: { ShowTag: { $each: arg as string[] } } },
           { upsert: true }
@@ -427,7 +424,7 @@ export class Device {
         break;
       case 'AlarmStat':
         const AlarmStat = arg as Uart.ConstantAlarmStat[];
-        await this.getModel(DevConstant).updateOne(
+        await getModel(DevConstant).updateOne(
           { Protocol, ProtocolType },
           { $set: { AlarmStat } },
           { upsert: true }
@@ -435,7 +432,7 @@ export class Device {
         break;
       case 'Oprate':
         const OprateInstruct = arg as Uart.OprateInstruct[];
-        await this.getModel(DevConstant).updateOne(
+        await getModel(DevConstant).updateOne(
           { Protocol, ProtocolType },
           { $set: { OprateInstruct } },
           { upsert: true }
@@ -446,7 +443,7 @@ export class Device {
     // 获取所有配置有此协议的用户,迭代更新缓存
     if (type === 'AlarmStat' || type === 'Threshold') {
       return (
-        await this.getModel(UserAlarmSetup)
+        await getModel(UserAlarmSetup)
           .find({ 'ProtocolSetup.Protocol': Protocol }, { user: 1 })
           .lean()
       ).map(el => el.user);
@@ -460,15 +457,15 @@ export class Device {
    * @param protocol
    */
   async deleteProtocol(protocol: string) {
-    const ps = await this.getModel(DevType)
+    const ps = await getModel(DevType)
       .find({ 'Protocols.Protocol': protocol }, { DevModel: 1 })
       .lean();
     if (ps.length > 0) {
       return ps.map(el => el.DevModel);
     } else {
-      await this.getModel(Protocols).deleteOne({ Protocol: protocol });
-      await this.getModel(DevConstant).deleteOne({ Protocol: protocol });
-      await this.getModel(UserAlarmSetup).updateMany(
+      await getModel(Protocols).deleteOne({ Protocol: protocol });
+      await getModel(DevConstant).deleteOne({ Protocol: protocol });
+      await getModel(UserAlarmSetup).updateMany(
         {},
         { $pull: { 'ProtocolSetup.Protocol': protocol } }
       );
@@ -482,7 +479,7 @@ export class Device {
    */
   async updateProtocol(protocol: Uart.protocol) {
     const { Protocol, ProtocolType, instruct } = protocol;
-    return await this.getModel(Protocols).updateOne(
+    return await getModel(Protocols).updateOne(
       { Protocol, ProtocolType },
       { $set: { instruct } }
     );
@@ -502,7 +499,7 @@ export class Device {
     Protocol: string,
     instruct: Uart.protocolInstruct[]
   ) {
-    return this.getModel(Protocols)
+    return getModel(Protocols)
       .updateOne(
         { Type, Protocol },
         { $set: { ProtocolType, instruct } },
@@ -516,7 +513,7 @@ export class Device {
    * @returns
    */
   DevTypes() {
-    return this.getModel(DevType).find().lean();
+    return getModel(DevType).find().lean();
   }
 
   /**
@@ -524,7 +521,7 @@ export class Device {
    * @returns
    */
   DevType(DevModel: string) {
-    return this.getModel(DevType).findOne({ DevModel }).lean();
+    return getModel(DevType).findOne({ DevModel }).lean();
   }
 
   /**
@@ -539,7 +536,7 @@ export class Device {
     DevModel: string,
     Protocols: Pick<Uart.protocol, 'Type' | 'Protocol'>[]
   ) {
-    return await this.getModel(DevType)
+    return await getModel(DevType)
       .updateOne(
         { Type, DevModel },
         {
@@ -559,13 +556,13 @@ export class Device {
    * 删除设备类型
    */
   async deleteDevModel(DevModel: string) {
-    const terminals = await this.getModel(Terminal)
+    const terminals = await getModel(Terminal)
       .find({ 'mountDevs.mountDev': DevModel }, { DevMac: 1 })
       .lean();
     if (terminals.length > 0) {
       return terminals.map(el => el.DevMac);
     } else {
-      await this.getModel(DevType).deleteOne({ DevModel }).lean();
+      await getModel(DevType).deleteOne({ DevModel }).lean();
       return [];
     }
   }
@@ -577,12 +574,12 @@ export class Device {
    * @returns
    */
   async addRegisterTerminal(DevMac: string, mountNode: string) {
-    await this.getModel(RegisterTerminal).updateOne(
+    await getModel(RegisterTerminal).updateOne(
       { DevMac },
       { $set: { mountNode } },
       { upsert: true }
     );
-    return this.getModel(Terminal)
+    return getModel(Terminal)
       .updateOne(
         { DevMac },
         { $set: { mountNode, name: DevMac } },
@@ -595,7 +592,7 @@ export class Device {
    * 删除登记设备
    */
   async deleteRegisterTerminal(DevMac: string) {
-    const terminal = await this.getModel(UserBindDevice)
+    const terminal = await getModel(UserBindDevice)
       .findOne({ UTs: DevMac }, { user: 1 })
       .lean();
     if (terminal) {
@@ -607,30 +604,30 @@ export class Device {
       return {
         code: 200,
         data: {
-          TerminalClientResult: await this.getModel(TerminalClientResult)
+          TerminalClientResult: await getModel(TerminalClientResult)
             .deleteMany({ mac: DevMac })
             .lean(),
-          TerminalClientResults: await this.getModel(TerminalClientResults)
+          TerminalClientResults: await getModel(TerminalClientResults)
             .deleteMany({ mac: DevMac })
             .lean(),
-          TerminalClientResultSingle: await this.getModel(
+          TerminalClientResultSingle: await getModel(
             TerminalClientResultSingle
           )
             .deleteMany({ mac: DevMac })
             .lean(),
-          Terminal: await this.getModel(Terminal).deleteOne({ DevMac }).lean(),
-          LogUartTerminalDataTransfinite: await this.getModel(
+          Terminal: await getModel(Terminal).deleteOne({ DevMac }).lean(),
+          LogUartTerminalDataTransfinite: await getModel(
             UartTerminalDataTransfinite
           )
             .deleteMany({ mac: DevMac })
             .lean(),
-          LogTerminals: await this.getModel(Terminals)
+          LogTerminals: await getModel(Terminals)
             .deleteMany({ TerminalMac: DevMac })
             .lean(),
-          LogUseBytes: await this.getModel(UseBytes)
+          LogUseBytes: await getModel(UseBytes)
             .deleteMany({ mac: DevMac })
             .lean(),
-          RegisterTerminal: await this.getModel(RegisterTerminal)
+          RegisterTerminal: await getModel(RegisterTerminal)
             .deleteOne({ DevMac })
             .lean(),
         },
@@ -652,7 +649,7 @@ export class Device {
     Port: number,
     MaxConnections: number
   ) {
-    return await this.getModel(NodeClient)
+    return await getModel(NodeClient)
       .updateOne(
         { Name },
         { $set: { IP, Port, MaxConnections } },
@@ -665,13 +662,13 @@ export class Device {
    * 删除节点
    */
   async deleteNode(Name: string) {
-    const ter = await this.getModel(Terminal)
+    const ter = await getModel(Terminal)
       .find({ mountNode: Name }, { DevMac: 1 })
       .lean();
     if (ter.length > 0) {
       return ter.map(el => el.DevMac);
     } else {
-      await this.getModel(NodeClient).deleteOne({ Name }).lean();
+      await getModel(NodeClient).deleteOne({ Name }).lean();
       return [];
     }
   }
@@ -682,14 +679,14 @@ export class Device {
    * @returns
    */
   async RegisterTerminal(DevMac: string) {
-    return await this.getModel(RegisterTerminal).findOne({ DevMac }).lean();
+    return await getModel(RegisterTerminal).findOne({ DevMac }).lean();
   }
 
   /**
    * 查询所有终端
    */
   async RegisterTerminals() {
-    return await this.getModel(RegisterTerminal).find().lean();
+    return await getModel(RegisterTerminal).find().lean();
   }
 
   /**
@@ -700,7 +697,7 @@ export class Device {
    * @returns
    */
   async ClientResults(start?: number, end?: number, id?: Types.ObjectId) {
-    const model = this.getModel(TerminalClientResults);
+    const model = getModel(TerminalClientResults);
     if (id) {
       return [await model.findOne({ _id: id })];
     } else {
@@ -716,7 +713,7 @@ export class Device {
    * @returns
    */
   async ClientResult(start?: number, end?: number, id?: Types.ObjectId) {
-    const model = this.getModel(TerminalClientResult);
+    const model = getModel(TerminalClientResult);
     if (id) {
       return [await model.findOne({ _id: id })];
     } else {
@@ -729,7 +726,7 @@ export class Device {
    * @returns
    */
   ClientResultSingle() {
-    return this.getModel(TerminalClientResultSingle).find().lean();
+    return getModel(TerminalClientResultSingle).find().lean();
   }
 
   /**
@@ -737,7 +734,7 @@ export class Device {
    * @param data
    */
   addRegisterDev(doc: Uart.registerDev) {
-    return this.getModel(registerDev).create(doc);
+    return getModel(registerDev).create(doc);
   }
 
   /**
@@ -746,7 +743,7 @@ export class Device {
    * @returns
    */
   getRegisterDev(id: string) {
-    return this.getModel(registerDev).findOne({ id }).lean();
+    return getModel(registerDev).findOne({ id }).lean();
   }
 
   /**
@@ -755,7 +752,7 @@ export class Device {
    * @returns
    */
   async delRegisterDev(id: string) {
-    return await this.getModel(registerDev).deleteOne({ id }).lean();
+    return await getModel(registerDev).deleteOne({ id }).lean();
   }
 
   /**
@@ -763,7 +760,7 @@ export class Device {
    * @returns
    */
   getRegisterDevs() {
-    return this.getModel(registerDev).find().lean();
+    return getModel(registerDev).find().lean();
   }
 
   /**
@@ -772,15 +769,15 @@ export class Device {
    */
   async initTerminal(mac: string) {
     const a = Date.now();
-    await this.getModel(UseBytes).deleteMany({ mac });
-    await this.getModel(UartTerminalDataTransfinite).deleteMany({ mac });
-    await this.getModel(Terminals).deleteMany({ mac });
-    await this.getModel(DtuBusy).deleteMany({ mac });
-    await this.getModel(DevArgumentAlias).deleteMany({ mac });
-    await this.getModel(TerminalClientResult).deleteMany({ mac });
-    await this.getModel(TerminalClientResultSingle).deleteMany({ mac });
-    await this.getModel(TerminalClientResultSingle).deleteOne({ mac });
-    await this.getModel(Terminal).updateOne(
+    await getModel(UseBytes).deleteMany({ mac });
+    await getModel(UartTerminalDataTransfinite).deleteMany({ mac });
+    await getModel(Terminals).deleteMany({ mac });
+    await getModel(DtuBusy).deleteMany({ mac });
+    await getModel(DevArgumentAlias).deleteMany({ mac });
+    await getModel(TerminalClientResult).deleteMany({ mac });
+    await getModel(TerminalClientResultSingle).deleteMany({ mac });
+    await getModel(TerminalClientResultSingle).deleteOne({ mac });
+    await getModel(Terminal).updateOne(
       { DevMac: mac },
       { $set: { mountDevs: [], name: mac } }
     );
