@@ -32,6 +32,7 @@ import {
   addAgg,
   updateAvanter,
   updateJw,
+  terminalResultsV2,
 } from '../dto/user';
 import { Sms } from '../decorator/smsValidation';
 import { Util } from '../util/util';
@@ -509,10 +510,13 @@ export class ApiControll {
    * @param user
    * @param mac
    * @param pid
+   * @deprecated 下一版本删除,请使用getTerminalDatasV2
    */
   @Post('/getTerminalDatas')
   @Validate()
   async getTerminalDatas(@Body(ALL) data: terminalResults) {
+    console.log();
+
     const d = (await this.UserService.getTerminalDatas(
       data.token.user,
       data.mac,
@@ -567,6 +571,49 @@ export class ApiControll {
   }
 
   /**
+   * 获取用户设备运行数据
+   * @param user
+   * @param mac
+   * @param pid
+   */
+  @Post('/getTerminalDatasV2')
+  @Validate()
+  async getTerminalDatasV2(@Body(ALL) data: terminalResultsV2) {
+    console.log();
+
+    const d = (await this.UserService.getTerminalDatasV2(
+      data.token.user,
+      data.mac,
+      data.pid,
+      data.name,
+      data.start,
+      data.end
+    ))
+
+    // 如果参数是数组,或结果小于50条,直接返回数据
+    if (d.length < 50 || typeof data.name === 'object') {
+      return {
+        code: 200,
+        data: d
+      };
+    }
+    // 把结果拆分为块,50等分
+    const len = Number.parseInt((d.length / 50).toFixed(0));
+    const resultChunk = lodash.chunk(d, len < 10 ? 10 : len);
+    const arrs = resultChunk
+      .map(el => [
+        lodash.maxBy(el, 'value')!,
+        lodash.minBy(el, 'value')!,
+      ])
+      .flat();
+    return {
+      code: 200,
+      data: arrs
+    };
+
+  }
+
+  /**
    * 重置设备超时状态
    * @param mac
    * @param pid
@@ -597,6 +644,8 @@ export class ApiControll {
       query,
       item,
     } = data;
+    console.log({ query, item });
+
     if (await this.UserService.isBindMac(user, query.DevMac)) {
       const protocol = await this.Device.getProtocol(query.protocol);
       // 携带事件名称，触发指令查询

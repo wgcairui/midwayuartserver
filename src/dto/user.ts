@@ -132,6 +132,17 @@ export class terminalResults extends macPid {
   }
 }
 
+@Rule(macPid)
+export class terminalResultsV2 extends macPid {
+  @Rule(RuleType.allow().required())
+  name: string | string[];
+
+  @Rule(RuleType.number().required())
+  start: number;
+  @Rule(RuleType.number().required())
+  end: number;
+}
+
 /**
  * 挂载设备
  */

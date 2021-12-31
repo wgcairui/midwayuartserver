@@ -742,24 +742,29 @@ export class UserService {
    * @param protocol
    */
   async getUserAlarmProtocol(user: string, protocol: string) {
-    const data = await this.userAlarmSetupModel
+    /* const data = await this.userAlarmSetupModel
       .findOne(
         { user, 'ProtocolSetup.Protocol': protocol },
         { 'ProtocolSetup.$': 1 }
       )
       .lean();
     const setup = data
-      ?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null;
-    const obj: Pick<
-      Uart.ProtocolConstantThreshold,
-      'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'
-    > = {
+      ?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null; */
+
+    const { setup } = await this.userAlarmSetupModel.aggregate([
+      { $match: { user: "test2" } },
+      { $project: { ProtocolSetup: 1 } },
+      { $project: { setup: "ProtocolSetup" } },
+      { $unwind: "$setup" },
+      { $match: { "setup.Protocol": "卡乐控制器" } }
+    ]) as any
+    return {
       Protocol: protocol,
       ShowTag: setup?.ShowTag || [],
       Threshold: setup?.Threshold || [],
       AlarmStat: setup?.AlarmStat || [],
-    };
-    return obj;
+    } as Pick<Uart.ProtocolConstantThreshold, 'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'>
+    //return obj;
   }
 
   /**
@@ -818,6 +823,7 @@ export class UserService {
    * @param user
    * @param mac
    * @param pid
+   * @deprecated 下一版本删除,请使用getTerminalDatasV2
    */
   async getTerminalDatas(
     user: string,
@@ -856,6 +862,66 @@ export class UserService {
           )
           .lean();
       }
+    }
+  }
+
+  /**
+   * 获取用户设备运行数据
+   * @param user
+   * @param mac
+   * @param pid
+   */
+  async getTerminalDatasV2(
+    user: string,
+    mac: string,
+    pid: number,
+    name: string | string[],
+    start: number,
+    end: number
+  ) {
+    const isBind = await this.isBindMac(user, mac);
+    if (!isBind) {
+      return null;
+    } else {
+      const model = getModelForClass(TerminalClientResult);
+      return await model.aggregate([
+        {
+          $match: {
+            mac,
+            pid,
+            timeStamp:
+              { $lt: end, $gt: start }
+          }
+        },
+        { $project: { "timeStamp": 1, result: 1 } },
+        { $unwind: "$result" },
+        { $match: { "result.name": typeof name === 'string' ? name : { $in: name } } },
+        { $project: { name: "$result.name", value: "$result.parseValue", time: "$timeStamp", _id: 0 } },
+      ]) as any as { name: string, value: string, time: number }[]
+      /* if (typeof name === 'string') {
+        return await model
+          .find(
+            {
+              mac,
+              pid,
+              'result.name': name,
+              timeStamp: { $gte: start, $lte: end },
+            },
+            { 'result.$': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+          )
+          .lean();
+      } else {
+        return await model
+          .find(
+            {
+              mac,
+              pid,
+              timeStamp: { $gte: start, $lte: end },
+            },
+            { result: 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+          )
+          .lean();
+      } */
     }
   }
 
