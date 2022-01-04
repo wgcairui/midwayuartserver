@@ -117,6 +117,7 @@ export class UserService {
    * 同步百事服用户信息
    * @param user
    * @returns
+   * @deprecated 百事服已下线,此同步器下个版本废弃
    */
   async syncPesivUser(user: string, pw: string) {
     try {

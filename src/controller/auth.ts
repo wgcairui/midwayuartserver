@@ -115,7 +115,7 @@ export class AuthController {
     let user = await this.userService.getUser(accont.user);
     //
     if (!user) {
-      user = await this.userService.syncPesivUser(accont.user, decryptPasswd);
+     // user = await this.userService.syncPesivUser(accont.user, decryptPasswd);
       if (!user) {
         return {
           code: 0,
@@ -329,7 +329,7 @@ export class AuthController {
   async wplogin(@Body(ALL) accont: wplogin) {
     let user = await this.userService.getUser(accont.user);
     if (!user) {
-      user = await this.userService.syncPesivUser(accont.user, accont.passwd);
+      //user = await this.userService.syncPesivUser(accont.user, accont.passwd);
       if (!user) {
         return {
           code: 0,

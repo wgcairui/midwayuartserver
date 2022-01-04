@@ -312,6 +312,17 @@ export class Device {
     );
     // 基数
     let baseNum = terminal.ICCID ? 1000 : 500;
+
+    /**
+     * 如果是定向卡,暂时没有流量信息,预设流量为512mb
+     */
+    if (terminal.ICCID && !terminal.iccidInfo) {
+      (terminal.iccidInfo as any) = {
+        statu: true,
+        flowResource: 512e3
+      }
+    }
+
     // 如果有有iccidInfo,状态开启且月流量小于500mb,修改基数,
     if (
       terminal.iccidInfo &&
@@ -323,6 +334,8 @@ export class Device {
       baseNum =
         baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource));
     }
+
+
     // 指令合计数量
     const LensCount =
       MountDevLens.length > 0 ? MountDevLens.reduce((pre, cu) => pre + cu) : 1;
