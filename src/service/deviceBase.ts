@@ -444,6 +444,7 @@ export class Device {
         );
         break;
       case 'Oprate':
+      case "OprateInstruct":
         const OprateInstruct = arg as Uart.OprateInstruct[];
         await getModel(DevConstant).updateOne(
           { Protocol, ProtocolType },
@@ -496,6 +497,18 @@ export class Device {
       { Protocol, ProtocolType },
       { $set: { instruct } }
     );
+  }
+
+  /**
+   * 更新协议字段
+   * @param protocol
+   */
+  async modifyProtocol(Protocol: string, data: Partial<Uart.protocol>) {
+    return await getModel(Protocols)
+      .updateOne(
+        { Protocol },
+        { $set: { ...data } }
+      ).lean();
   }
 
   /**

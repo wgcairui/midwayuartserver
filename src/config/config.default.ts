@@ -1,11 +1,11 @@
 import { RedisOptions } from 'ioredis';
 import { ConnectOptions } from 'mongoose';
 import { tencetMapConfig } from '../interface';
+import { Options as ossOptions } from "ali-oss"
 
 export const mongoose = {
-  uri: `mongodb://${
-    process.env.NODE_Docker === 'docker' ? 'mongo' : '192.168.1.190'
-  }:27017/UartServer`,
+  uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : '192.168.1.190'//'uart.ladishb.com'//
+    }:27017/UartServer`,
   options: {
     dbName: 'UartServer',
     useNewUrlParser: true,
@@ -36,4 +36,16 @@ export const tencetMap: tencetMapConfig = {
   key: '7LGBZ-JLHWW-UCHRM-OIJG6-PNBLV-6ZBCN',
   apiUrl: 'https://apis.map.qq.com',
   SK: 'VNXI1sCXNvFIAZFeRT7ghlnLeOuiZWt',
+};
+
+
+// normal oss bucket
+export const oss: Record<string, ossOptions> = {
+  client: {
+    accessKeyId: 'LTAI5t5tDuUVYHTukr9cQa91',
+    accessKeySecret: '1J1G2xaCWGWdvPvlNpFbgDDK439K71',
+    bucket: 'besiv-uart',
+    endpoint: 'oss-cn-hangzhou.aliyuncs.com',
+    timeout: '60s',
+  },
 };

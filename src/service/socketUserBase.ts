@@ -43,9 +43,41 @@ export class SocketUser {
   async sendMacUpdate(mac: string) {
     this.toUser(mac, 'MacUpdate', { mac });
 
-    const users = this.subscribeUsers.get('MacUpdate')
-    if (users && users.size > 0) {
-      this.toUserInfo([...users.values()], 'MacUpdate', { mac })
+    /**
+     * 适用于root,监控所有设备变更
+     */
+    {
+      const users = this.subscribeUsers.get('MacUpdate')
+      if (users && users.size > 0) {
+        this.toUserInfo([...users.values()], 'MacUpdate', { mac })
+      }
+    }
+    /**
+     * 适用于用户
+     */
+    {
+      const key = 'MacUpdate' + mac
+      const users = this.subscribeUsers.get(key)
+      if (users && users.size > 0) {
+        this.toUserInfo([...users.values()], key, { mac })
+      }
+    }
+  }
+
+  /**
+   *
+   * @param mac 向订阅ˇ端发送设备查询间隔变更日志
+   */
+  async sendMacIntervalUpdate(mac: string, pid: number | string) {
+    /**
+     * 适用于用户
+     */
+    {
+      const key = 'MacIntervalUpdate' + mac + pid
+      const users = this.subscribeUsers.get(key)
+      if (users && users.size > 0) {
+        this.toUserInfo([...users.values()], key, { mac })
+      }
     }
   }
 

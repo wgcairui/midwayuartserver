@@ -1334,6 +1334,21 @@ export class RootControll {
     }
   }
 
+
+  /**
+   * 修改user备注
+   * @param user 
+   * @param remark 
+   * @returns 
+   */
+  @Post("/modifyProtocolRemark")
+  async modifyProtocolRemark(@Body() protocol: string, @Body() remark: string) {
+    return {
+      code: 200,
+      data: await this.Device.modifyProtocol(protocol, { remark })
+    }
+  }
+
   /**
    * 获取用户信息
    * @param data
