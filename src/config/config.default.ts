@@ -3,6 +3,8 @@ import { ConnectOptions } from 'mongoose';
 import { tencetMapConfig } from '../interface';
 import { Options as ossOptions } from "ali-oss"
 
+const ossKey = require("./oss.json")
+
 export const mongoose = {
   uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : '192.168.1.190'
     }:27017/UartServer`,
@@ -42,8 +44,8 @@ export const tencetMap: tencetMapConfig = {
 // normal oss bucket
 export const oss: Record<string, ossOptions> = {
   client: {
-    accessKeyId: 'LTAI5t5tDuUVYHTukr9cQa91',
-    accessKeySecret: '1J1G2xaCWGWdvPvlNpFbgDDK439K71',
+    accessKeyId: ossKey.accessKeyId,
+    accessKeySecret: ossKey.accessKeySecret,
     bucket: 'besiv-uart',
     endpoint: 'oss-cn-hangzhou.aliyuncs.com',
     timeout: '60s',
