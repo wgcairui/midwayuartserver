@@ -389,6 +389,7 @@ export class NodeSocket {
    */
   @OnWSMessage('deviceopratesuccess')
   @OnWSMessage('dtuopratesuccess')
+  @OnWSMessage("result")
   dtuOprateSuccess(events: string, result: Uart.ApolloMongoResult) {
     this.SocketUart.event.emit(events, result);
   }

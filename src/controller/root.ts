@@ -1395,4 +1395,15 @@ export class RootControll {
       data: await getBindMacUser(mac)
     }
   }
+
+  /** */
+  @Post("/nodeRestart")
+  async nodeRestart(@Body() node: string) {
+    try {
+      const el = await this.SocketUart.nodeRestart(node);
+      return ({ code: 200, data: el });
+    } catch (e) {
+      return ({ code: 0, data: e });
+    }
+  }
 }

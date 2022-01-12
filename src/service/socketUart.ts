@@ -442,4 +442,40 @@ export class SocketUart {
       throw new Error('无此设备');
     }
   }
+
+  /**
+   * 往node节点发送信息
+   * @param node 节点名称
+   * @param eventName 监听的发送的事件名称
+   * @param data 
+   * @param timeOut 
+   */
+  async sendMessagetoNode<T>(node: string, eventName: string, data: any = {}, timeOut: number = 10000) {
+    return new Promise<T>((resolve, reject) => {
+      /**
+       * 监听返回的事件名称
+       */
+      const resultEventName = eventName + Date.now()
+      // 创建一次性监听，监听来自Node节点指令查询操作结果
+      this.event.once(resultEventName, (result: T) => {
+        resolve(result);
+      });
+      this.getApp().in(node).emit(eventName, { eventName: resultEventName, data });
+      // 设置定时器，超过30秒无响应则触发事件，避免事件堆积内存泄漏
+      setTimeout(() => {
+        this.event.removeListener(resultEventName, () => {
+          reject('Node节点无响应')
+        });
+      }, timeOut);
+    });
+  }
+
+  /**
+   * 重启节点程序
+   * @param node 
+   * @returns 
+   */
+  async nodeRestart(node: string) {
+    return this.sendMessagetoNode(node, 'restart')
+  }
 }
