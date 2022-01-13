@@ -443,7 +443,7 @@ export class Device {
           { upsert: true }
         );
         break;
-      case 'Oprate':
+      case 'Oprate' as any:
       case "OprateInstruct":
         const OprateInstruct = arg as Uart.OprateInstruct[];
         await getModel(DevConstant).updateOne(
