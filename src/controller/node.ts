@@ -325,12 +325,12 @@ export class NodeControll {
     const key = data.mac + data.pid
     const hisData = this.RedisService.terminalDataMap.get(key)
     const newData = data.contents.map(el => el.buffer.data)
-    console.log({ hisData, n: JSON.stringify(newData) });
+    //console.log({ hisData, n: JSON.stringify(newData) });
     if (hisData && hisData === JSON.stringify(newData)) {
-      console.log(`key:${key} 数据重复`);
+      //console.log(`key:${key} 数据重复`);
       return undefined
     }
-    console.log(`key:${key} new数据--------------------------------------------------`);
+    //console.log(`key:${key} new数据--------------------------------------------------`);
     this.RedisService.terminalDataMap.set(key, JSON.stringify(newData))
 
     // 异步保存设备数据
