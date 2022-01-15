@@ -205,7 +205,7 @@ export class WxPublic {
           break;
 
         default: {
-          let text = '详情请咨询400-6655778\n\n招商专线18971282941';
+          let text = '详情请咨询400-6655778';
           if (body.MsgType === 'text' && body.Content && body.Content !== '') {
             const data = await this.UserService.seach_user_keywords(
               body.Content
