@@ -213,6 +213,7 @@ export class Logs {
    */
   logterminals(start: number, end: number) {
     return getModel(Terminals)
+
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -222,8 +223,17 @@ export class Logs {
    */
   logsmssends(start: number, end: number) {
     return getModel(SmsSend)
-      .find({ timeStamp: { $lte: end, $gte: start } })
-      .lean();
+      .aggregate([
+        {
+          $match: {
+            timeStamp: { $lte: end, $gte: start }
+          }
+        },
+        { $project: { "timeStamp": 1, tels: 1, sendParams: 1, Success: 1, Error: 1 } },
+        { $unwind: "$tels" },
+      ])
+    /* .find({ timeStamp: { $lte: end, $gte: start } })
+    .lean(); */
   }
 
   /**
@@ -231,8 +241,17 @@ export class Logs {
    */
   logmailsends(start: number, end: number) {
     return getModel(MailSend)
-      .find({ timeStamp: { $lte: end, $gte: start } })
-      .lean();
+      .aggregate([
+        {
+          $match: {
+            timeStamp: { $lte: end, $gte: start }
+          }
+        },
+        { $project: { "timeStamp": 1, mails: 1, sendParams: 1, Success: 1, Error: 1 } },
+        { $unwind: "$mails" },
+      ])
+    /* .find({ timeStamp: { $lte: end, $gte: start } })
+    .lean(); */
   }
 
   /**

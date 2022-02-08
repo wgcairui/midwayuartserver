@@ -168,6 +168,9 @@ export class UserLogin {
 
   @prop()
   public msg: string;
+
+  @prop()
+  public creatTime: Date
 }
 
 /**
