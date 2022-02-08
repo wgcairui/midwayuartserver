@@ -753,7 +753,7 @@ export class UserService {
       ?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null; */
 
     const { setup } = await this.userAlarmSetupModel.aggregate([
-      { $match: { user: "test2" } },
+      { $match: { user } },
       { $project: { ProtocolSetup: 1 } },
       { $project: { setup: "ProtocolSetup" } },
       { $unwind: "$setup" },

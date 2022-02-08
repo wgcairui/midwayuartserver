@@ -87,7 +87,7 @@ export class NodeControll {
           if (terminal.ICCID !== ICCID && this.Util.RegexICCID(ICCID))
             temp.push({ ICCID });
           if (terminal.signal !== signal)
-            temp.push({ signal });
+            temp.push({ signal: Number(signal) || 0 });
         }
 
         if (temp.length > 0) {

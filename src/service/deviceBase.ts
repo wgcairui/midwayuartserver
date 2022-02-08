@@ -244,7 +244,7 @@ export class Device {
     const t = await getModel(Terminal)
       .findOne({ DevMac: mac }, { online: 1 })
       .lean();
-    return Boolean(t.online);
+    return Boolean(t?.online);
   }
 
   /**

@@ -644,7 +644,6 @@ export class ApiControll {
       query,
       item,
     } = data;
-    console.log({ query, item });
 
     if (await this.UserService.isBindMac(user, query.DevMac)) {
       const protocol = await this.Device.getProtocol(query.protocol);
