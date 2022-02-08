@@ -28,3 +28,4 @@ $ npm start
 
 [midway]: https://midwayjs.org
 # midwayuartserver
+# midwayuartserver-v2
