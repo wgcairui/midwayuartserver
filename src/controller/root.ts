@@ -912,6 +912,18 @@ export class RootControll {
   }
 
   /**
+   * 获取短信日志
+   */
+  @Post('/logsmssendsCountInfo')
+  @Validate()
+  async logsmssendsCountInfo() {
+    return {
+      code: 200,
+      data: await this.logs.logsmssendsCountInfo(),
+    };
+  }
+
+  /**
    * 获取邮件日志
    */
   @Post('/logmailsends')

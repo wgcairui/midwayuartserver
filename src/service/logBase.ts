@@ -237,6 +237,20 @@ export class Logs {
   }
 
   /**
+   * 返回每个手机号码发送的短信次数
+   * @returns 
+   */
+  logsmssendsCountInfo() {
+    return getModel(SmsSend)
+      .aggregate<{ _id: string, sum: number }>([
+        { $project: { tels: 1, Success: 1 } },
+        { $unwind: "$tels" },
+        { $match: { "Success.Code": "OK" } },
+        { $group: { _id: "$tels", sum: { $sum: 1 } } },
+        { $sort: { sum: -1 } }])
+  }
+
+  /**
    * 获取邮件日志
    */
   logmailsends(start: number, end: number) {

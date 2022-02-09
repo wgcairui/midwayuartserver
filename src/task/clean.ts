@@ -222,7 +222,7 @@ export class Clean {
     const sMode = getModel(TerminalClientResults);
     const len = await ColltionMode.countDocuments();
     const docs = await ColltionMode.find(
-      { timeStamp: { $lte: lastM } },
+      { timeStamp: { $lt: lastM } },
       { parentId: 1 }
     ).lean();
 
@@ -230,7 +230,7 @@ export class Clean {
       _id: { $in: docs.map(el => new Types.ObjectId(el.parentId)) },
     });
     const result = await ColltionMode.deleteMany({
-      timeStamp: { $lte: lastM },
+      timeStamp: { $lt: lastM },
     });
     console.timeEnd('CleanClientresultsTimeOut');
     return result.deletedCount + '/' + len;
