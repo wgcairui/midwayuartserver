@@ -7,7 +7,7 @@
 see [midway docs][midway] for more detail.
 
 ### Development
-### saxsasx
+
 ```bash
 $ npm i
 $ npm run dev
