@@ -4,7 +4,7 @@
 
 <!-- add docs here for user -->
 
-see [midway docs][midway] for more detail.
+see [midway docs][midway] for more detail.ss
 
 ### Development
 
