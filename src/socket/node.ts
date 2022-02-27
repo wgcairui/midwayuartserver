@@ -289,7 +289,7 @@ export class NodeSocket {
       this.SocketUser.sendRootSocketMessage(
         `部分指令超时,mac:${mac}/pid:${pid}/instruct:${instruct.join(',')}`
       );
-      this.log.saveDataTransfinite({
+     /*  this.log.saveDataTransfinite({
         mac: mac + 'h',
         pid,
         protocol: EX.protocol,
@@ -298,7 +298,7 @@ export class NodeSocket {
         timeStamp: Date.now(),
         msg: instruct.join(','),
         isOk: true,
-      });
+      }); */
       // console.log({ EX });
     }
   }
