@@ -332,7 +332,7 @@ export class Device {
       // 新的基数= 基数 * (512e3 / 流量总量 )
       // 例如月流量是30Mb=32e3,512e3/32e3 ~ 17,基数系数变更为17,则单条指令查询事件为17秒
       baseNum =
-        baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource)) * 1.5;
+        baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource));
     }
 
 
