@@ -47,12 +47,12 @@ export class MQ {
   private async initWork(job: Job, id: string) {
     console.log(job, id);
     const parse = {
-      [QUEUE_NAME.dataCheck]: this.#dataCheck(job.data),
+      [QUEUE_NAME.dataCheck]: this.dataCheck(job.data),
     };
     parse[job.name](job.data);
   }
 
-  #dataCheck(data: any) {
+  private dataCheck(data: any) {
     console.log(data);
   }
 

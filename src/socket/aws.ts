@@ -6,7 +6,6 @@ import {
   OnWSMessage,
 } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/ws';
-import * as http from 'http';
 import { Util } from '../util/util';
 import { SocketUser } from '../service/socketUserBase';
 
