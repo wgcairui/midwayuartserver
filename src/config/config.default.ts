@@ -3,7 +3,7 @@ import { ConnectOptions } from 'mongoose';
 import { tencetMapConfig } from '../interface';
 import { Options as ossOptions } from "ali-oss"
 
-const ossKey = require("./oss.json")
+import ossKey = require('./oss.json');
 
 export const mongoose = {
   uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : '192.168.1.190'

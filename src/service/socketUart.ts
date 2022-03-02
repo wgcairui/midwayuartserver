@@ -88,7 +88,6 @@ export class SocketUart {
     // 循环迭代缓存,发送查询指令
     // 设置定时器
     setInterval(() => {
-
       this.cache.forEach(mountDev => {
         // 判断轮询计算结果是否是正整数,是的话发送查询指令
         if (Number.isInteger(this.count / mountDev.Interval)) {
@@ -99,11 +98,13 @@ export class SocketUart {
     }, 500);
 
     // 设置所有终端为离线状态
-    this.Device.getTerminals({ DevMac: 1, _id: 0 }).then(els => {
-      els.forEach(el => {
-        this.Device.setStatTerminal(el.DevMac, false);
+    if (process.env.NODE_ENV === 'production') {
+      this.Device.getTerminals({ DevMac: 1, _id: 0 }).then(els => {
+        els.forEach(el => {
+          this.Device.setStatTerminal(el.DevMac, false);
+        });
       });
-    });
+    }
   }
 
   /**
@@ -291,24 +292,27 @@ export class SocketUart {
             case 'utf8':
               if (Protocol.Type === 232) {
                 content = ProtocolInstruct.name;
-                break;
               }
-            /* case "HX":
-                            content = tool.HX(Query.pid, ProtocolInstruct.name)
-                            break; */
+              break;
+
             default:
-              // 如果是非标协议,且包含前处理脚本
-              if (ProtocolInstruct.noStandard && ProtocolInstruct.scriptStart) {
-                // 转换脚本字符串为Fun函数,此处不保证字符串为规定的格式,请在添加协议的时候手工校验
-                const Fun = this.Util.ParseFunction(
+              {
+                // 如果是非标协议,且包含前处理脚本
+                if (
+                  ProtocolInstruct.noStandard &&
                   ProtocolInstruct.scriptStart
-                );
-                content = Fun(Query.pid, ProtocolInstruct.name);
-              } else {
-                content = this.Util.Crc16modbus(
-                  Query.pid,
-                  ProtocolInstruct.name
-                );
+                ) {
+                  // 转换脚本字符串为Fun函数,此处不保证字符串为规定的格式,请在添加协议的时候手工校验
+                  const Fun = this.Util.ParseFunction(
+                    ProtocolInstruct.scriptStart
+                  );
+                  content = Fun(Query.pid, ProtocolInstruct.name);
+                } else {
+                  content = this.Util.Crc16modbus(
+                    Query.pid,
+                    ProtocolInstruct.name
+                  );
+                }
               }
               break;
           }
@@ -447,24 +451,31 @@ export class SocketUart {
    * 往node节点发送信息
    * @param node 节点名称
    * @param eventName 监听的发送的事件名称
-   * @param data 
-   * @param timeOut 
+   * @param data
+   * @param timeOut
    */
-  async sendMessagetoNode<T>(node: string, eventName: string, data: any = {}, timeOut: number = 10000) {
+  async sendMessagetoNode<T>(
+    node: string,
+    eventName: string,
+    data: any = {},
+    timeOut = 10000
+  ) {
     return new Promise<T>((resolve, reject) => {
       /**
        * 监听返回的事件名称
        */
-      const resultEventName = eventName + Date.now()
+      const resultEventName = eventName + Date.now();
       // 创建一次性监听，监听来自Node节点指令查询操作结果
       this.event.once(resultEventName, (result: T) => {
         resolve(result);
       });
-      this.getApp().in(node).emit(eventName, { eventName: resultEventName, data });
+      this.getApp()
+        .in(node)
+        .emit(eventName, { eventName: resultEventName, data });
       // 设置定时器，超过30秒无响应则触发事件，避免事件堆积内存泄漏
       setTimeout(() => {
         this.event.removeListener(resultEventName, () => {
-          reject('Node节点无响应')
+          reject('Node节点无响应');
         });
       }, timeOut);
     });
@@ -472,10 +483,10 @@ export class SocketUart {
 
   /**
    * 重启节点程序
-   * @param node 
-   * @returns 
+   * @param node
+   * @returns
    */
   async nodeRestart(node: string) {
-    return this.sendMessagetoNode(node, 'restart')
+    return this.sendMessagetoNode(node, 'restart');
   }
 }

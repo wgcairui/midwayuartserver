@@ -21,6 +21,7 @@
     "pretty": true,
     "declaration": false,
     "removeComments": true,
+    "resolveJsonModule": true,
     "typeRoots": [
       "./typings",
       "./node_modules/@types"
