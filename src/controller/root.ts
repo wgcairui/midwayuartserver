@@ -26,6 +26,8 @@ import { SocketUser } from '../service/socketUserBase';
 import { loginHash } from '../dto/user';
 import { getBindMacUser } from '../util/base';
 
+import {NewDyIot} from "../util/newDyIot"
+
 @Provide()
 @Controller('/api/root', { middleware: ['root', 'modifyTerminal'] })
 export class RootControll {
@@ -65,8 +67,13 @@ export class RootControll {
   @Inject()
   SocketUser: SocketUser;
 
+  @Inject()
+  NewDyIot:NewDyIot
+
   @App(MidwayFrameworkType.WS_IO)
   private SocketApp: SocketApp;
+
+
 
   /**
    * 获取服务器状态
@@ -1408,7 +1415,10 @@ export class RootControll {
     }
   }
 
-  /** */
+  /**
+   * 
+   * 重启节点程序
+   */
   @Post("/nodeRestart")
   async nodeRestart(@Body() node: string) {
     try {
@@ -1418,4 +1428,14 @@ export class RootControll {
       return ({ code: 0, data: e });
     }
   }
+
+  /**
+   * 获取物联卡信息
+   * @param Iccid 
+   */
+  @Post("/getSimInfo")
+  async getSimInfo(@Body() Iccid:string){
+    
+  }
+
 }
