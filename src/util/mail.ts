@@ -45,8 +45,8 @@ export class Mail {
   async send(mail: string, title: string, subject: string, body: string) {
     body = String(body);
     title = title || 'Ladis';
-    if (title == '注册') body = `注册验证码：<strong>${body}</strong>`;
-    if (title == '重置密码') body = `重置验证码：<strong>${body}</strong>`;
+    if (title === '注册') body = `注册验证码：<strong>${body}</strong>`;
+    if (title === '重置密码') body = `重置验证码：<strong>${body}</strong>`;
     subject = subject + title;
     const mailOptions = {
       from: `"${title}" <${this.from}>`,

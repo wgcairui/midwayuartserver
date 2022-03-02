@@ -52,8 +52,8 @@ export class AuthController {
   async user(@Body() user: Uart.UserInfo) {
     return {
       code: user ? 200 : 0,
-      user: user? user.user:'guest',
-      userGroup: user?user.userGroup:'guest',
+      user: user ? user.user : 'guest',
+      userGroup: user ? user.userGroup : 'guest',
     };
   }
 
@@ -112,10 +112,10 @@ export class AuthController {
     // 解密hash密码
     const decryptPasswd = AES.decrypt(accont.passwd, hash!).toString(enc.Utf8);
     //
-    let user = await this.userService.getUser(accont.user);
+    const user = await this.userService.getUser(accont.user);
     //
     if (!user) {
-     // user = await this.userService.syncPesivUser(accont.user, decryptPasswd);
+      // user = await this.userService.syncPesivUser(accont.user, decryptPasswd);
       if (!user) {
         return {
           code: 0,
@@ -246,8 +246,8 @@ export class AuthController {
 
   /**
    * 小程序测试试用
-   * @param data 
-   * @returns 
+   * @param data
+   * @returns
    */
   @Get('/trial')
   async trial(@Query(ALL) data: code2Session) {
@@ -263,7 +263,7 @@ export class AuthController {
     await this.userService.updateUserLoginlog(
       user.user,
       this.ctx.ip,
-      'wx_login-'+seesion.openid+'-trail'
+      'wx_login-' + seesion.openid + '-trail'
     );
     return {
       code: 200,
@@ -271,7 +271,6 @@ export class AuthController {
         token: await this.userService.getToken(user.user),
       },
     };
-
   }
 
   /**
@@ -327,7 +326,7 @@ export class AuthController {
   @Post('/wplogin')
   @Validate()
   async wplogin(@Body(ALL) accont: wplogin) {
-    let user = await this.userService.getUser(accont.user);
+    const user = await this.userService.getUser(accont.user);
     if (!user) {
       //user = await this.userService.syncPesivUser(accont.user, accont.passwd);
       if (!user) {

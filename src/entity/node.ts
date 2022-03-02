@@ -75,7 +75,7 @@ export class WebSocketTerminal {
   public iotStat: string;
 
   @prop()
-  public signal: number
+  public signal: number;
 }
 
 /**
@@ -348,6 +348,12 @@ class iccidInfo {
    */
   @prop()
   public flowResource: number;
+
+  /**
+   * 物联卡版本
+   */
+  @prop()
+  public version: string;
 }
 
 /**
@@ -416,13 +422,13 @@ export class Terminal {
   public iccidInfo: iccidInfo;
 
   @prop()
-  public signal: number
+  public signal: number;
 
   @prop()
-  public share: boolean
+  public share: boolean;
 
   @prop()
-  public remark: string
+  public remark: string;
 }
 
 /**

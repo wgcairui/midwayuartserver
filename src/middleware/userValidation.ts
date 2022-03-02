@@ -10,7 +10,8 @@ import { Logs } from '../service/logBase';
 export class token implements IWebMiddleware {
   resolve() {
     return async (ctx: Context, next: IMidwayKoaNext) => {
-      const token = (ctx.header.token as string) || ctx.cookies.get('auth._token.local')
+      const token =
+        (ctx.header.token as string) || ctx.cookies.get('auth._token.local');
       if (/^\/api\/guest\/.*/.test(ctx.path)) {
         await next();
       } else {

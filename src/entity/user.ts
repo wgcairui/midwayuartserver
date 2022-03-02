@@ -62,7 +62,7 @@ export class Users {
   public proxy?: string;
 
   @prop()
-  public remark: string
+  public remark: string;
 }
 
 /**

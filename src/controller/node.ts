@@ -67,8 +67,20 @@ export class NodeControll {
     // 获取terminal信息
     const terminal = await this.Device.getTerminal(info.DevMac);
     if (terminal) {
-      const { DevMac, ip, port, AT, PID, ver, Gver, iotStat, jw, uart, ICCID, signal } =
-        info;
+      const {
+        DevMac,
+        ip,
+        port,
+        AT,
+        PID,
+        ver,
+        Gver,
+        iotStat,
+        jw,
+        uart,
+        ICCID,
+        signal,
+      } = info;
       // 比较参数，如果有修改则更新数据库
       {
         const temp: any[] = [];
@@ -135,9 +147,11 @@ export class NodeControll {
    */
   @Post('/queryData')
   async queryData(@Body() data: Uart.queryResult) {
-
     // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
-    if (data.mac && !(await this.RedisService.hasParseSet(data.mac + data.pid))) {
+    if (
+      data.mac &&
+      !(await this.RedisService.hasParseSet(data.mac + data.pid))
+    ) {
       // 标记数据正在处理
       this.RedisService.setParseSet(data.mac + data.pid);
       {
@@ -178,7 +192,7 @@ export class NodeControll {
                   timestamp: data.timeStamp,
                   data: parse,
                 })
-                .catch(_ => {
+                .catch(() => {
                   this.console.error({
                     msg: 'proxy Error',
                     mac: data.mac,
@@ -224,25 +238,24 @@ export class NodeControll {
             // 发送告警
             this.Alarm.argumentAlarm(data.mac, data.pid, a);
             // 迭代告警信息,加入日志
-            this.saveResultHistory(data, parse, a.length, r)
-              .then(el => {
-                if (el) {
-                  a.forEach(el2 => {
-                    this.Logs.saveDataTransfinite({
-                      parentId: el._id,
-                      mac: data.mac,
-                      pid: data.pid,
-                      devName: data.mountDev,
-                      protocol: data.protocol,
-                      timeStamp: el2.timeStamp,
-                      tag: el2.tag,
-                      msg: `${el2.argument}[${el2.data.parseValue}]`,
-                    }).then(el => {
-                      this.SocketUser.sendMacAlarm(data.mac, el as any);
-                    });
+            this.saveResultHistory(data, parse, a.length, r).then(el => {
+              if (el) {
+                a.forEach(el2 => {
+                  this.Logs.saveDataTransfinite({
+                    parentId: el._id,
+                    mac: data.mac,
+                    pid: data.pid,
+                    devName: data.mountDev,
+                    protocol: data.protocol,
+                    timeStamp: el2.timeStamp,
+                    tag: el2.tag,
+                    msg: `${el2.argument}[${el2.data.parseValue}]`,
+                  }).then(el => {
+                    this.SocketUser.sendMacAlarm(data.mac, el as any);
                   });
-                }
-              });
+                });
+              }
+            });
           } else {
             this.saveResultHistory(data, parse, a.length, r);
           }
@@ -320,18 +333,22 @@ export class NodeControll {
    * @param r
    * @returns
    */
-  async saveResultHistory(data: Uart.queryResult, parse: Uart.queryResultArgument[], a: number, r: Uart.queryResultArgument[]) {
-
-    const key = data.mac + data.pid
-    const hisData = this.RedisService.terminalDataMap.get(key)
-    const newData = data.contents.map(el => el.buffer.data)
+  async saveResultHistory(
+    data: Uart.queryResult,
+    parse: Uart.queryResultArgument[],
+    a: number,
+    r: Uart.queryResultArgument[]
+  ) {
+    const key = data.mac + data.pid;
+    const hisData = this.RedisService.terminalDataMap.get(key);
+    const newData = data.contents.map(el => el.buffer.data);
     //console.log({ hisData, n: JSON.stringify(newData) });
     if (hisData && hisData === JSON.stringify(newData)) {
       //console.log(`key:${key} 数据重复`);
-      return undefined
+      return undefined;
     }
     //console.log(`key:${key} new数据--------------------------------------------------`);
-    this.RedisService.terminalDataMap.set(key, JSON.stringify(newData))
+    this.RedisService.terminalDataMap.set(key, JSON.stringify(newData));
 
     // 异步保存设备数据
     const { _id: parentId } = await this.Device.saveTerminalResults({

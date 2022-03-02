@@ -220,10 +220,7 @@ export class WxPublic {
     // 处理普通消息
     else {
       // 自动回复信息
-      return this.TextMessege(
-        body,
-        '详情请咨询400-6655778'
-      );
+      return this.TextMessege(body, '详情请咨询400-6655778');
     }
     return 'success';
   }

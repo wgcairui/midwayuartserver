@@ -23,7 +23,7 @@ export class HelloSocketController {
   SocketUser: SocketUser;
 
   @OnWSConnection()
-  async onConnectionMethod(socket: Context, request: http.IncomingMessage) {
+  async onConnectionMethod() {
     this.ctx.send(JSON.stringify({ type: 'Connection' }));
   }
 

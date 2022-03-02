@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 import { Provide } from '@midwayjs/decorator';
 import { Types } from 'mongoose';
 import {
@@ -17,7 +18,6 @@ import {
   Protocols,
 } from '../entity/protocol';
 import { filter } from '../interface';
-import * as _ from 'lodash';
 import { UserAlarmSetup, UserBindDevice } from '../entity/user';
 import {
   UartTerminalDataTransfinite,
@@ -33,7 +33,6 @@ import { getModel } from '../util/base';
  */
 @Provide()
 export class Device {
-
   /**
    * 获取all终端
    * @returns
@@ -114,7 +113,10 @@ export class Device {
    * 获取单个协议告警配置
    * @param protocol
    */
-  async getAlarmProtocol(protocol: string, filter: filter<Uart.ProtocolConstantThreshold> = { _id: 0 }) {
+  async getAlarmProtocol(
+    protocol: string,
+    filter: filter<Uart.ProtocolConstantThreshold> = { _id: 0 }
+  ) {
     const model = getModel(DevConstant);
     const setup = (await model
       .findOne({ Protocol: protocol }, filter)
@@ -319,8 +321,8 @@ export class Device {
     if (terminal.ICCID && !terminal.iccidInfo) {
       (terminal.iccidInfo as any) = {
         statu: true,
-        flowResource: 512e3
-      }
+        flowResource: 512e3,
+      };
     }
 
     // 如果有有iccidInfo,状态开启且月流量小于500mb,修改基数,
@@ -334,7 +336,6 @@ export class Device {
       baseNum =
         baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource));
     }
-
 
     // 指令合计数量
     const LensCount =
@@ -444,7 +445,7 @@ export class Device {
         );
         break;
       case 'Oprate' as any:
-      case "OprateInstruct":
+      case 'OprateInstruct':
         const OprateInstruct = arg as Uart.OprateInstruct[];
         await getModel(DevConstant).updateOne(
           { Protocol, ProtocolType },
@@ -505,10 +506,8 @@ export class Device {
    */
   async modifyProtocol(Protocol: string, data: Partial<Uart.protocol>) {
     return await getModel(Protocols)
-      .updateOne(
-        { Protocol },
-        { $set: { ...data } }
-      ).lean();
+      .updateOne({ Protocol }, { $set: { ...data } })
+      .lean();
   }
 
   /**
@@ -636,9 +635,7 @@ export class Device {
           TerminalClientResults: await getModel(TerminalClientResults)
             .deleteMany({ mac: DevMac })
             .lean(),
-          TerminalClientResultSingle: await getModel(
-            TerminalClientResultSingle
-          )
+          TerminalClientResultSingle: await getModel(TerminalClientResultSingle)
             .deleteMany({ mac: DevMac })
             .lean(),
           Terminal: await getModel(Terminal).deleteOne({ DevMac }).lean(),

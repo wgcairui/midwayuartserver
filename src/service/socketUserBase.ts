@@ -13,7 +13,6 @@ import { getBindMacUser } from '../util/base';
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class SocketUser {
-
   @App(MidwayFrameworkType.WS_IO)
   app: IO;
 
@@ -25,12 +24,12 @@ export class SocketUser {
   /**
    * 用户订阅
    */
-  subscribeUsers: Map<string, Set<string>>
+  subscribeUsers: Map<string, Set<string>>;
 
   @Init()
   async init() {
     this.wsMap = new Map();
-    this.subscribeUsers = new Map()
+    this.subscribeUsers = new Map();
   }
 
   /* @App(MidwayFrameworkType.WS)
@@ -47,19 +46,19 @@ export class SocketUser {
      * 适用于root,监控所有设备变更
      */
     {
-      const users = this.subscribeUsers.get('MacUpdate')
+      const users = this.subscribeUsers.get('MacUpdate');
       if (users && users.size > 0) {
-        this.toUserInfo([...users.values()], 'MacUpdate', { mac })
+        this.toUserInfo([...users.values()], 'MacUpdate', { mac });
       }
     }
     /**
      * 适用于用户
      */
     {
-      const key = 'MacUpdate' + mac
-      const users = this.subscribeUsers.get(key)
+      const key = 'MacUpdate' + mac;
+      const users = this.subscribeUsers.get(key);
       if (users && users.size > 0) {
-        this.toUserInfo([...users.values()], key, { mac })
+        this.toUserInfo([...users.values()], key, { mac });
       }
     }
   }
@@ -73,10 +72,10 @@ export class SocketUser {
      * 适用于用户
      */
     {
-      const key = 'MacIntervalUpdate' + mac + pid
-      const users = this.subscribeUsers.get(key)
+      const key = 'MacIntervalUpdate' + mac + pid;
+      const users = this.subscribeUsers.get(key);
       if (users && users.size > 0) {
-        this.toUserInfo([...users.values()], key, { mac })
+        this.toUserInfo([...users.values()], key, { mac });
       }
     }
   }
@@ -86,10 +85,10 @@ export class SocketUser {
    * @param mac 向订阅端发送设备数据更新
    */
   async sendMacDateUpdate(mac: string, pid: number) {
-    const event = mac + pid
-    const users = this.subscribeUsers.get(mac + pid)
+    const event = mac + pid;
+    const users = this.subscribeUsers.get(mac + pid);
     if (users && users.size > 0) {
-      this.toUserInfo([...users.values()], event)
+      this.toUserInfo([...users.values()], event);
     }
     this.toUser(mac, 'MacDateUpdate' + mac + pid, { mac, pid });
   }
@@ -137,20 +136,18 @@ export class SocketUser {
         if (this.wsMap.has(u)) {
           this.wsMap.get(u).send(JSON.stringify({ type: events, data }));
         }
-      })
+      });
     }
-
   }
-
-
 
   /**
    * 给root用户推送告警信息
    * @param msg
-   * @param type 消息类型
+   * @param _type 消息类型
    * @param user
    */
-  sendRootSocketMessage(msg: string, type = 'message', user = 'root') {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  sendRootSocketMessage(msg: string, _type = 'message', user = 'root') {
     this.app.of('/web').in(user).emit('message', msg);
   }
 }

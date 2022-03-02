@@ -25,7 +25,6 @@ import { getModel } from '../util/base';
  */
 @Provide()
 export class Logs {
-
   /**
    * 创建插入文档
    * @param cl
@@ -213,7 +212,6 @@ export class Logs {
    */
   logterminals(start: number, end: number) {
     return getModel(Terminals)
-
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }
@@ -222,48 +220,62 @@ export class Logs {
    * 获取短信日志
    */
   logsmssends(start: number, end: number) {
-    return getModel(SmsSend)
-      .aggregate([
-        {
-          $match: {
-            timeStamp: { $lte: end, $gte: start }
-          }
+    return getModel(SmsSend).aggregate([
+      {
+        $match: {
+          timeStamp: { $lte: end, $gte: start },
         },
-        { $project: { "timeStamp": 1, tels: 1, sendParams: 1, Success: 1, Error: 1 } },
-        { $unwind: "$tels" },
-      ])
+      },
+      {
+        $project: {
+          timeStamp: 1,
+          tels: 1,
+          sendParams: 1,
+          Success: 1,
+          Error: 1,
+        },
+      },
+      { $unwind: '$tels' },
+    ]);
     /* .find({ timeStamp: { $lte: end, $gte: start } })
     .lean(); */
   }
 
   /**
    * 返回每个手机号码发送的短信次数
-   * @returns 
+   * @returns
    */
   logsmssendsCountInfo() {
-    return getModel(SmsSend)
-      .aggregate<{ _id: string, sum: number }>([
-        { $project: { tels: 1, Success: 1 } },
-        { $unwind: "$tels" },
-        { $match: { "Success.Code": "OK" } },
-        { $group: { _id: "$tels", sum: { $sum: 1 } } },
-        { $sort: { sum: -1 } }])
+    return getModel(SmsSend).aggregate<{ _id: string; sum: number }>([
+      { $project: { tels: 1, Success: 1 } },
+      { $unwind: '$tels' },
+      { $match: { 'Success.Code': 'OK' } },
+      { $group: { _id: '$tels', sum: { $sum: 1 } } },
+      { $sort: { sum: -1 } },
+    ]);
   }
 
   /**
    * 获取邮件日志
    */
   logmailsends(start: number, end: number) {
-    return getModel(MailSend)
-      .aggregate([
-        {
-          $match: {
-            timeStamp: { $lte: end, $gte: start }
-          }
+    return getModel(MailSend).aggregate([
+      {
+        $match: {
+          timeStamp: { $lte: end, $gte: start },
         },
-        { $project: { "timeStamp": 1, mails: 1, sendParams: 1, Success: 1, Error: 1 } },
-        { $unwind: "$mails" },
-      ])
+      },
+      {
+        $project: {
+          timeStamp: 1,
+          mails: 1,
+          sendParams: 1,
+          Success: 1,
+          Error: 1,
+        },
+      },
+      { $unwind: '$mails' },
+    ]);
     /* .find({ timeStamp: { $lte: end, $gte: start } })
     .lean(); */
   }

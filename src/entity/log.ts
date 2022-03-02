@@ -170,7 +170,7 @@ export class UserLogin {
   public msg: string;
 
   @prop()
-  public creatTime: Date
+  public creatTime: Date;
 }
 
 /**

@@ -92,7 +92,7 @@ class instruct {
   public formResize: formResize[];
 
   @prop()
-  public remark: string
+  public remark: string;
 }
 
 /**
@@ -113,7 +113,7 @@ export class Protocols {
   public instruct: instruct[];
 
   @prop()
-  public remark: string
+  public remark: string;
 }
 
 /**

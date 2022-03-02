@@ -10,20 +10,16 @@ export class modifyTerminal implements IWebMiddleware {
   resolve() {
     return async (ctx: Context, next: IMidwayKoaNext) => {
       await next();
-      const path = ctx.request.path.split("/").reverse()[0]
-        
-      
-      
-      if(/^(modify|set).*terminal/i.test((path)) ){
+      const path = ctx.request.path.split('/').reverse()[0];
+
+      if (/^(modify|set).*terminal/i.test(path)) {
         console.log(path);
-          const body = ctx.request.body
-          if(body && 'mac' in body){
-            const socket = await ctx.requestContext.getAsync(SocketUser);
-            socket.sendMacUpdate(body.mac)
-          }
+        const body = ctx.request.body;
+        if (body && 'mac' in body) {
+          const socket = await ctx.requestContext.getAsync(SocketUser);
+          socket.sendMacUpdate(body.mac);
+        }
       }
-      
-      
     };
   }
 }

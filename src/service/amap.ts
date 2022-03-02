@@ -40,17 +40,17 @@ export class Amap {
     coordsys: 'gps' | 'mapbar' | 'baidu' = 'gps'
   ) {
     if (!loctions || loctions === '') return [''];
-    const result = await this.fecth<any>(
-      'assistant/coordinate/convert',
-      { locations: loctions, coordsys }
-    );
+    const result = await this.fecth<any>('assistant/coordinate/convert', {
+      locations: loctions,
+      coordsys,
+    });
     return result.status === '1' ? result.locations.split(';') : [''];
   }
 
   // axios
-  private async fecth<T extends any>(
+  private async fecth<T>(
     type: apiType,
-    data: { [x: string]: string | string[] }
+    data: { [x: string]: string | string[] | T }
   ) {
     const res = await axios({
       url: 'https://restapi.amap.com/v3/' + type,

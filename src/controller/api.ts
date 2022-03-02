@@ -75,7 +75,7 @@ export class ApiControll {
    * @param company
    * @returns
    */
-  @(CreateApiDoc()
+  @CreateApiDoc()
     .summary('注册用户')
     .description('用于网页端注册用户')
     .param('昵称')
@@ -84,7 +84,7 @@ export class ApiControll {
     .param('手机号')
     .param('邮箱')
     .param('组织')
-    .build())
+    .build()
   @Post('/guest/addUser')
   addUser(
     @Body(ALL)
@@ -108,7 +108,7 @@ export class ApiControll {
    * @param token
    * @returns
    */
-  @(CreateApiDoc().summary('获取用户绑定设备').build())
+  @CreateApiDoc().summary('获取用户绑定设备').build()
   @Post('/BindDev')
   @Validate()
   async BindDev(@Body(ALL) data: Api) {
@@ -122,11 +122,11 @@ export class ApiControll {
    * 获取用户告警信息
    * @param token
    */
-  @(CreateApiDoc()
+  @CreateApiDoc()
     .summary('获取用户告警信息')
     .param('开始时间')
     .param('结束时间')
-    .build())
+    .build()
   @Validate()
   @Post('/loguartterminaldatatransfinites')
   async loguartterminaldatatransfinites(@Body(ALL) data: date) {
@@ -161,8 +161,6 @@ export class ApiControll {
       }),
     };
   }
-
-
 
   /**
    * 确认用户告警信息
@@ -220,7 +218,6 @@ export class ApiControll {
   @Post('/addUserTerminal')
   @Validate()
   async addUserTerminal(@Body(ALL) data: mac) {
-
     if (data.token.userGroup === 'test') {
       return {
         code: 0,
@@ -287,7 +284,7 @@ export class ApiControll {
   }
 
   /**
-   *   添加用户终端挂载设备
+   * 添加用户终端挂载设备
    * @param mac
    * @param param2
    * @returns
@@ -352,8 +349,8 @@ export class ApiControll {
       msg: !code
         ? '验证码已失效'
         : code !== data.code
-          ? '验证码错误'
-          : 'success',
+        ? '验证码错误'
+        : 'success',
     };
   }
 
@@ -531,9 +528,9 @@ export class ApiControll {
         const nameSet = new Set(data.name);
         d.forEach(
           el =>
-          (el.result = el.result
-            .filter(el2 => nameSet.has(el2.name))
-            .map(el3 => ({ name: el3.name, value: el3.value } as any)))
+            (el.result = el.result
+              .filter(el2 => nameSet.has(el2.name))
+              .map(el3 => ({ name: el3.name, value: el3.value } as any)))
         );
       }
       // 如果参数是数组,或结果小于50条,直接返回数据
@@ -581,36 +578,32 @@ export class ApiControll {
   async getTerminalDatasV2(@Body(ALL) data: terminalResultsV2) {
     console.log();
 
-    const d = (await this.UserService.getTerminalDatasV2(
+    const d = await this.UserService.getTerminalDatasV2(
       data.token.user,
       data.mac,
       data.pid,
       data.name,
       data.start,
       data.end
-    ))
+    );
 
     // 如果参数是数组,或结果小于50条,直接返回数据
     if (d.length < 50 || typeof data.name === 'object') {
       return {
         code: 200,
-        data: d
+        data: d,
       };
     }
     // 把结果拆分为块,50等分
     const len = Number.parseInt((d.length / 50).toFixed(0));
     const resultChunk = lodash.chunk(d, len < 10 ? 10 : len);
     const arrs = resultChunk
-      .map(el => [
-        lodash.maxBy(el, 'value')!,
-        lodash.minBy(el, 'value')!,
-      ])
+      .map(el => [lodash.maxBy(el, 'value')!, lodash.minBy(el, 'value')!])
       .flat();
     return {
       code: 200,
-      data: arrs
+      data: arrs,
     };
-
   }
 
   /**
@@ -1047,35 +1040,40 @@ export class ApiControll {
     };
   }
 
-
   /**
    * 获取设备对应协议
-   * @param data 
+   * @param data
    */
-  @Post("/getTerminalPidProtocol")
+  @Post('/getTerminalPidProtocol')
   async getTerminalPidProtocol(@Body(ALL) data: macPid) {
-    const t = await this.Device.getTerminal(data.mac, { mountDevs: 1 })
-    const m = t.mountDevs?.find(el => el.pid === data.pid)
+    const t = await this.Device.getTerminal(data.mac, { mountDevs: 1 });
+    const m = t.mountDevs?.find(el => el.pid === data.pid);
     return {
       code: 200,
-      data: m
-    }
+      data: m,
+    };
   }
 
   /**
    * 获取协议配置
    */
-  @Post("/getProtocolSetup")
-  async getProtocolSetup(@Body() protocol: string, @Body() type: Uart.ConstantThresholdType, @Body() user?: string) {
-    const sys = await this.Device.getAlarmProtocol(protocol, { [type]: 1 })
-    const u = user ? await this.UserService.getUserAlarmProtocol(user, protocol) : undefined
+  @Post('/getProtocolSetup')
+  async getProtocolSetup(
+    @Body() protocol: string,
+    @Body() type: Uart.ConstantThresholdType,
+    @Body() user?: string
+  ) {
+    const sys = await this.Device.getAlarmProtocol(protocol, { [type]: 1 });
+    const u = user
+      ? await this.UserService.getUserAlarmProtocol(user, protocol)
+      : undefined;
 
     return {
       code: 200,
       data: {
         sys: sys[type],
-        user: u ? u[type] : []
-      }
-    }
+        user: u ? u[type] : [],
+      },
+    };
   }
 }

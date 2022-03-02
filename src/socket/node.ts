@@ -65,8 +65,6 @@ export class NodeSocket {
     const socket = this.ctx;
     const ID = socket.id;
 
-
-
     if (!this.ctx.handshake) return;
     // ip由nginx代理后会变为nginx服务器的ip，重写文件头x-real-ip为远端ip
     const IP: string =
@@ -74,6 +72,7 @@ export class NodeSocket {
       socket.conn.remoteAddress;
     // 检查连接节点是否在系统登记
     const Node = await this.Device.getNode(
+      // eslint-disable-next-line no-useless-escape
       /\:/.test(IP) ? IP.split(':').reverse()[0] : IP
     );
     if (Node) {
@@ -129,12 +128,12 @@ export class NodeSocket {
 
   /**
    * 响应注册事件
-   * @param data
+   * @param _data
    * @returns
    */
   @OnWSMessage('register')
   @WSEmit('registerSuccess')
-  async register(data: string) {
+  async register(_data: string) {
     const node = await this.SocketUart.getNode(this.ctx.id);
     const UserID = await this.HF.getUserId();
     return { ...node, UserID };
@@ -142,10 +141,10 @@ export class NodeSocket {
 
   /**
    * 节点启动失败
-   * @param data
+   * @param _data
    */
   @OnWSMessage('startError')
-  async startError(data: any) {
+  async startError(_data: any) {
     const node = await this.SocketUart.getNode(this.ctx.id);
     this.log.saveNode({
       type: 'TcpServer启动失败',
@@ -196,7 +195,7 @@ export class NodeSocket {
           Type: 'UPS',
         };
         await this.UserService.addTerminalMountDev('root', data, mountDev);
-        await this.Device.setTerminal(data, { PID: 'pesiv' })
+        await this.Device.setTerminal(data, { PID: 'pesiv' });
         this.RedisService.initTerminalMap();
         this.console.info(`Pesiv卡:${data}未注册,将自动注册到设备库`);
       }
@@ -289,7 +288,7 @@ export class NodeSocket {
       this.SocketUser.sendRootSocketMessage(
         `部分指令超时,mac:${mac}/pid:${pid}/instruct:${instruct.join(',')}`
       );
-     /*  this.log.saveDataTransfinite({
+      /*  this.log.saveDataTransfinite({
         mac: mac + 'h',
         pid,
         protocol: EX.protocol,
@@ -389,7 +388,7 @@ export class NodeSocket {
    */
   @OnWSMessage('deviceopratesuccess')
   @OnWSMessage('dtuopratesuccess')
-  @OnWSMessage("result")
+  @OnWSMessage('result')
   dtuOprateSuccess(events: string, result: Uart.ApolloMongoResult) {
     this.SocketUart.event.emit(events, result);
   }

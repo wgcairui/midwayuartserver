@@ -79,7 +79,7 @@ export class ProtocolParse {
           el =>
             InstructMap.has(el.content) &&
             el.buffer.data.findIndex(el2 => el2 === 13) ===
-            el.buffer.data.length - 1
+              el.buffer.data.length - 1
         )
 
         .map(el => {
@@ -248,7 +248,7 @@ export class ProtocolParse {
     });
     // 把转换处理后的数据根据协议指令对应的解析对象生成结果对象数组,赋值result属性
     return (await Promise.all(ParseInstructResultType))
-      .map(({ content, bufferData, bufferN }) => {
+      .map(({ content, bufferData }) => {
         const instructs = InstructMap.get(content)!;
         const buffer = Buffer.from(bufferData);
         return instructs.formResize.map(async el2 => {
@@ -277,7 +277,7 @@ export class ProtocolParse {
                   step,
                 });
 
-                result.value = undefined
+                result.value = undefined;
               }
               break;
             // 处理ascii
@@ -315,14 +315,14 @@ export class ProtocolParse {
               ).toFixed(2);
               break;
           }
-          result.parseValue = (result.value && result.issimulate)
-            ? await this.RedisService.parseUnit(result.unit!, result.value)
-            : result.value;
+          result.parseValue =
+            result.value && result.issimulate
+              ? await this.RedisService.parseUnit(result.unit!, result.value)
+              : result.value;
           return result;
-        })
+        });
       })
-      .flat()
-
+      .flat();
   }
 
   /**

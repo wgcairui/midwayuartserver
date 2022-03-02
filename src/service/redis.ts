@@ -49,7 +49,7 @@ export class RedisService {
   /**
    * 每个设备最新数据
    */
-  terminalDataMap: Map<string, string>
+  terminalDataMap: Map<string, string>;
 
   @Init()
   async init() {
@@ -57,7 +57,7 @@ export class RedisService {
     this.protocolInstructMap = new Map();
     this.userSetup = new Map();
     this.terminalMap = new Map();
-    this.terminalDataMap = new Map()
+    this.terminalDataMap = new Map();
     //  this.clear()
     this.initTerminalMap();
   }

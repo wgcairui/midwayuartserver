@@ -1,13 +1,14 @@
 import { RedisOptions } from 'ioredis';
 import { ConnectOptions } from 'mongoose';
 import { tencetMapConfig } from '../interface';
-import { Options as ossOptions } from "ali-oss"
+import { Options as ossOptions } from 'ali-oss';
 
 import ossKey = require('./oss.json');
 
 export const mongoose = {
-  uri: `mongodb://${process.env.NODE_Docker === 'docker' ? 'mongo' : '192.168.1.190'
-    }:27017/UartServer`,
+  uri: `mongodb://${
+    process.env.NODE_Docker === 'docker' ? 'mongo' : '127.0.0.1'
+  }:27017/UartServer`,
   options: {
     dbName: 'UartServer',
     useNewUrlParser: true,
@@ -18,7 +19,7 @@ export const mongoose = {
 
 export const redis: RedisOptions = {
   port: 6379, // Redis port
-  host: process.env.NODE_Docker === 'docker' ? 'redis' : 'uart.ladishb.com', //"127.0.0.1", // Redis host
+  host: process.env.NODE_Docker === 'docker' ? 'redis' : '127.0.0.1', // Redis host
   family: 4, // 4 (IPv4) or 6 (IPv6)
   password: '',
   db: 0,
@@ -39,7 +40,6 @@ export const tencetMap: tencetMapConfig = {
   apiUrl: 'https://apis.map.qq.com',
   SK: 'VNXI1sCXNvFIAZFeRT7ghlnLeOuiZWt',
 };
-
 
 // normal oss bucket
 export const oss: Record<string, ossOptions> = {

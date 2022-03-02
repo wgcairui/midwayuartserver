@@ -26,7 +26,7 @@ import { SocketUser } from '../service/socketUserBase';
 import { loginHash } from '../dto/user';
 import { getBindMacUser } from '../util/base';
 
-import {NewDyIot} from "../util/newDyIot"
+import { NewDyIot } from '../util/newDyIot';
 
 @Provide()
 @Controller('/api/root', { middleware: ['root', 'modifyTerminal'] })
@@ -68,12 +68,10 @@ export class RootControll {
   SocketUser: SocketUser;
 
   @Inject()
-  NewDyIot:NewDyIot
+  NewDyIot: NewDyIot;
 
   @App(MidwayFrameworkType.WS_IO)
   private SocketApp: SocketApp;
-
-
 
   /**
    * 获取服务器状态
@@ -757,19 +755,17 @@ export class RootControll {
   }
 
   /**
- * 获取节点指令发送运行状态
- * @returns
- */
+   * 获取节点指令发送运行状态
+   * @returns
+   */
   @Post('/getNodeInstructQueryMac')
   @Validate()
   getNodeInstructQueryMac(@Body() mac: string, @Body() pid: string | number) {
     return {
       code: 200,
       data: this.SocketUart.cache.get(mac + pid)?.Interval || 3000,
-
     };
   }
-
 
   /**
    * 获取所有连接的socket客户端用户
@@ -806,8 +802,8 @@ export class RootControll {
 
     return {
       code: 200,
-      data: names.includes(user) || this.SocketUser.wsMap.has(user)
-    }
+      data: names.includes(user) || this.SocketUser.wsMap.has(user),
+    };
   }
 
   /**
@@ -1323,49 +1319,46 @@ export class RootControll {
     };
   }
 
-
   /**
    * 修改设备备注
-   * @param mac 
-   * @param remark 
-   * @returns 
+   * @param mac
+   * @param remark
+   * @returns
    */
-  @Post("/modifyTerminalRemark")
+  @Post('/modifyTerminalRemark')
   async modifyTerminalRemark(@Body() mac: string, @Body() remark: string) {
     return {
       code: 200,
-      data: await this.Device.setTerminal(mac, { remark })
-    }
+      data: await this.Device.setTerminal(mac, { remark }),
+    };
   }
-
 
   /**
    * 修改user备注
-   * @param user 
-   * @param remark 
-   * @returns 
+   * @param user
+   * @param remark
+   * @returns
    */
-  @Post("/modifyUserRemark")
+  @Post('/modifyUserRemark')
   async modifyUserRemark(@Body() user: string, @Body() remark: string) {
     return {
       code: 200,
-      data: await this.UserService.modifyUserInfo(user, { remark })
-    }
+      data: await this.UserService.modifyUserInfo(user, { remark }),
+    };
   }
-
 
   /**
    * 修改user备注
-   * @param user 
-   * @param remark 
-   * @returns 
+   * @param user
+   * @param remark
+   * @returns
    */
-  @Post("/modifyProtocolRemark")
+  @Post('/modifyProtocolRemark')
   async modifyProtocolRemark(@Body() protocol: string, @Body() remark: string) {
     return {
       code: 200,
-      data: await this.Device.modifyProtocol(protocol, { remark })
-    }
+      data: await this.Device.modifyProtocol(protocol, { remark }),
+    };
   }
 
   /**
@@ -1389,53 +1382,62 @@ export class RootControll {
    * @param token
    */
   @Post('/userLoguartterminaldatatransfinites')
-  async userLoguartterminaldatatransfinites(@Body() user: string, @Body() start: number, @Body() end: number) {
-    const alarms = await this.UserService.getUserAlarm(
-      user,
-      start,
-      end
-    );
+  async userLoguartterminaldatatransfinites(
+    @Body() user: string,
+    @Body() start: number,
+    @Body() end: number
+  ) {
+    const alarms = await this.UserService.getUserAlarm(user, start, end);
     return {
       code: 200,
-      data: alarms
+      data: alarms,
     };
   }
 
-
   /**
-   * 
+   *
    * @param mac 根据mac获取用户
-   * @returns 
+   * @returns
    */
-  @Post("/getTerminalUser")
+  @Post('/getTerminalUser')
   async getTerminalUser(@Body() mac: string) {
     return {
       code: 200,
-      data: await getBindMacUser(mac)
-    }
+      data: await getBindMacUser(mac),
+    };
   }
 
   /**
-   * 
+   *
    * 重启节点程序
    */
-  @Post("/nodeRestart")
+  @Post('/nodeRestart')
   async nodeRestart(@Body() node: string) {
     try {
       const el = await this.SocketUart.nodeRestart(node);
-      return ({ code: 200, data: el });
+      return { code: 200, data: el };
     } catch (e) {
-      return ({ code: 0, data: e });
+      return { code: 0, data: e };
     }
   }
 
   /**
    * 获取物联卡信息
-   * @param Iccid 
+   * @param Iccid
    */
-  @Post("/getSimInfo")
-  async getSimInfo(@Body() Iccid:string){
-    
+  @Post('/getSimInfo')
+  async getSimInfo(@Body() Iccid: string) {
+    try {
+      const data = await this.NewDyIot.GetCardDetail(Iccid);
+      return {
+        code: 200,
+        data,
+      };
+    } catch (error) {
+      return {
+        code: 0,
+        data: error,
+      };
+    }
   }
-
 }

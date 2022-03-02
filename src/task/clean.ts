@@ -217,7 +217,7 @@ export class Clean {
   async CleanClientresultsTimeOut() {
     console.log('把所有2个月前的设备结果集删除');
     console.time('CleanClientresultsTimeOut');
-    const lastM = Date.now() - (2.592e9 * 2);
+    const lastM = Date.now() - 2.592e9 * 2;
     const ColltionMode = getModel(TerminalClientResult);
     const sMode = getModel(TerminalClientResults);
     const len = await ColltionMode.countDocuments();

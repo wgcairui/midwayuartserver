@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Provide, Inject, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { RedisService } from '../service/redis';
 import { Device } from './deviceBase';

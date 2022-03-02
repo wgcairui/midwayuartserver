@@ -14,7 +14,7 @@ export class UpdateIccid {
   DyIot: DyIot;
 
   @Inject()
-  newDyIot: NewDyIot
+  newDyIot: NewDyIot;
 
   @Inject()
   Device: Device;
@@ -25,7 +25,11 @@ export class UpdateIccid {
   @Inject()
   Alarm: Alarm;
 
-  @TaskLocal('0 7 * * * ')
+  /**
+   * 每小时更新一次
+   * @returns
+   */
+  @TaskLocal('0 * * * * ')
   async up() {
     const now = Date.now();
     const terminals = await this.Device.getTerminals();
@@ -34,79 +38,86 @@ export class UpdateIccid {
     );
 
     for (const ter of terminalsFilter) {
-      const Iccid = ter.ICCID
+      const Iccid = ter.ICCID;
 
       try {
-        const { Success, Data } = await this.newDyIot.GetCardDetail(Iccid)
+        const { Success, Data } = await this.newDyIot.GetCardDetail(Iccid);
+
         if (Success) {
-          const CardInfo = Data.VsimCardInfo
+          const CardInfo = Data.VsimCardInfo;
+          const flowUsed = CardInfo.PeriodAddFlow.includes('KB')
+            ? Number(CardInfo.PeriodAddFlow.split('KB')[0])
+            : Number(CardInfo.PeriodAddFlow.split('MB')[0]) * 1024;
+
+          const restOfFlow =
+            Number(CardInfo.PeriodRestFlow.split('MB')[0]) * 1024;
+
           const iccidInfo: Uart.iccidInfo = {
             statu: true,
             expireDate: CardInfo.ExpireTime,
-            resName: '',
+            resName: CardInfo.CredentialNo,
             resourceType: '',
             validDate: '',
             voiceTotal: 0,
             voiceUsed: 0,
             smsUsed: 0,
-            flowResource: Number(CardInfo.PeriodAddFlow.split("MB")[0]) * 1024,
-            restOfFlow: Number(CardInfo.PeriodRestFlow.split("MB")[0]) * 1024,
-            flowUsed: 0
-          }
+            flowResource: restOfFlow + flowUsed,
+            restOfFlow,
+            flowUsed,
+            version: CardInfo.AliFee,
+          };
+
+          await this.Device.setTerminal(ter.DevMac, {
+            iccidInfo: iccidInfo as any,
+          });
+        }
+      } catch (error) {
+        const info = await this.DyIot.QueryCardFlowInfo(ter.ICCID);
+        if (info.code === 'OK') {
+          const data = info.cardFlowInfos.cardFlowInfo[0];
+          const iccidInfo: Partial<Uart.iccidInfo> = data
+            ? { statu: true, ...data }
+            : { statu: false };
           await this.Device.setTerminal(ter.DevMac, {
             iccidInfo: iccidInfo as any,
           });
 
-        } else {
-          const info = await this.DyIot.QueryCardFlowInfo(ter.ICCID);
-          if (info.code === 'OK') {
-            const data = info.cardFlowInfos.cardFlowInfo[0];
-            const iccidInfo: Partial<Uart.iccidInfo> = data
-              ? { statu: true, ...data }
-              : { statu: false };
-            await this.Device.setTerminal(ter.DevMac, {
-              iccidInfo: iccidInfo as any,
-            });
+          if (data) {
+            // 失效日期
+            const expireDate = new Date(data.expireDate).getTime();
+            // 距离失效日期还有几天
+            const hasExpireDate = Math.floor((expireDate - now) / 864e5);
+            // 以使用的流量计算每天用量
+            const dayUse = data.flowUsed / (31 - hasExpireDate);
+            // 剩余每天可使用的量
+            const afterUse = data.restOfFlow / hasExpireDate;
 
-            if (data) {
-              // 失效日期
-              const expireDate = new Date(data.expireDate).getTime();
-              // 距离失效日期还有几天
-              const hasExpireDate = Math.floor((expireDate - now) / 864e5);
-              // 以使用的流量计算每天用量
-              const dayUse = data.flowUsed / (31 - hasExpireDate);
-              // 剩余每天可使用的量
-              const afterUse = data.restOfFlow / hasExpireDate;
+            // 如果剩余量不足,修改查询间隔,避免超出使用流量,此流程不准确,获取的使用量会懈后
+            if (afterUse < dayUse) {
+              const interVal =
+                (await this.Device.getMountDevInterval(ter.DevMac)) *
+                Math.ceil(afterUse / dayUse);
+              this.SocketUart.setTerminalMountDevCache(ter.DevMac, interVal);
+            }
+            /**
+             * 如果卡会在三天内失效
+             * 检查卡是否还有多的套餐
+             */
 
-              // 如果剩余量不足,修改查询间隔,避免超出使用流量,此流程不准确,获取的使用量会懈后
-              if (afterUse < dayUse) {
-                const interVal =
-                  (await this.Device.getMountDevInterval(ter.DevMac)) *
-                  Math.ceil(afterUse / dayUse);
-                this.SocketUart.setTerminalMountDevCache(ter.DevMac, interVal);
-              }
-              /**
-               * 如果卡会在三天内失效
-               * 检查卡是否还有多的套餐
-               */
-
-              if (expireDate - now < 864e5 * 3) {
-                const dtl = await this.DyIot.QueryIotCardOfferDtl(ter.ICCID);
-                if (dtl.code !== 'OK' || dtl.cardOfferDetail.detail.length < 2) {
-                  this.Alarm.IccidExpire('root', ter.DevMac, ter.ICCID, expireDate);
-                }
+            if (expireDate - now < 864e5 * 3) {
+              const dtl = await this.DyIot.QueryIotCardOfferDtl(ter.ICCID);
+              if (dtl.code !== 'OK' || dtl.cardOfferDetail.detail.length < 2) {
+                this.Alarm.IccidExpire(
+                  'root',
+                  ter.DevMac,
+                  ter.ICCID,
+                  expireDate
+                );
               }
             }
           }
         }
-      } catch (error) {
-        console.log({
-          Iccid,
-          error
-        });
       }
-
-
     }
     console.log('更新ICCIDs success', terminalsFilter.length);
 

@@ -129,9 +129,9 @@ export class UserService {
         status === 200 &&
         data.code === 200 &&
         data.data.u.user_pwd ===
-        SHA384(pw + data.data.u.salt)
-          .toString()
-          .toLocaleUpperCase()
+          SHA384(pw + data.data.u.salt)
+            .toString()
+            .toLocaleUpperCase()
       ) {
         const { u, devs } = data.data;
         // 创建用户信息
@@ -146,7 +146,10 @@ export class UserService {
         } as Partial<Uart.UserInfo>;
 
         // 判断用户电话
-        if ((u.telephone && this.Util.RegexTel(u.telephone)) || this.Util.RegexTel(u.real_name)) {
+        if (
+          (u.telephone && this.Util.RegexTel(u.telephone)) ||
+          this.Util.RegexTel(u.real_name)
+        ) {
           const tel = String(u.telephone || u.real_name) as any;
           if (await this.getUser(tel)) {
             this.console.warn({ ...userinfo, msg: '用户手机号码重复' });
@@ -156,7 +159,9 @@ export class UserService {
         }
         // 判断用户邮箱
         if (
-          (u.email && this.Util.RegexMail(u.email)) || this.Util.RegexMail(u.real_name)) {
+          (u.email && this.Util.RegexMail(u.email)) ||
+          this.Util.RegexMail(u.real_name)
+        ) {
           userinfo.mail = u.email || u.real_name;
         }
         // pesiv用户密码盐值
@@ -200,7 +205,7 @@ export class UserService {
             await this.Device.addRegisterTerminal(code, 'pwsiv');
             // 修改卡名称
             await this.modifyTerminal(ru.user, code, dev.DevName);
-            await this.Device.setTerminal(code, { PID: 'pesiv' })
+            await this.Device.setTerminal(code, { PID: 'pesiv' });
             // 添加挂载信息
             await this.addTerminalMountDev(ru.user, code, mountDev);
           }
@@ -231,7 +236,10 @@ export class UserService {
   async isBindMac(user: string, mac: string) {
     const u = await this.getUser(user);
     if (u && ['root', 'admin'].includes(u.userGroup)) return true;
-    const r = await this.userbindModel.findOne({ user, $or: [{ UTs: mac }] }, { _id: 1 });
+    const r = await this.userbindModel.findOne(
+      { user, $or: [{ UTs: mac }] },
+      { _id: 1 }
+    );
     return r ? true : false;
   }
 
@@ -407,7 +415,7 @@ export class UserService {
       type: '用户注册',
       address: user.address,
       msg: '',
-      creatTime: new Date()
+      creatTime: new Date(),
     });
     return u;
   }
@@ -436,10 +444,12 @@ export class UserService {
    * @returns
    */
   private async getUserBind(user: string) {
-    const bind = await this.userbindModel.findOne({ user }, { UTs: 1, UTsShare: 1 }).lean();
+    const bind = await this.userbindModel
+      .findOne({ user }, { UTs: 1, UTsShare: 1 })
+      .lean();
     return {
-      UTs: [bind?.UTs || [], bind?.UTsShare || []].flat()
-    }
+      UTs: [bind?.UTs || [], bind?.UTsShare || []].flat(),
+    };
   }
 
   /**
@@ -624,7 +634,7 @@ export class UserService {
   }
 
   /**
-   *   添加用户终端挂载设备
+   * 添加用户终端挂载设备
    * @param user
    * @param mac
    * @param param2
@@ -752,19 +762,22 @@ export class UserService {
     const setup = data
       ?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null; */
 
-    const { setup } = await this.userAlarmSetupModel.aggregate([
+    const { setup } = (await this.userAlarmSetupModel.aggregate([
       { $match: { user } },
       { $project: { ProtocolSetup: 1 } },
-      { $project: { setup: "ProtocolSetup" } },
-      { $unwind: "$setup" },
-      { $match: { "setup.Protocol": "卡乐控制器" } }
-    ]) as any
+      { $project: { setup: 'ProtocolSetup' } },
+      { $unwind: '$setup' },
+      { $match: { 'setup.Protocol': '卡乐控制器' } },
+    ])) as any;
     return {
       Protocol: protocol,
       ShowTag: setup?.ShowTag || [],
       Threshold: setup?.Threshold || [],
       AlarmStat: setup?.AlarmStat || [],
-    } as Pick<Uart.ProtocolConstantThreshold, 'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'>
+    } as Pick<
+      Uart.ProtocolConstantThreshold,
+      'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'
+    >;
     //return obj;
   }
 
@@ -885,20 +898,30 @@ export class UserService {
       return null;
     } else {
       const model = getModelForClass(TerminalClientResult);
-      return await model.aggregate([
+      return (await model.aggregate([
         {
           $match: {
             mac,
             pid,
-            timeStamp:
-              { $lt: end, $gt: start }
-          }
+            timeStamp: { $lt: end, $gt: start },
+          },
         },
-        { $project: { "timeStamp": 1, result: 1 } },
-        { $unwind: "$result" },
-        { $match: { "result.name": typeof name === 'string' ? name : { $in: name } } },
-        { $project: { name: "$result.name", value: "$result.parseValue", time: "$timeStamp", _id: 0 } },
-      ]) as any as { name: string, value: string, time: number }[]
+        { $project: { timeStamp: 1, result: 1 } },
+        { $unwind: '$result' },
+        {
+          $match: {
+            'result.name': typeof name === 'string' ? name : { $in: name },
+          },
+        },
+        {
+          $project: {
+            name: '$result.name',
+            value: '$result.parseValue',
+            time: '$timeStamp',
+            _id: 0,
+          },
+        },
+      ])) as any as { name: string; value: string; time: number }[];
       /* if (typeof name === 'string') {
         return await model
           .find(
@@ -1258,10 +1281,10 @@ export class UserService {
       ? ''
       : `匹配到如下链接\n
     ${data.slice(0, 20).map(el => {
-        return `<a href="https://www.ladishb.com${el.rout}">${el.title
-          .slice(0, 12)
-          .trim()}...</a>\n\n`;
-      })}`.replace(/(\,|^ )/g, '');
+      return `<a href="https://www.ladishb.com${el.rout}">${el.title
+        .slice(0, 12)
+        .trim()}...</a>\n\n`;
+    })}`.replace(/(\,|^ )/g, '');
   }
 
   /**
