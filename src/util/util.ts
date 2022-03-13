@@ -172,8 +172,8 @@ export class Util {
   ParseCoefficient(fun: string, val: number) {
     if (Number(fun)) return (Number(fun) * val) as number;
     else {
-      const args = fun.replace(/(^\(|\)$)/g, '').split(',');
-      const Fun = new Function(args[0], `return ${args[1]}`);
+      const [arg,...f] = fun.replace(/(^\(|\)$)/g, '').split(',');
+      const Fun = new Function(arg, `return ${f.join(',')}`);
       return Fun(val) as number;
     }
   }

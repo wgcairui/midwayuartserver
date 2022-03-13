@@ -79,7 +79,7 @@ export class ProtocolParse {
           el =>
             InstructMap.has(el.content) &&
             el.buffer.data.findIndex(el2 => el2 === 13) ===
-              el.buffer.data.length - 1
+            el.buffer.data.length - 1
         )
 
         .map(el => {
@@ -294,18 +294,26 @@ export class ProtocolParse {
                   buffer.readIntBE(start, step)
                 );
                 const str = num.toString();
+
+               /*  if (R.mac === '193059799391' && content === "0300830002") {
+                  console.log({ num, str, content, buffer, k: buffer.readIntBE(start, step),el2 });
+                } */
+
                 result.value = /\./.test(str) ? num.toFixed(1) : str;
               } catch (error) {
                 result.value = undefined;
-                /* console.error({
-                                msg: '解析结果长度错误',
-                                instructs,
-                                content,
-                                bufferData,
-                                bufferN,
-                                R,
-                                IntructResult
-                            }); */
+                console.error({
+                  el2,
+                  msg: '解析结果长度错误',
+                  instructs,
+                  content,
+                  bufferData,
+                  buffer,
+                  start, end, step,
+                  R,
+                  IntructResult,
+                  error
+                });
               }
               break;
             // 处理单精度浮点数

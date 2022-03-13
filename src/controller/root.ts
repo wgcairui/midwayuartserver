@@ -1252,6 +1252,31 @@ export class RootControll {
   }
 
   /**
+   * 续订套餐
+   * @param mac
+   * @returns 
+   */
+  @Post("/IotRecharge")
+  async IotRecharge(@Body() mac: string) {
+    const ter = await this.Device.getTerminal(mac)
+    if (ter && ter.iccidInfo) {
+      if (ter.iccidInfo.version === 'ali_1') {
+        const data = await this.DyIot.DoIotRecharge(ter.ICCID)
+        return {
+          code: 200,
+          data
+        }
+      }
+
+    } else {
+      return {
+        code: 0,
+        messege: 'no terminal'
+      }
+    }
+  }
+
+  /**
    * 查询物联网卡的明细信息
    * @param iccid
    * @returns

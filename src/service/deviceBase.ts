@@ -123,7 +123,7 @@ export class Device {
       .lean()) as unknown as Uart.ProtocolConstantThreshold;
     const obj: Uart.ProtocolConstantThreshold = {
       Protocol: protocol,
-      ProtocolType: setup.ProtocolType,
+      ProtocolType: setup?.ProtocolType,
       ShowTag: setup?.ShowTag || [],
       Threshold: setup?.Threshold || [],
       AlarmStat: setup?.AlarmStat || [],
@@ -296,45 +296,43 @@ export class Device {
    * @param mac dtu设备mac
    */
   async getMountDevInterval(mac: string) {
-    const terminal = (await this.getTerminal(mac, {
+    const terminal = await this.getTerminal(mac, {
       ICCID: 1,
       'mountDevs.online': 1,
       'mountDevs.protocol': 1,
       'mountDevs.pid': 1,
       iccidInfo: 1,
-    })) as unknown as Uart.Terminal;
+    });
 
     // 统计挂载的设备协议指令数量
     const MountDevLens = await Promise.all(
-      terminal.mountDevs.map(async el => {
+      (terminal?.mountDevs || []).map(async el => {
         // 如果设备在线则统计所有指令条数，不在线则记为1
         return (await this.getProtocol(el.protocol, { instruct: 1 }))!.instruct
           .length;
       })
     );
+
+    const { ICCID, iccidInfo } = terminal
     // 基数
-    let baseNum = terminal.ICCID ? 1000 : 500;
+    let baseNum = ICCID ? 1000 : 500;
 
     /**
      * 如果是定向卡,暂时没有流量信息,预设流量为512mb
      */
-    if (terminal.ICCID && !terminal.iccidInfo) {
+    /* if (terminal.ICCID && !terminal.iccidInfo) {
       (terminal.iccidInfo as any) = {
         statu: true,
         flowResource: 512e3,
       };
-    }
+    } */
 
     // 如果有有iccidInfo,状态开启且月流量小于500mb,修改基数,
-    if (
-      terminal.iccidInfo &&
-      terminal.iccidInfo.statu &&
-      terminal.iccidInfo.flowResource < 512000
-    ) {
+    if (iccidInfo && iccidInfo.statu && iccidInfo.flowResource < 512000) {
       // 新的基数= 基数 * (512e3 / 流量总量 )
       // 例如月流量是30Mb=32e3,512e3/32e3 ~ 17,基数系数变更为17,则单条指令查询事件为17秒
       baseNum =
-        baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource));
+        baseNum * (parseInt(String(512000 / terminal.iccidInfo.flowResource)) + 2);
     }
 
     // 指令合计数量

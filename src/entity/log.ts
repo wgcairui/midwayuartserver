@@ -466,3 +466,49 @@ export class wxsubscribeMessage {
   @prop({ default: Date.now(), type: Schema.Types.Mixed })
   public timeStamp?: number;
 }
+
+
+/**
+ * 记录站内信
+ */
+@modelOptions({
+  schemaOptions: { collection: 'log.innerMessages' },
+  options: { allowMixed: 0 },
+})
+export class innerMessages {
+  @prop({ default: Date.now(), required: true })
+  public timeStamp?: number;
+  /**
+   * 用户
+   */
+  @prop()
+  user?: string;
+  /**
+   * 用户昵称
+   */
+  @prop()
+  nikeName?: string;
+  /**
+   * 设备mac
+   */
+  @prop()
+  mac?: string;
+  /**
+   * 设备pid
+   */
+  @prop()
+  page?: number;
+
+  /**
+   * 数据
+   */
+  @prop({ type: Schema.Types.Mixed })
+  public data?: any;
+
+  /**
+   * 消息
+   */
+  @prop()
+  public message: string;
+
+}

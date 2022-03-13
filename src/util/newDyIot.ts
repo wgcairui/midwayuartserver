@@ -49,7 +49,7 @@ export class NewDyIot {
         ex => {
           reject(ex);
         }
-      );
+      )
     });
   }
 
