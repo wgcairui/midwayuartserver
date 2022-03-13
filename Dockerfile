@@ -12,7 +12,7 @@ ENV NODE_ENV=production
 ENV NODE_Docker=docker
 
 COPY dist /app/dist
-copy node_modules /app/node_modules
+COPY node_modules /app/node_modules
 COPY bootstrap.js /app/bootstrap.js
 
 CMD ["npm", "run", "start"]
