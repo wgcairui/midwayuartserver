@@ -467,7 +467,6 @@ export class wxsubscribeMessage {
   public timeStamp?: number;
 }
 
-
 /**
  * 记录站内信
  */
@@ -510,5 +509,4 @@ export class innerMessages {
    */
   @prop()
   public message: string;
-
 }

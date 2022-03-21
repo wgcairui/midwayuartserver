@@ -1,10 +1,10 @@
-import { Provide, Post, Inject, Controller, Body } from '@midwayjs/decorator';
+import { Post, Inject, Controller, Body } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { OSSService } from '@midwayjs/oss';
 import { MD5 } from 'crypto-js';
+import { root } from '../middleware/root';
 
-@Provide()
-@Controller('/api/root', { middleware: ['root'] })
+@Controller('/api/root', { middleware: [root] })
 export class Oss {
   @Inject()
   ctx: Context;
@@ -18,7 +18,7 @@ export class Oss {
    */
   @Post('/ossupload')
   async uploads() {
-    const file = [this.ctx.request.files.file].flat()[0];
+    const file = [(this.ctx.request as any).files.file].flat()[0];
     const fileType = file.name.split('.').reverse()[0];
     return {
       code: 200,
@@ -37,10 +37,8 @@ export class Oss {
    * @returns
    */
   @Post('/ossFilelist')
-  async ossFilelist(@Body() prefix?: string) {
+  async ossFilelist(@Body('prefix') prefix?: string) {
     const files = await this.ossService.list({ prefix, 'max-keys': 1000 }, {});
-    console.log(files);
-
     const data =
       Object.prototype.hasOwnProperty.call(files, 'objects') && files.objects
         ? files.objects.map(({ url, lastModified, size, name }) => ({
@@ -62,7 +60,7 @@ export class Oss {
    * @returns
    */
   @Post('/ossDelete')
-  async ossDelete(@Body() names: string[]) {
+  async ossDelete(@Body('names') names: string[]) {
     return {
       code: 200,
       data: await this.ossService.deleteMulti(names),

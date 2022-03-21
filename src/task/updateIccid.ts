@@ -37,13 +37,16 @@ export class UpdateIccid {
     const terminals = await this.Device.getTerminals();
     // 刷选出有效的物联卡
     const terminalsFilter = terminals.filter(
-      el => el.ICCID && el.ICCID.length === 20 && el.name !== 'isv.IOT_RES_NOT_EXIST'
+      el =>
+        el.ICCID &&
+        el.ICCID.length === 20 &&
+        el.name !== 'isv.IOT_RES_NOT_EXIST'
     );
 
     for (const ter of terminalsFilter) {
       const Iccid = ter.ICCID;
 
-      const Info = { statu: false, version: "ali_1" } as Uart.iccidInfo
+      const Info = { statu: false, version: 'ali_1' } as Uart.iccidInfo;
 
       try {
         const { Success, Data } = await this.newDyIot.GetCardDetail(Iccid);
@@ -71,35 +74,36 @@ export class UpdateIccid {
             flowUsed,
             version: CardInfo.AliFee,
           };
-          Object.assign(Info, iccidInfo)
+          Object.assign(Info, iccidInfo);
         }
         // 如果是老版本物联卡接口会报错
       } catch (error) {
         const info = await this.DyIot.QueryCardFlowInfo(Iccid);
         if (info.code === 'OK' && !isEmpty(info.cardFlowInfos?.cardFlowInfo)) {
-          const data = info.cardFlowInfos.cardFlowInfo[0] as any as Uart.iccidInfo;
-          Object.assign(Info, data, { statu: true })
+          const data = info.cardFlowInfos
+            .cardFlowInfo[0] as any as Uart.iccidInfo;
+          Object.assign(Info, data, { statu: true });
         } else {
           // 保存数据
           await this.Device.setTerminal(ter.DevMac, {
             remark: info.message,
-            name: info.code
-          })
+            name: info.code,
+          });
         }
       }
       // 保存数据
       await this.Device.setTerminal(ter.DevMac, {
         iccidInfo: Info,
-      })
+      });
 
-      // 操作有效卡
-      if (Info.statu) {
-        const data = Info
+      // 操作有效卡,且为老款物联卡
+      if (Info.statu && Info.version === 'ali_1') {
+        const data = Info;
 
         // 失效日期
         // const expireDate = new Date(data.expireDate).getTime();
         // 距离失效日期还有几天
-        const hasExpireDate = moment(data.expireDate).diff(now, "day")
+        const hasExpireDate = moment(data.expireDate).diff(now, 'day');
         // 以使用的流量计算每天用量
         // const dayUse = data.flowUsed / (31 - hasExpireDate);
         // 剩余每天可使用的量
@@ -109,10 +113,13 @@ export class UpdateIccid {
         // 小于10MB
         if (afterUse < 10240) {
           // 当前计算间隔
-          const interVal = await this.Device.getMountDevInterval(ter.DevMac)
+          const interVal = await this.Device.getMountDevInterval(ter.DevMac);
 
           // Math.ceil(afterUse / dayUse);
-          this.SocketUart.setTerminalMountDevCache(ter.DevMac, interVal * (Math.ceil(10240 / afterUse) + 1));
+          this.SocketUart.setTerminalMountDevCache(
+            ter.DevMac,
+            interVal * (Math.ceil(10240 / afterUse) + 1)
+          );
         }
         /**
          * 如果卡会在5天内失效
@@ -138,12 +145,14 @@ export class UpdateIccid {
               data.expireDate
             );
           }
-
         }
       }
-
     }
-    console.log(moment().format("YYYY-MM-DD H:M:s"), '::更新ICCIDs success,更新数量:', terminalsFilter.length);
+    console.log(
+      moment().format('YYYY-MM-DD H:M:s'),
+      '::更新ICCIDs success,更新数量:',
+      terminalsFilter.length
+    );
 
     return {
       time: Date.now() - now,

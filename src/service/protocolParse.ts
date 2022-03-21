@@ -79,7 +79,7 @@ export class ProtocolParse {
           el =>
             InstructMap.has(el.content) &&
             el.buffer.data.findIndex(el2 => el2 === 13) ===
-            el.buffer.data.length - 1
+              el.buffer.data.length - 1
         )
 
         .map(el => {
@@ -295,7 +295,7 @@ export class ProtocolParse {
                 );
                 const str = num.toString();
 
-               /*  if (R.mac === '193059799391' && content === "0300830002") {
+                /*  if (R.mac === '193059799391' && content === "0300830002") {
                   console.log({ num, str, content, buffer, k: buffer.readIntBE(start, step),el2 });
                 } */
 
@@ -309,10 +309,12 @@ export class ProtocolParse {
                   content,
                   bufferData,
                   buffer,
-                  start, end, step,
+                  start,
+                  end,
+                  step,
                   R,
                   IntructResult,
-                  error
+                  error,
                 });
               }
               break;

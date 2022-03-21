@@ -1,12 +1,4 @@
-import {
-  Provide,
-  Controller,
-  Inject,
-  Post,
-  Body,
-  Validate,
-  ALL,
-} from '@midwayjs/decorator';
+import { Controller, Inject, Post, Body } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { UserService } from '../service/user';
 import { Device } from '../service/deviceBase';
@@ -39,10 +31,10 @@ import { Util } from '../util/util';
 import { SocketUart } from '../service/socketUart';
 import * as lodash from 'lodash';
 import { toDataURL } from 'qrcode';
-import { CreateApiDoc } from '@midwayjs/swagger';
+import { Validate } from '@midwayjs/validate';
+import { userValidation } from '../middleware/userValidation';
 
-@Provide()
-@Controller('/api', { middleware: ['token', 'modifyTerminal'] })
+@Controller('/api', { middleware: [userValidation] })
 export class ApiControll {
   @Inject()
   UserService: UserService;
@@ -75,19 +67,9 @@ export class ApiControll {
    * @param company
    * @returns
    */
-  @CreateApiDoc()
-    .summary('注册用户')
-    .description('用于网页端注册用户')
-    .param('昵称')
-    .param('账号')
-    .param('密码')
-    .param('手机号')
-    .param('邮箱')
-    .param('组织')
-    .build()
   @Post('/guest/addUser')
-  addUser(
-    @Body(ALL)
+  async addUser(
+    @Body()
     user: Pick<
       Uart.UserInfo,
       'user' | 'name' | 'passwd' | 'tel' | 'mail' | 'company'
@@ -108,10 +90,9 @@ export class ApiControll {
    * @param token
    * @returns
    */
-  @CreateApiDoc().summary('获取用户绑定设备').build()
   @Post('/BindDev')
   @Validate()
-  async BindDev(@Body(ALL) data: Api) {
+  async BindDev(@Body() data: Api) {
     return {
       code: 200,
       data: await this.UserService.getUserBindDevices(data.token.user),
@@ -122,14 +103,9 @@ export class ApiControll {
    * 获取用户告警信息
    * @param token
    */
-  @CreateApiDoc()
-    .summary('获取用户告警信息')
-    .param('开始时间')
-    .param('结束时间')
-    .build()
   @Validate()
   @Post('/loguartterminaldatatransfinites')
-  async loguartterminaldatatransfinites(@Body(ALL) data: date) {
+  async loguartterminaldatatransfinites(@Body() data: date) {
     const alarms = await this.UserService.getUserAlarm(
       data.token.user,
       data.getStart(),
@@ -152,7 +128,7 @@ export class ApiControll {
    */
   @Post('/userInfo')
   @Validate()
-  async userinfo(@Body(ALL) data: Api) {
+  async userinfo(@Body() data: Api) {
     return {
       code: 200,
       data: await this.UserService.getUser(data.token.user, {
@@ -170,7 +146,7 @@ export class ApiControll {
    */
   @Post('/confrimAlarm')
   @Validate()
-  async confrimAlarm(@Body(ALL) data: mongoId) {
+  async confrimAlarm(@Body() data: mongoId) {
     return {
       code: 200,
       data: await this.UserService.confrimAlarm(data.token.user, data.getId()),
@@ -184,7 +160,7 @@ export class ApiControll {
    */
   @Post('/getTerminalOnline')
   @Validate()
-  async getTerminalOnline(@Body(ALL) data: mac) {
+  async getTerminalOnline(@Body() data: mac) {
     const ter = await this.Device.getTerminal(data.mac);
     return {
       code: 200,
@@ -199,7 +175,7 @@ export class ApiControll {
   @Post('/modifyTerminal')
   @Sms()
   @Validate()
-  async modifyTerminal(@Body(ALL) data: modifiTerminalName) {
+  async modifyTerminal(@Body() data: modifiTerminalName) {
     return {
       code: 200,
       data: await this.UserService.modifyTerminal(
@@ -217,7 +193,7 @@ export class ApiControll {
    */
   @Post('/addUserTerminal')
   @Validate()
-  async addUserTerminal(@Body(ALL) data: mac) {
+  async addUserTerminal(@Body() data: mac) {
     if (data.token.userGroup === 'test') {
       return {
         code: 0,
@@ -241,7 +217,7 @@ export class ApiControll {
   @Post('/delUserTerminal')
   @Sms()
   @Validate()
-  async delUserTerminal(@Body(ALL) data: mac) {
+  async delUserTerminal(@Body() data: mac) {
     return {
       code: 200,
       data: await this.UserService.delUserTerminal(data.token.user, data.mac),
@@ -254,7 +230,7 @@ export class ApiControll {
    * @returns
    */
   @Post('/getDevTypes')
-  async getDevTypes(@Body() Type: string) {
+  async getDevTypes(@Body('Type') Type: string) {
     return {
       code: 200,
       data: await this.Device.getDevTypes(Type),
@@ -269,7 +245,7 @@ export class ApiControll {
   @Post('/delTerminalMountDev')
   @Sms()
   @Validate()
-  async delTerminalMountDev(@Body(ALL) data: macPid) {
+  async delTerminalMountDev(@Body() data: macPid) {
     const d = await this.UserService.delTerminalMountDev(
       data.token.user,
       data.mac,
@@ -292,7 +268,7 @@ export class ApiControll {
   @Post('/addTerminalMountDev')
   @Validate()
   @Sms()
-  async addTerminalMountDev(@Body(ALL) data: addMountDev) {
+  async addTerminalMountDev(@Body() data: addMountDev) {
     const d = await this.UserService.addTerminalMountDev(
       data.token.user,
       data.mac,
@@ -313,7 +289,7 @@ export class ApiControll {
    */
   @Post('/smsValidation')
   @Validate()
-  async smsValidation(@Body(ALL) data: Api) {
+  async smsValidation(@Body() data: Api) {
     const sr = await this.UserService.sendValidation(data.token.user);
     if (sr.code) {
       await this.RedisService.setUserSmsCode(data.token.user, sr.data);
@@ -335,7 +311,7 @@ export class ApiControll {
    */
   @Post('/smsCodeValidation')
   @Validate()
-  async smsCodeValidation(@Body(ALL) data: smsCode) {
+  async smsCodeValidation(@Body() data: smsCode) {
     const code = await this.RedisService.getUserSmsCode(data.token.user);
     if (code === data.code) {
       await this.RedisService.getClient().setex(
@@ -360,7 +336,7 @@ export class ApiControll {
    */
   @Post('/getUserAlarmSetup')
   @Validate()
-  async getUserAlarmSetup(@Body(ALL) data: Api) {
+  async getUserAlarmSetup(@Body() data: Api) {
     return {
       code: 200,
       data: await this.UserService.getUserAlarmSetup(data.token.user, {
@@ -380,7 +356,7 @@ export class ApiControll {
   @Post('/modifyUserAlarmSetupTel')
   @Sms()
   @Validate()
-  async modifyUserAlarmSetupTel(@Body(ALL) data: alarmTels) {
+  async modifyUserAlarmSetupTel(@Body() data: alarmTels) {
     return {
       code: 200,
       data: await this.UserService.modifyUserAlarmSetupTel(
@@ -400,8 +376,8 @@ export class ApiControll {
   @Post('/modifyUserInfo')
   @Sms()
   async modifyUserInfo(
-    @Body() token: { user: string },
-    @Body() data: Partial<Uart.UserInfo>
+    @Body('token') token: { user: string },
+    @Body('data') data: Partial<Uart.UserInfo>
   ) {
     if (data.tel && this.Util.RegexTel(data.tel)) {
       const u = await this.UserService.getUser(data.tel as any);
@@ -428,7 +404,7 @@ export class ApiControll {
    */
   @Post('/mpTicket')
   @Validate()
-  async mpTicket(@Body(ALL) data: Api) {
+  async mpTicket(@Body() data: Api) {
     const d = await this.UserService.mpTicket(data.token.user);
     return {
       code: typeof d === 'string' ? 200 : 0,
@@ -443,7 +419,7 @@ export class ApiControll {
    */
   @Post('/wpTicket')
   @Validate()
-  async wpTicket(@Body(ALL) data: Api) {
+  async wpTicket(@Body() data: Api) {
     const d = await this.UserService.wpTicket(data.token.user);
     return {
       code: typeof d === 'string' ? 200 : 0,
@@ -458,7 +434,7 @@ export class ApiControll {
    */
   @Post('/getUserAlarmProtocol')
   @Validate()
-  async getUserAlarmProtocol(@Body(ALL) data: protocol) {
+  async getUserAlarmProtocol(@Body() data: protocol) {
     return {
       code: 200,
       data: await this.UserService.getUserAlarmProtocol(
@@ -474,7 +450,7 @@ export class ApiControll {
    */
   @Post('/getAlarmProtocol')
   @Validate()
-  async getAlarmProtocol(@Body(ALL) data: protocol) {
+  async getAlarmProtocol(@Body() data: protocol) {
     return {
       code: 200,
       data: await this.Device.getAlarmProtocol(data.protocol),
@@ -489,7 +465,7 @@ export class ApiControll {
    */
   @Post('/getTerminalData')
   @Validate()
-  async getTerminalData(@Body(ALL) data: macPid) {
+  async getTerminalData(@Body() data: macPid) {
     const d = await this.UserService.getTerminalData(
       data.token.user,
       data.mac,
@@ -511,7 +487,7 @@ export class ApiControll {
    */
   @Post('/getTerminalDatas')
   @Validate()
-  async getTerminalDatas(@Body(ALL) data: terminalResults) {
+  async getTerminalDatas(@Body() data: terminalResults) {
     console.log();
 
     const d = (await this.UserService.getTerminalDatas(
@@ -575,7 +551,7 @@ export class ApiControll {
    */
   @Post('/getTerminalDatasV2')
   @Validate()
-  async getTerminalDatasV2(@Body(ALL) data: terminalResultsV2) {
+  async getTerminalDatasV2(@Body() data: terminalResultsV2) {
     console.log();
 
     const d = await this.UserService.getTerminalDatasV2(
@@ -613,7 +589,7 @@ export class ApiControll {
    */
   @Post('/refreshDevTimeOut')
   @Validate()
-  async refreshDevTimeOut(@Body(ALL) data: macPid) {
+  async refreshDevTimeOut(@Body() data: macPid) {
     await this.SocketUart.setTerminalMountDevCache(data.mac, data.interVal);
     return {
       code: 200,
@@ -631,7 +607,7 @@ export class ApiControll {
   @Post('/SendProcotolInstructSet')
   @Sms()
   @Validate()
-  async SendProcotolInstructSet(@Body(ALL) data: InstructSet) {
+  async SendProcotolInstructSet(@Body() data: InstructSet) {
     const {
       token: { user },
       query,
@@ -697,7 +673,7 @@ export class ApiControll {
    */
   @Post('/getProtocol')
   @Validate()
-  async getProtocol(@Body(ALL) data: protocol) {
+  async getProtocol(@Body() data: protocol) {
     return {
       code: 200,
       data: await this.Device.getProtocol(data.protocol),
@@ -714,7 +690,7 @@ export class ApiControll {
    */
   @Post('/setUserSetupProtocol')
   @Validate()
-  async setUserSetupProtocol(@Body(ALL) data: setUserSetupProtocol) {
+  async setUserSetupProtocol(@Body() data: setUserSetupProtocol) {
     const d = await this.UserService.setUserSetupProtocol(
       data.token.user,
       data.protocol,
@@ -739,7 +715,7 @@ export class ApiControll {
    */
   @Post('/setAlias')
   @Validate()
-  async setAlias(@Body(ALL) { mac, pid, protocol, name, alias }: setAlias) {
+  async setAlias(@Body() { mac, pid, protocol, name, alias }: setAlias) {
     return {
       code: 200,
       data: await this.Device.setAlias(mac, pid, protocol, name, alias),
@@ -754,7 +730,7 @@ export class ApiControll {
    */
   @Post('/getTerminal')
   @Validate()
-  async getTerminal(@Body(ALL) data: mac) {
+  async getTerminal(@Body() data: mac) {
     return {
       code: 200,
       data: await this.UserService.getTerminal(data.token.user, data.mac),
@@ -780,7 +756,7 @@ export class ApiControll {
    */
   @Post('/getUserLayout')
   @Validate()
-  async getUserLayout(@Body(ALL) data: id) {
+  async getUserLayout(@Body() data: id) {
     const layout = await this.UserService.getUserLayout(
       data.token.user,
       data.id
@@ -806,7 +782,7 @@ export class ApiControll {
    */
   @Post('/getAggregation')
   @Validate()
-  async getAggregation(@Body(ALL) data: id) {
+  async getAggregation(@Body() data: id) {
     return {
       code: 200,
       data: await this.UserService.getAggregation(data.token.user, data.id),
@@ -822,7 +798,7 @@ export class ApiControll {
    */
   @Post('/setUserLayout')
   @Validate()
-  async setUserLayout(@Body(ALL) data: setAggs) {
+  async setUserLayout(@Body() data: setAggs) {
     return {
       code: 200,
       data: await this.UserService.setUserLayout(
@@ -843,7 +819,7 @@ export class ApiControll {
    */
   @Post('/addAggregation')
   @Validate()
-  async addAggregation(@Body(ALL) data: addAgg) {
+  async addAggregation(@Body() data: addAgg) {
     return this.UserService.addAggregation(
       data.token.user,
       data.name,
@@ -859,7 +835,7 @@ export class ApiControll {
    */
   @Post('/deleteAggregation')
   @Sms()
-  async deleteAggregation(@Body(ALL) data: id) {
+  async deleteAggregation(@Body() data: id) {
     return {
       code: 200,
       data: await this.UserService.deleteAggregation(data.token.user, data.id),
@@ -872,7 +848,7 @@ export class ApiControll {
    * @returns
    */
   @Post('/guest/resetPasswdValidation')
-  async resetPasswdValidation(@Body() user: string) {
+  async resetPasswdValidation(@Body('user') user: string) {
     const u = await this.UserService.getUser(user);
     if (u) {
       const { code, data, msg } = await this.UserService.sendValidation(u.user);
@@ -905,9 +881,9 @@ export class ApiControll {
    */
   @Post('/guest/resetUserPasswd')
   async resetUserPasswd(
-    @Body() user: string,
-    @Body() passwd: string,
-    @Body() code: string
+    @Body('user') user: string,
+    @Body('passwd') passwd: string,
+    @Body('code') code: string
   ) {
     const lcode = await this.RedisService.getUserSmsCode(user);
     if (lcode) {
@@ -938,7 +914,7 @@ export class ApiControll {
    */
   @Validate()
   @Post('/updateAvanter')
-  async updateAvanter(@Body(ALL) data: updateAvanter) {
+  async updateAvanter(@Body() data: updateAvanter) {
     return {
       code: 200,
       data: await this.UserService.modifyUserInfo(data.token.user, {
@@ -954,7 +930,7 @@ export class ApiControll {
   @Post('/unbindwx')
   @Validate()
   @Sms()
-  async unbindwx(@Body(ALL) data: Api) {
+  async unbindwx(@Body() data: Api) {
     const user = await this.UserService.getUser(data.token.user);
     if (user.rgtype === 'wx') {
       await this.UserService.deleteUser(user.user);
@@ -974,7 +950,7 @@ export class ApiControll {
    */
   @Post('/getAlarmunconfirmed')
   @Validate()
-  async getAlarmunconfirmed(@Body(ALL) data: Api) {
+  async getAlarmunconfirmed(@Body() data: Api) {
     return {
       code: 200,
       data: await this.UserService.getAlarmunconfirmed(data.token.user),
@@ -987,7 +963,7 @@ export class ApiControll {
    * @returns
    */
   @Post('/getGPSaddress')
-  async getGPSaddress(@Body() location: string) {
+  async getGPSaddress(@Body('location') location: string) {
     const r = await this.TencetMap.geocoder(location);
     return {
       code: r.status === 0 ? 200 : 0,
@@ -1003,7 +979,7 @@ export class ApiControll {
    */
   @Post('/updateGps')
   @Validate()
-  async updateGps(@Body(ALL) data: updateJw) {
+  async updateGps(@Body() data: updateJw) {
     return {
       code: 200,
       data: await this.UserService.modifyTerminalJw(
@@ -1020,7 +996,7 @@ export class ApiControll {
    * @returns
    */
   @Post('/getRegisterDev')
-  async getRegisterDev(@Body() id: string) {
+  async getRegisterDev(@Body('id') id: string) {
     return {
       code: 200,
       data: await this.Device.getRegisterDev(id),
@@ -1033,7 +1009,7 @@ export class ApiControll {
    * @returns
    */
   @Post('/qr')
-  async qr(@Body() code: string) {
+  async qr(@Body('code') code: string) {
     return {
       code: 200,
       data: await toDataURL(code),
@@ -1045,7 +1021,7 @@ export class ApiControll {
    * @param data
    */
   @Post('/getTerminalPidProtocol')
-  async getTerminalPidProtocol(@Body(ALL) data: macPid) {
+  async getTerminalPidProtocol(@Body() data: macPid) {
     const t = await this.Device.getTerminal(data.mac, { mountDevs: 1 });
     const m = t.mountDevs?.find(el => el.pid === data.pid);
     return {
@@ -1059,9 +1035,9 @@ export class ApiControll {
    */
   @Post('/getProtocolSetup')
   async getProtocolSetup(
-    @Body() protocol: string,
-    @Body() type: Uart.ConstantThresholdType,
-    @Body() user?: string
+    @Body('protocol') protocol: string,
+    @Body('type') type: Uart.ConstantThresholdType,
+    @Body('user') user?: string
   ) {
     const sys = await this.Device.getAlarmProtocol(protocol, { [type]: 1 });
     const u = user

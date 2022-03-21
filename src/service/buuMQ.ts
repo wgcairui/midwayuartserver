@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Init, Inject, Provide, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq';
 import { RedisService } from './redis';
-
 
 export enum QUEUE_NAME {
   /**
@@ -30,13 +30,12 @@ export enum QUEUE_NAME {
   /**
    * 站内信
    */
-  inner_Message = "inner_Message"
+  inner_Message = 'inner_Message',
 }
 
 interface QUENAME_TYPE {
-  inner_Message: Uart.logInnerMessages
+  inner_Message: Uart.logInnerMessages;
 }
-
 
 /**
  * 消息队列
@@ -83,32 +82,26 @@ export class MQ {
     console.log(job, id);
     const parse = {
       [QUEUE_NAME.dataCheck]: this.dataCheck(job),
-      [QUEUE_NAME.inner_Message]: this.innerMessage(job)
+      [QUEUE_NAME.inner_Message]: this.innerMessage(job),
     };
     parse[job.name](job.data);
   }
 
-  private dataCheck(data: any) {
-  }
+  private dataCheck(data: any) {}
 
   /**
    * 处理内部消息
    * @param job
    */
-  private innerMessage(job: Job<Uart.logInnerMessages>) {
-
-  }
+  private innerMessage(job: Job<Uart.logInnerMessages>) {}
 
   /**
    * 添加消息到队列
-   * @param name 
-   * @param data 
+   * @param name
+   * @param data
    */
   addJob<T extends keyof QUENAME_TYPE>(name: T, data: QUENAME_TYPE[T]) {
-    const Queue = this.QueueMap.get(name as any)
-    Queue && Queue.add(data.mac || data.user || data.message, data)
+    const Queue = this.QueueMap.get(name as any);
+    Queue && Queue.add(data.mac || data.user || data.message, data);
   }
-
-
-
 }

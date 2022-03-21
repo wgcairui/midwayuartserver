@@ -25,7 +25,7 @@ export class Amap {
     if (!(await this.RedisService.getloctionIp(ip))) {
       const result = await this.fecth<any>('ip', { ip });
       if (!result || !result.rerectangle) {
-        return result?.message || '地址解析失败'
+        return result?.message || '地址解析失败';
       }
       const loction = result.rectangle.split(';')[0];
       this.RedisService.setloctionIp(ip, loction);

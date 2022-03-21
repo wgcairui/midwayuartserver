@@ -1284,6 +1284,7 @@ export class UserService {
       return `<a href="https://www.ladishb.com${el.rout}">${el.title
         .slice(0, 12)
         .trim()}...</a>\n\n`;
+      // eslint-disable-next-line no-useless-escape
     })}`.replace(/(\,|^ )/g, '');
   }
 

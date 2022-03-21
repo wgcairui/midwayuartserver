@@ -1,11 +1,4 @@
-import {
-  Provide,
-  Controller,
-  Inject,
-  Post,
-  Body,
-  Logger,
-} from '@midwayjs/decorator';
+import { Controller, Inject, Post, Body, Logger } from '@midwayjs/decorator';
 import { Device } from '../service/deviceBase';
 import { Util } from '../util/util';
 import { Logs } from '../service/logBase';
@@ -21,9 +14,9 @@ import { alarm } from '../interface';
 import axios from 'axios';
 import { ILogger } from '@midwayjs/logger';
 import { getBindMacUser } from '../util/base';
+import { nodeHttp } from '../middleware/nodeHttpRequest';
 
-@Provide()
-@Controller('/api/node', { middleware: ['nodeHttp'] })
+@Controller('/api/node', { middleware: [nodeHttp] })
 export class NodeControll {
   @Logger()
   console: ILogger;
@@ -63,7 +56,7 @@ export class NodeControll {
    * @param info
    */
   @Post('/dtuInfo')
-  async dtuInfo(@Body() info: Uart.Terminal) {
+  async dtuInfo(@Body('info') info: Uart.Terminal) {
     // 获取terminal信息
     const terminal = await this.Device.getTerminal(info.DevMac);
     if (terminal) {
@@ -127,9 +120,9 @@ export class NodeControll {
    */
   @Post('/nodeInfo')
   async nodeInfo(
-    @Body() name: string,
-    @Body() node: Uart.nodeInfo,
-    @Body() tcp: number
+    @Body('name') name: string,
+    @Body('node') node: Uart.nodeInfo,
+    @Body('tcp') tcp: number
   ) {
     return {
       code: 200,
@@ -146,7 +139,7 @@ export class NodeControll {
    * @param data
    */
   @Post('/queryData')
-  async queryData(@Body() data: Uart.queryResult) {
+  async queryData(@Body('data') data: Uart.queryResult) {
     // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
     if (
       data.mac &&

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { Provide } from '@midwayjs/decorator';
+import { Provide, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { Types } from 'mongoose';
 import {
   NodeClient,
@@ -32,6 +32,7 @@ import { getModel } from '../util/base';
  * 获取设备协议等相关数据的逻辑
  */
 @Provide()
+@Scope(ScopeEnum.Singleton)
 export class Device {
   /**
    * 获取all终端
@@ -313,7 +314,7 @@ export class Device {
       })
     );
 
-    const { ICCID, iccidInfo } = terminal
+    const { ICCID, iccidInfo } = terminal;
     // 基数
     let baseNum = ICCID ? 1000 : 500;
 
@@ -327,12 +328,17 @@ export class Device {
       };
     } */
 
-    // 如果有有iccidInfo,状态开启且月流量小于500mb,修改基数,
-    if (iccidInfo && iccidInfo.statu && iccidInfo.flowResource < 512000) {
+    // 如果有有iccidInfo,老版物联卡,状态开启且月流量小于500mb,修改基数,
+    if (
+      iccidInfo &&
+      iccidInfo.statu &&
+      iccidInfo.flowResource < 512000 &&
+      iccidInfo.version === 'ali_1'
+    ) {
       // 新的基数= 基数 * (512e3 / 流量总量 )
       // 例如月流量是30Mb=32e3,512e3/32e3 ~ 17,基数系数变更为17,则单条指令查询事件为17秒
       baseNum =
-        baseNum * (parseInt(String(512000 / terminal.iccidInfo.flowResource)) + 2);
+        baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource));
     }
 
     // 指令合计数量

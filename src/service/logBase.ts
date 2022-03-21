@@ -1,4 +1,4 @@
-import { Provide } from '@midwayjs/decorator';
+import { Provide, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
 import {
   Nodes,
@@ -18,12 +18,12 @@ import {
 import * as _ from 'lodash';
 import { getModelForClass } from '@typegoose/typegoose';
 import { getModel } from '../util/base';
-//import { SocketUser } from "../service/socketUser"
 
 /**
  * 日至操作
  */
 @Provide()
+@Scope(ScopeEnum.Singleton)
 export class Logs {
   /**
    * 创建插入文档

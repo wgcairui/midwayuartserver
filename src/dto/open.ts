@@ -1,4 +1,4 @@
-import { RuleType, Rule } from '@midwayjs/decorator';
+import { Rule, RuleType } from '@midwayjs/validate';
 
 /**
  * 开放crc校验

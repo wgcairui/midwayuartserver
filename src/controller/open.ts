@@ -1,19 +1,8 @@
-import {
-  Provide,
-  Controller,
-  Post,
-  Get,
-  Validate,
-  ALL,
-  Body,
-  Inject,
-} from '@midwayjs/decorator';
-import { crc } from '../dto/open';
+import { Controller, Post, Get, Body, Inject } from '@midwayjs/decorator';
 import { Util } from '../util/util';
 import { Sms } from '../util/sms';
 import { Device } from '../service/deviceBase';
 
-@Provide()
 @Controller('/api/open')
 export class OpenControll {
   @Inject()
@@ -31,8 +20,10 @@ export class OpenControll {
    * @returns
    */
   @Post('/crc')
-  @Validate()
-  crc(@Body(ALL) { pid, instructN, address, value }: crc) {
+  async crc(@Body() data: any) {
+    console.log({ data });
+
+    const { pid, instructN, address, value } = data;
     const c = Buffer.allocUnsafe(2);
     c.writeIntBE(address, 0, 2);
     const start = c.slice(0, 2).toString('hex');
@@ -53,7 +44,7 @@ export class OpenControll {
    * @returns
    */
   @Post('/sendValidationSms')
-  async sendValidationSms(@Body() tel: string) {
+  async sendValidationSms(@Body('tel') tel: string) {
     return await this.Sms.SendValidation(tel);
   }
 
@@ -73,7 +64,7 @@ export class OpenControll {
    * @returns
    */
   @Post('/protocolSetup')
-  async protocolSetup(@Body() protocol: string) {
+  async protocolSetup(@Body('protocol') protocol: string) {
     if (protocol) {
       return await this.Device.getAlarmProtocol(protocol);
     }

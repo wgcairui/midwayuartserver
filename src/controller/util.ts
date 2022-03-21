@@ -1,7 +1,6 @@
-import { Provide, Controller, Inject, Post, Body } from '@midwayjs/decorator';
+import { Controller, Inject, Post, Body } from '@midwayjs/decorator';
 import { Amap } from '../service/amap';
 
-@Provide()
 @Controller('/api/util')
 export class UtilControll {
   @Inject()
@@ -13,7 +12,7 @@ export class UtilControll {
    * @returns
    */
   @Post('/AMap/IP2loction')
-  async IP2loction(@Body() ip: string) {
+  async IP2loction(@Body('ip') ip: string) {
     return {
       code: 200,
       data: await this.Amap.IP2loction(ip),
@@ -28,8 +27,8 @@ export class UtilControll {
    */
   @Post('/AMap/GPS2autonavi')
   async GPS2autonavi(
-    @Body() locations: string | string[],
-    @Body() coordsys: 'gps'
+    @Body('locations') locations: string | string[],
+    @Body('coordsys') coordsys: 'gps'
   ) {
     return {
       code: 200,

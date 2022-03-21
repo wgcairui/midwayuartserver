@@ -1,4 +1,4 @@
-import { Provide, Controller, Inject, Post } from '@midwayjs/decorator';
+import { Controller, Inject, Post } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { Wx } from '../util/wx';
 import { Logs } from '../service/logBase';
@@ -18,7 +18,6 @@ interface xmlObj {
 /**
  * 响应微信公众号
  */
-@Provide()
 @Controller('/api/wxPublic')
 export class WxPublic {
   @Inject()

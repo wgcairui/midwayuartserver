@@ -1,13 +1,10 @@
 import {
-  Provide,
   Controller,
   Post,
   Inject,
   App,
   MidwayFrameworkType,
   Body,
-  Validate,
-  ALL,
 } from '@midwayjs/decorator';
 import { Device } from '../service/deviceBase';
 import { UserService } from '../service/user';
@@ -27,9 +24,10 @@ import { loginHash } from '../dto/user';
 import { getBindMacUser } from '../util/base';
 
 import { NewDyIot } from '../util/newDyIot';
+import { Validate } from '@midwayjs/validate';
+import { root } from '../middleware/root';
 
-@Provide()
-@Controller('/api/root', { middleware: ['root', 'modifyTerminal'] })
+@Controller('/api/root', { middleware: [root] })
 export class RootControll {
   @Inject()
   private Device: Device;
@@ -138,7 +136,7 @@ export class RootControll {
    * @returns
    */
   @Post('/getTerminal')
-  async getTerminal(@Body() mac: string) {
+  async getTerminal(@Body('mac') mac: string) {
     return {
       code: 200,
       data: await this.UserService.getTerminal('root', mac),
@@ -162,7 +160,7 @@ export class RootControll {
    * @returns 获取指定节点
    */
   @Post('/Node')
-  async Node(@Body() name: string) {
+  async Node(@Body('name') name: string) {
     return {
       code: 200,
       data: await this.Device.getNode(name),
@@ -174,7 +172,7 @@ export class RootControll {
    * @returns
    */
   @Post('/getTerminals')
-  async getTerminals(@Body() filter?: any) {
+  async getTerminals(@Body('filter') filter?: any) {
     const ts = await this.Device.getTerminals(filter);
     for (const t of ts) {
       (t as any).user = await getBindMacUser(t.DevMac);
@@ -194,9 +192,9 @@ export class RootControll {
    */
   @Post('/materials_list')
   async materials_list(
-    @Body() type: 'image' | 'video' | 'voice' | 'news',
-    @Body() offset: number,
-    @Body() count: number
+    @Body('type') type: 'image' | 'video' | 'voice' | 'news',
+    @Body('offset') offset: number,
+    @Body('count') count: number
   ) {
     return {
       code: 200,
@@ -241,9 +239,9 @@ export class RootControll {
    */
   @Post('/wx_send_info')
   async wx_send_info(
-    @Body() key: string,
-    @Body() openid: string,
-    @Body() content: string
+    @Body('key') key: string,
+    @Body('openid') openid: string,
+    @Body('content') content: string
   ) {
     if (openid) {
       return {
@@ -297,9 +295,9 @@ export class RootControll {
    */
   @Post('/setSecret')
   async setSecret(
-    @Body() type: any,
-    @Body() appid: string,
-    @Body() secret: string
+    @Body('type') type: any,
+    @Body('appid') appid: string,
+    @Body('secre') secret: string
   ) {
     return {
       code: 200,
@@ -313,7 +311,7 @@ export class RootControll {
    * @returns
    */
   @Post('/getSecret')
-  async getSecret(@Body() type: any) {
+  async getSecret(@Body('type') type: any) {
     return {
       code: 200,
       data: await this.UserService.getUserSecret(type),
@@ -342,10 +340,10 @@ export class RootControll {
    */
   @Post('/addDevConstent')
   async addDevConstent(
-    @Body() ProtocolType: string,
-    @Body() Protocol: string,
-    @Body() type: Uart.ConstantThresholdType,
-    @Body() arg: any
+    @Body('ProtocolType') ProtocolType: string,
+    @Body('Protocol') Protocol: string,
+    @Body('type') type: Uart.ConstantThresholdType,
+    @Body('arg') arg: any
   ) {
     const users = await this.Device.addDevConstent(
       ProtocolType,
@@ -368,7 +366,7 @@ export class RootControll {
    * @param protocol
    */
   @Post('/deleteProtocol')
-  async deleteProtocol(@Body() protocol: string) {
+  async deleteProtocol(@Body('protocol') protocol: string) {
     const r = await this.Device.deleteProtocol(protocol);
     return {
       code: r.length > 0 ? 0 : 200,
@@ -381,7 +379,7 @@ export class RootControll {
    * @param protocol
    */
   @Post('/updateProtocol')
-  async updateProtocol(@Body() protocol: Uart.protocol) {
+  async updateProtocol(@Body('protocol') protocol: Uart.protocol) {
     const d = await this.Device.updateProtocol(protocol);
     this.RedisService.setProtocolInstruct(protocol.Protocol);
     this.SocketUart.UpdateCacheProtocol(protocol.Protocol);
@@ -401,10 +399,10 @@ export class RootControll {
    */
   @Post('/setProtocol')
   async setProtocol(
-    @Body() Type: number,
-    @Body() ProtocolType: string,
-    @Body() Protocol: string,
-    @Body() instruct: Uart.protocolInstruct[]
+    @Body('Type') Type: number,
+    @Body('ProtocolType') ProtocolType: string,
+    @Body('Protocol') Protocol: string,
+    @Body('instruct') instruct: Uart.protocolInstruct[]
   ) {
     const d = await this.Device.setProtocol(
       Type,
@@ -425,7 +423,10 @@ export class RootControll {
    * @returns
    */
   @Post('/TestScriptStart')
-  async TestScriptStart(@Body() scriptStart: string, @Body() name: string) {
+  async TestScriptStart(
+    @Body('scriptStart') scriptStart: string,
+    @Body('name') name: string
+  ) {
     const Fun = this.Util.ParseFunction(scriptStart);
     return {
       code: 200,
@@ -450,7 +451,7 @@ export class RootControll {
    * @returns
    */
   @Post('/DevType')
-  async DevType(@Body() DevModel: string) {
+  async DevType(@Body('DevModel') DevModel: string) {
     return {
       code: 200,
       data: await this.Device.DevType(DevModel),
@@ -466,9 +467,9 @@ export class RootControll {
    */
   @Post('/addDevType')
   async addDevType(
-    @Body() Type: string,
-    @Body() DevModel: string,
-    @Body() Protocols: Pick<Uart.protocol, 'Type' | 'Protocol'>[]
+    @Body('Type') Type: string,
+    @Body('DevModel') DevModel: string,
+    @Body('Protocols') Protocols: Pick<Uart.protocol, 'Type' | 'Protocol'>[]
   ) {
     return {
       code: 200,
@@ -480,7 +481,7 @@ export class RootControll {
    * 删除设备类型
    */
   @Post('/deleteDevModel')
-  async deleteDevModel(@Body() DevModel: string) {
+  async deleteDevModel(@Body('DevModel') DevModel: string) {
     const r = await this.Device.deleteDevModel(DevModel);
     return {
       code: r.length > 0 ? 0 : 200,
@@ -495,7 +496,10 @@ export class RootControll {
    * @returns
    */
   @Post('/addRegisterTerminal')
-  async addRegisterTerminal(@Body() DevMac: string, @Body() mountNode: string) {
+  async addRegisterTerminal(
+    @Body('DevMac') DevMac: string,
+    @Body('mountNode') mountNode: string
+  ) {
     return {
       code: 200,
       data: await this.Device.addRegisterTerminal(DevMac, mountNode),
@@ -506,7 +510,7 @@ export class RootControll {
    * 删除登记设备
    */
   @Post('/deleteRegisterTerminal')
-  async deleteRegisterTerminal(@Body() DevMac: string) {
+  async deleteRegisterTerminal(@Body('DevMac') DevMac: string) {
     return await this.Device.deleteRegisterTerminal(DevMac);
   }
 
@@ -520,10 +524,10 @@ export class RootControll {
    */
   @Post('/setNode')
   async setNode(
-    @Body() Name: string,
-    @Body() IP: string,
-    @Body() Port: number,
-    @Body() MaxConnections: number
+    @Body('Name') Name: string,
+    @Body('IP') IP: string,
+    @Body('Port') Port: number,
+    @Body('MaxConnections') MaxConnections: number
   ) {
     return {
       code: 200,
@@ -535,7 +539,7 @@ export class RootControll {
    * 删除节点
    */
   @Post('/deleteNode')
-  async deleteNode(@Body() Name: string) {
+  async deleteNode(@Body('Name') Name: string) {
     const r = await this.Device.deleteNode(Name);
     return {
       code: r.length > 0 ? 0 : 200,
@@ -548,7 +552,7 @@ export class RootControll {
    * @param mac
    */
   @Post('/iotRemoteUrl')
-  async iotRemoteUrl(@Body() mac: string) {
+  async iotRemoteUrl(@Body('mac') mac: string) {
     const d = await this.HF.macRemote(mac);
     return {
       code: d ? 200 : 0,
@@ -560,7 +564,7 @@ export class RootControll {
    * 获取设备使用流量
    */
   @Post('/getUseBtyes')
-  async getUseBtyes(@Body() mac: string) {
+  async getUseBtyes(@Body('mac') mac: string) {
     return {
       code: 200,
       data: await this.logs.getUseBtyes(mac),
@@ -575,7 +579,7 @@ export class RootControll {
    */
   @Post('/getDtuBusy')
   @Validate()
-  async getDtuBusy(@Body(ALL) data: macDate) {
+  async getDtuBusy(@Body('data') data: macDate) {
     return {
       code: 200,
       data: await this.logs.getDtuBusy(
@@ -592,7 +596,7 @@ export class RootControll {
    * @returns
    */
   @Post('/logInstructQuery')
-  async logInstructQuery(@Body() mac: string) {
+  async logInstructQuery(@Body('mac') mac: string) {
     return {
       code: 200,
       data: await this.logs.logInstructQuery(mac),
@@ -606,7 +610,10 @@ export class RootControll {
    * @returns
    */
   @Post('/sendATInstruct')
-  async sendATInstruct(@Body() mac: string, @Body() content: string) {
+  async sendATInstruct(
+    @Body('mac') mac: string,
+    @Body('content') content: string
+  ) {
     // 获取协议指令
     // 携带事件名称，触发指令查询
     const Query: Uart.DTUoprate = {
@@ -627,7 +634,7 @@ export class RootControll {
    * @returns
    */
   @Post('/RegisterTerminal')
-  async RegisterTerminal(@Body() DevMac: string) {
+  async RegisterTerminal(@Body('DevMac') DevMac: string) {
     return {
       code: 200,
       data: await this.Device.RegisterTerminal(DevMac),
@@ -663,7 +670,7 @@ export class RootControll {
    * @param passwd
    */
   @Post('/deleteUser')
-  async deleteUser(@Body() user: string, @Body() hash: string) {
+  async deleteUser(@Body('user') user: string, @Body('hash') hash: string) {
     if (user !== 'root' && hash === 'lgups@123') {
       return {
         code: 200,
@@ -679,7 +686,7 @@ export class RootControll {
    * @returns
    */
   @Post('/getUserAlarmSetup')
-  async getUserAlarmSetup(@Body() user: string) {
+  async getUserAlarmSetup(@Body('user') user: string) {
     return {
       code: 200,
       data: await this.UserService.getUserAlarmSetup(user),
@@ -706,7 +713,7 @@ export class RootControll {
    * @returns
    */
   @Post('/deleteUsersetup')
-  async deleteUsersetup(@Body() user: string) {
+  async deleteUsersetup(@Body('user') user: string) {
     return {
       code: 200,
       data: await this.UserService.deleteUsersetup(user),
@@ -718,7 +725,7 @@ export class RootControll {
    * @param user
    */
   @Post('/initUserAlarmSetup')
-  async initUserAlarmSetup(@Body() user: string) {
+  async initUserAlarmSetup(@Body('user') user: string) {
     await this.UserService.deleteUsersetup(user);
     return {
       code: 200,
@@ -732,7 +739,7 @@ export class RootControll {
    * @returns
    */
   @Post('/BindDev')
-  async BindDev(@Body() user: string) {
+  async BindDev(@Body('user') user: string) {
     const bind = await this.UserService.getUserBindDevices(user);
     return {
       code: 200,
@@ -745,7 +752,7 @@ export class RootControll {
    * @returns
    */
   @Post('/getNodeInstructQuery')
-  getNodeInstructQuery() {
+  async getNodeInstructQuery() {
     return {
       code: 200,
       data: [
@@ -760,7 +767,10 @@ export class RootControll {
    */
   @Post('/getNodeInstructQueryMac')
   @Validate()
-  getNodeInstructQueryMac(@Body() mac: string, @Body() pid: string | number) {
+  async getNodeInstructQueryMac(
+    @Body('mac') mac: string,
+    @Body('pid') pid: string | number
+  ) {
     return {
       code: 200,
       data: this.SocketUart.cache.get(mac + pid)?.Interval || 3000,
@@ -794,7 +804,7 @@ export class RootControll {
    * @returns
    */
   @Post('/getUserOnlineStat')
-  async getUserOnlineStat(@Body() user: string) {
+  async getUserOnlineStat(@Body('user') user: string) {
     const names = (await this.SocketApp.of('/web').fetchSockets())
       .map(el => (el.rooms.size > 1 ? [...el.rooms.values()][1] : ''))
       .flat()
@@ -813,7 +823,10 @@ export class RootControll {
    * @returns
    */
   @Post('/sendUserSocketInfo')
-  async sendUserSocketInfo(@Body() user: string, @Body() msg: string) {
+  async sendUserSocketInfo(
+    @Body('user') user: string,
+    @Body('msg') msg: string
+  ) {
     return {
       code: 200,
       data: this.SocketUser.toUserInfo(user, 'info', msg),
@@ -829,7 +842,7 @@ export class RootControll {
    */
   @Post('/ClientResults')
   @Validate()
-  async ClientResults(@Body(ALL) data: IdDate) {
+  async ClientResults(@Body() data: IdDate) {
     return {
       code: 200,
       data: await this.Device.ClientResults(
@@ -849,7 +862,7 @@ export class RootControll {
    */
   @Post('/ClientResult')
   @Validate()
-  async ClientResult(@Body(ALL) data: IdDate) {
+  async ClientResult(@Body() data: IdDate) {
     return {
       code: 200,
       data: await this.Device.ClientResult(
@@ -880,7 +893,7 @@ export class RootControll {
    */
   @Post('/lognodes')
   @Validate()
-  async lognodes(@Body(ALL) data: date) {
+  async lognodes(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.lognodes(data.getStart(), data.getEnd()),
@@ -895,7 +908,7 @@ export class RootControll {
    */
   @Post('/logterminals')
   @Validate()
-  async logterminals(@Body(ALL) data: date) {
+  async logterminals(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.logterminals(data.getStart(), data.getEnd()),
@@ -907,7 +920,7 @@ export class RootControll {
    */
   @Post('/logsmssends')
   @Validate()
-  async logsmssends(@Body(ALL) data: date) {
+  async logsmssends(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.logsmssends(data.getStart(), data.getEnd()),
@@ -931,7 +944,7 @@ export class RootControll {
    */
   @Post('/logmailsends')
   @Validate()
-  async logmailsends(@Body(ALL) data: date) {
+  async logmailsends(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.logmailsends(data.getStart(), data.getEnd()),
@@ -946,7 +959,7 @@ export class RootControll {
    */
   @Post('/loguartterminaldatatransfinites')
   @Validate()
-  async loguartterminaldatatransfinites(@Body(ALL) data: date) {
+  async loguartterminaldatatransfinites(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.loguartterminaldatatransfinites(
@@ -964,7 +977,7 @@ export class RootControll {
    */
   @Post('/loguserlogins')
   @Validate()
-  async loguserlogins(@Body(ALL) data: date) {
+  async loguserlogins(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.loguserlogins(data.getStart(), data.getEnd()),
@@ -979,7 +992,7 @@ export class RootControll {
    */
   @Post('/loguserrequsts')
   @Validate()
-  async loguserrequsts(@Body(ALL) data: date) {
+  async loguserrequsts(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.loguserrequsts(data.getStart(), data.getEnd()),
@@ -994,7 +1007,7 @@ export class RootControll {
    */
   @Post('/logwxsubscribes')
   @Validate()
-  async logwxsubscribes(@Body(ALL) data: date) {
+  async logwxsubscribes(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.logwxsubscribes(data.getStart(), data.getEnd()),
@@ -1009,7 +1022,7 @@ export class RootControll {
    */
   @Post('/logdataclean')
   @Validate()
-  async logdataclean(@Body(ALL) data: date) {
+  async logdataclean(@Body() data: date) {
     return {
       code: 200,
       data: await this.logs.logdataclean(data.getStart(), data.getEnd()),
@@ -1024,7 +1037,7 @@ export class RootControll {
    */
   @Post('/logterminalAggs')
   @Validate()
-  async logterminalAggs(@Body(ALL) data: macDate) {
+  async logterminalAggs(@Body() data: macDate) {
     return {
       code: 200,
       data: await this.logs.logterminalAggs(
@@ -1043,7 +1056,7 @@ export class RootControll {
    */
   @Post('/logUserAggs')
   @Validate()
-  async logUserAggs(@Body(ALL) data: userDate) {
+  async logUserAggs(@Body() data: userDate) {
     return {
       code: 200,
       data: await this.logs.logUserAggs(
@@ -1060,7 +1073,7 @@ export class RootControll {
    */
   @Post('/addRegisterDev')
   @Validate()
-  async addRegisterDev(@Body(ALL) data: registerDev) {
+  async addRegisterDev(@Body() data: registerDev) {
     return {
       code: 200,
       data: await Promise.all(
@@ -1077,7 +1090,7 @@ export class RootControll {
    * @returns
    */
   @Post('/delRegisterDev')
-  async delRegisterDev(@Body() id: string) {
+  async delRegisterDev(@Body('id') id: string) {
     const t = await this.Device.getTerminal(id);
     if (t) {
       return {
@@ -1109,7 +1122,7 @@ export class RootControll {
    * @param mac
    */
   @Post('/initTerminal')
-  async initTerminal(@Body() mac: string) {
+  async initTerminal(@Body('mac') mac: string) {
     const u = await getBindMacUser(mac);
     if (u) {
       const user = await this.UserService.getUser(u);
@@ -1130,7 +1143,7 @@ export class RootControll {
    * @param user
    */
   @Post('/toggleUserGroup')
-  async toggleUserGroup(@Body() user: string) {
+  async toggleUserGroup(@Body('user') user: string) {
     return {
       code: 200,
       data: await this.UserService.toggleUserGroup(user),
@@ -1183,7 +1196,7 @@ export class RootControll {
    * 删除redis中指定key
    */
   @Post('/rediskeysdValue')
-  async rediskeysdValue(@Body() keys: string[]) {
+  async rediskeysdValue(@Body('keys') keys: string[]) {
     return {
       code: 200,
       data: await this.RedisService.getClient().mget(keys),
@@ -1194,7 +1207,7 @@ export class RootControll {
    * 删除redis中指定key
    */
   @Post('/rediskeysdel')
-  async rediskeysdel(@Body() keys: string[]) {
+  async rediskeysdel(@Body('keys') keys: string[]) {
     return {
       code: 200,
       data: await this.RedisService.getClient().del(keys),
@@ -1219,7 +1232,7 @@ export class RootControll {
    * @returns
    */
   @Post('/SendProcotolInstructSet')
-  async SendProcotolInstructSet(@Body() query: Uart.instructQuery) {
+  async SendProcotolInstructSet(@Body('query') query: Uart.instructQuery) {
     const protocol = await this.Device.getProtocol(query.protocol);
     // 携带事件名称，触发指令查询
     const Query: Uart.instructQuery = {
@@ -1243,7 +1256,7 @@ export class RootControll {
    * @returns
    */
   @Post('/IotDoIotUnbindResume')
-  async IotDoIotUnbindResume(@Body() iccid: string) {
+  async IotDoIotUnbindResume(@Body('iccid') iccid: string) {
     const res = await this.DyIot.DoIotUnbindResume(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
@@ -1254,25 +1267,24 @@ export class RootControll {
   /**
    * 续订套餐
    * @param mac
-   * @returns 
+   * @returns
    */
-  @Post("/IotRecharge")
-  async IotRecharge(@Body() mac: string) {
-    const ter = await this.Device.getTerminal(mac)
+  @Post('/IotRecharge')
+  async IotRecharge(@Body('mac') mac: string) {
+    const ter = await this.Device.getTerminal(mac);
     if (ter && ter.iccidInfo) {
       if (ter.iccidInfo.version === 'ali_1') {
-        const data = await this.DyIot.DoIotRecharge(ter.ICCID)
+        const data = await this.DyIot.DoIotRecharge(ter.ICCID);
         return {
           code: 200,
-          data
-        }
+          data,
+        };
       }
-
     } else {
       return {
         code: 0,
-        messege: 'no terminal'
-      }
+        messege: 'no terminal',
+      };
     }
   }
 
@@ -1282,7 +1294,7 @@ export class RootControll {
    * @returns
    */
   @Post('/IotQueryCardInfo')
-  async IotQueryCardInfo(@Body() iccid: string) {
+  async IotQueryCardInfo(@Body('iccid') iccid: string) {
     const res = await this.DyIot.QueryCardInfo(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
@@ -1296,7 +1308,7 @@ export class RootControll {
    * @returns
    */
   @Post('/IotQueryCardFlowInfo')
-  async IotQueryCardFlowInfo(@Body() iccid: string) {
+  async IotQueryCardFlowInfo(@Body('iccid') iccid: string) {
     const res = await this.DyIot.QueryCardFlowInfo(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
@@ -1310,7 +1322,7 @@ export class RootControll {
    * @returns
    */
   @Post('/IotQueryIotCardOfferDtl')
-  async IotQueryIotCardOfferDtl(@Body() iccid: string) {
+  async IotQueryIotCardOfferDtl(@Body('iccid') iccid: string) {
     const res = await this.DyIot.QueryIotCardOfferDtl(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
@@ -1337,7 +1349,7 @@ export class RootControll {
    * @returns
    */
   @Post('/delUserTerminal')
-  async delUserTerminal(@Body() user: string, mac: string) {
+  async delUserTerminal(@Body('user') user: string, @Body('mac') mac: string) {
     return {
       code: 200,
       data: await this.UserService.delUserTerminal(user, mac),
@@ -1351,7 +1363,10 @@ export class RootControll {
    * @returns
    */
   @Post('/modifyTerminalRemark')
-  async modifyTerminalRemark(@Body() mac: string, @Body() remark: string) {
+  async modifyTerminalRemark(
+    @Body('mac') mac: string,
+    @Body('remark') remark: string
+  ) {
     return {
       code: 200,
       data: await this.Device.setTerminal(mac, { remark }),
@@ -1365,7 +1380,10 @@ export class RootControll {
    * @returns
    */
   @Post('/modifyUserRemark')
-  async modifyUserRemark(@Body() user: string, @Body() remark: string) {
+  async modifyUserRemark(
+    @Body('user') user: string,
+    @Body('remark') remark: string
+  ) {
     return {
       code: 200,
       data: await this.UserService.modifyUserInfo(user, { remark }),
@@ -1379,7 +1397,10 @@ export class RootControll {
    * @returns
    */
   @Post('/modifyProtocolRemark')
-  async modifyProtocolRemark(@Body() protocol: string, @Body() remark: string) {
+  async modifyProtocolRemark(
+    @Body('protocol') protocol: string,
+    @Body('remark') remark: string
+  ) {
     return {
       code: 200,
       data: await this.Device.modifyProtocol(protocol, { remark }),
@@ -1393,7 +1414,7 @@ export class RootControll {
    */
   @Post('/getUser')
   @Validate()
-  async getUser(@Body(ALL) data: loginHash) {
+  async getUser(@Body() data: loginHash) {
     return {
       code: 200,
       data: await this.UserService.getUser(data.user, {
@@ -1408,9 +1429,9 @@ export class RootControll {
    */
   @Post('/userLoguartterminaldatatransfinites')
   async userLoguartterminaldatatransfinites(
-    @Body() user: string,
-    @Body() start: number,
-    @Body() end: number
+    @Body('user') user: string,
+    @Body('start') start: number,
+    @Body('end') end: number
   ) {
     const alarms = await this.UserService.getUserAlarm(user, start, end);
     return {
@@ -1425,7 +1446,7 @@ export class RootControll {
    * @returns
    */
   @Post('/getTerminalUser')
-  async getTerminalUser(@Body() mac: string) {
+  async getTerminalUser(@Body('mac') mac: string) {
     return {
       code: 200,
       data: await getBindMacUser(mac),
@@ -1437,7 +1458,7 @@ export class RootControll {
    * 重启节点程序
    */
   @Post('/nodeRestart')
-  async nodeRestart(@Body() node: string) {
+  async nodeRestart(@Body('node') node: string) {
     try {
       const el = await this.SocketUart.nodeRestart(node);
       return { code: 200, data: el };
@@ -1451,7 +1472,7 @@ export class RootControll {
    * @param Iccid
    */
   @Post('/getSimInfo')
-  async getSimInfo(@Body() Iccid: string) {
+  async getSimInfo(@Body('Iccid') Iccid: string) {
     try {
       const data = await this.NewDyIot.GetCardDetail(Iccid);
       return {

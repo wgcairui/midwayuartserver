@@ -1,15 +1,16 @@
 import { Provide } from '@midwayjs/decorator';
-import { Context, IMidwayKoaNext, IWebMiddleware } from '@midwayjs/koa';
+import { Context, NextFunction } from '@midwayjs/koa';
 import { Util } from '../util/util';
 import { Logs } from '../service/logBase';
+import { IMiddleware } from '@midwayjs/core';
 
 /**
  * 判断请求是否是
  */
 @Provide()
-export class token implements IWebMiddleware {
+export class userValidation implements IMiddleware<Context, NextFunction> {
   resolve() {
-    return async (ctx: Context, next: IMidwayKoaNext) => {
+    return async (ctx: Context, next: NextFunction) => {
       const token =
         (ctx.header.token as string) || ctx.cookies.get('auth._token.local');
       if (/^\/api\/guest\/.*/.test(ctx.path)) {

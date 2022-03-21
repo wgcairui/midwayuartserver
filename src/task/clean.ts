@@ -7,8 +7,8 @@ import {
   UserRequst,
 } from '../entity/log';
 import { TerminalClientResults, TerminalClientResult } from '../entity/node';
-import { QueryCursor, Types } from 'mongoose';
-import { DocumentType } from '@typegoose/typegoose';
+import { Types } from 'mongoose';
+import * as mongoose from 'mongoose';
 import { chunk } from 'lodash';
 import { getModel } from '../util/base';
 
@@ -203,8 +203,8 @@ export class Clean {
     return deleteids.length + '/' + len;
   }
 
-  next<T>(curs: QueryCursor<DocumentType<T>>) {
-    return new Promise<DocumentType<T>>(resolve => {
+  next<T>(curs: mongoose.Cursor<T, any>) {
+    return new Promise<T>(resolve => {
       curs.next((err, doc) => {
         resolve(doc);
       });

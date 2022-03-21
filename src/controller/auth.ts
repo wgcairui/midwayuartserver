@@ -2,12 +2,9 @@ import {
   Inject,
   Controller,
   Get,
-  Provide,
   Query,
   Body,
   Post,
-  Validate,
-  ALL,
 } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { UserService } from '../service/user';
@@ -18,11 +15,13 @@ import { Wx } from '../util/wx';
 import { Logs } from '../service/logBase';
 import { AES, enc } from 'crypto-js';
 import { code2Session, getPhone, registerUser } from '../dto/auth';
+import { Validate } from '@midwayjs/validate';
+import { TokenParse } from '../middleware/tokenParse';
 
 /**
  * 登录相关控制器
  */
-@Provide()
+
 @Controller('/api/auth')
 export class AuthController {
   @Inject()
@@ -48,8 +47,8 @@ export class AuthController {
    * @param user
    * @returns
    */
-  @Get('/user', { middleware: ['tokenParse'] })
-  async user(@Body() user: Uart.UserInfo) {
+  @Get('/user', { middleware: [TokenParse] })
+  async user(@Body('user') user: Uart.UserInfo) {
     return {
       code: user ? 200 : 0,
       user: user ? user.user : 'guest',
@@ -62,8 +61,8 @@ export class AuthController {
    * @param user
    * @returns
    */
-  @Get('/userGroup', { middleware: ['tokenParse'] })
-  async userGroup(@Body() user: Uart.UserInfo) {
+  @Get('/userGroup', { middleware: [TokenParse] })
+  async userGroup(@Body('user') user: Uart.UserInfo) {
     return { code: user ? 200 : 0, userGroup: user?.userGroup };
   }
 
@@ -83,7 +82,7 @@ export class AuthController {
    */
   @Get('/hash')
   @Validate()
-  async hash(@Query(ALL) data: loginHash) {
+  async hash(@Query() data: loginHash) {
     const hash = await this.Util.Secret_JwtSign({
       key: data.user,
       time: Date.now(),
@@ -101,7 +100,7 @@ export class AuthController {
    */
   @Post('/login')
   @Validate()
-  async login(@Body(ALL) accont: login) {
+  async login(@Body() accont: login) {
     const hash = await this.RedisService.getClient().get(accont.user);
     if (!hash) {
       return {
@@ -147,7 +146,7 @@ export class AuthController {
 
   @Post('/wxlogin')
   @Validate()
-  async wxlogin(@Body(ALL) data: wxlogin) {
+  async wxlogin(@Body() data: wxlogin) {
     const info = await this.Wx.OP.userInfo(data.code);
     let user = await this.userService.getUser(info.unionid);
     // 如果没有用户则新建
@@ -179,7 +178,7 @@ export class AuthController {
    * https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html
    */
   @Get('/code2Session')
-  async code2Session(@Query(ALL) data: code2Session) {
+  async code2Session(@Query() data: code2Session) {
     // 正确的话返回sessionkey
     const seesion = await this.Wx.WP.UserOpenID(data.js_code);
     // 存储session
@@ -250,7 +249,7 @@ export class AuthController {
    * @returns
    */
   @Get('/trial')
-  async trial(@Query(ALL) data: code2Session) {
+  async trial(@Query() data: code2Session) {
     // 正确的话返回sessionkey
     const seesion = await this.Wx.WP.UserOpenID(data.js_code);
     // 存储session
@@ -279,7 +278,7 @@ export class AuthController {
    */
   @Post('/getphonenumber')
   @Validate()
-  async getphonenumber(@Body(ALL) data: getPhone) {
+  async getphonenumber(@Body() data: getPhone) {
     const session = await this.RedisService.getCode2Session(data.openid);
     return {
       code: 200,
@@ -297,7 +296,7 @@ export class AuthController {
    */
   @Post('/wxRegister')
   @Validate()
-  async wxRegister(@Body(ALL) data: registerUser) {
+  async wxRegister(@Body() data: registerUser) {
     if (await this.userService.getUser(data.tel)) {
       return {
         code: 0,
@@ -325,7 +324,7 @@ export class AuthController {
    */
   @Post('/wplogin')
   @Validate()
-  async wplogin(@Body(ALL) accont: wplogin) {
+  async wplogin(@Body() accont: wplogin) {
     const user = await this.userService.getUser(accont.user);
     if (!user) {
       //user = await this.userService.syncPesivUser(accont.user, accont.passwd);

@@ -1,4 +1,4 @@
-import { Rule, RuleType } from '@midwayjs/decorator';
+import { Rule, RuleType } from '@midwayjs/validate';
 import { Types } from 'mongoose';
 
 /**

@@ -2,6 +2,9 @@ import { RedisOptions } from 'ioredis';
 import { ConnectOptions } from 'mongoose';
 import { tencetMapConfig } from '../interface';
 import { Options as ossOptions } from 'ali-oss';
+import { IMidwayKoaConfigurationOptions } from '@midwayjs/koa';
+import { IMidwaySocketIOConfigurationOptions } from '@midwayjs/socketio';
+import { IMidwayWSConfigurationOptions } from '@midwayjs/ws';
 
 import ossKey = require('./oss.json');
 
@@ -25,7 +28,7 @@ export const redis: RedisOptions = {
   db: 0,
 };
 
-export const taskConfig = {
+export const task = {
   redis: `redis://${redis.host}:${redis.port}`, //任务依赖redis，所以此处需要加一个redis
   prefix: 'midway-task', // 这些任务存储的key，都是midway-task开头，以便区分用户原有redis里面的配置。
   defaultJobOptions: {
@@ -50,4 +53,41 @@ export const oss: Record<string, ossOptions> = {
     endpoint: 'oss-cn-hangzhou.aliyuncs.com',
     timeout: '60s',
   },
+};
+
+/**
+ * logger配置
+ */
+export const midwayLogger = {
+  default: {
+    level: 'warn',
+    consoleLevel: 'info',
+  },
+};
+
+/**
+ * koa配置
+ */
+export const koa: IMidwayKoaConfigurationOptions = {
+  port: 9010,
+  hostname: '0.0.0.0',
+  keys: [],
+};
+
+/**
+ * socketio配置
+ */
+export const socketIO: IMidwaySocketIOConfigurationOptions = {
+  path: '/client',
+  /* cors: {
+    origin: "http://120.202.61.88:9010",
+    methods: ["GET", "POST"]
+  } */
+};
+
+/**
+ * ws配置
+ */
+export const ws: IMidwayWSConfigurationOptions = {
+  path: '/ws',
 };

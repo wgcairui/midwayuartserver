@@ -1,14 +1,15 @@
+import { IMiddleware } from '@midwayjs/core';
 import { Provide } from '@midwayjs/decorator';
-import { Context, IMidwayKoaNext, IWebMiddleware } from '@midwayjs/koa';
+import { Context, NextFunction } from '@midwayjs/koa';
 import { Device } from '../service/deviceBase';
 
 /**
  * 校验数据来源
  */
 @Provide()
-export class nodeHttp implements IWebMiddleware {
+export class nodeHttp implements IMiddleware<Context, NextFunction> {
   resolve() {
-    return async (ctx: Context, next: IMidwayKoaNext) => {
+    return async (ctx: Context, next: NextFunction) => {
       const nodes = await (
         await ctx.requestContext.getAsync(Device)
       ).getNodes();

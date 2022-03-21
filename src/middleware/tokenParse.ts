@@ -1,14 +1,15 @@
+import { IMiddleware } from '@midwayjs/core';
 import { Provide } from '@midwayjs/decorator';
-import { Context, IMidwayKoaNext, IWebMiddleware } from '@midwayjs/koa';
+import { Context, NextFunction } from '@midwayjs/koa';
 import { Util } from '../util/util';
 
 /**
  * 解析请求是否携带token,是的话转换token数据
  */
 @Provide()
-export class TokenParse implements IWebMiddleware {
+export class TokenParse implements IMiddleware<Context, NextFunction> {
   resolve() {
-    return async (ctx: Context, next: IMidwayKoaNext) => {
+    return async (ctx: Context, next: NextFunction) => {
       const token =
         (ctx.header.token as string) || ctx.cookies.get('auth._token.local');
 

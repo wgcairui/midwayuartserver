@@ -1,5 +1,4 @@
 import {
-  Provide,
   WSController,
   Inject,
   App,
@@ -21,7 +20,6 @@ import { HF } from '../util/hf';
 import { UserService } from '../service/user';
 import { ILogger } from '@midwayjs/logger';
 
-@Provide()
 @WSController('/node')
 export class NodeSocket {
   @Logger()
@@ -133,7 +131,7 @@ export class NodeSocket {
    */
   @OnWSMessage('register')
   @WSEmit('registerSuccess')
-  async register(_data: string) {
+  async register() {
     const node = await this.SocketUart.getNode(this.ctx.id);
     const UserID = await this.HF.getUserId();
     return { ...node, UserID };
@@ -144,7 +142,7 @@ export class NodeSocket {
    * @param _data
    */
   @OnWSMessage('startError')
-  async startError(_data: any) {
+  async startError() {
     const node = await this.SocketUart.getNode(this.ctx.id);
     this.log.saveNode({
       type: 'TcpServer启动失败',

@@ -1,4 +1,5 @@
-import { Provide, Init } from '@midwayjs/decorator';
+/* eslint-disable no-useless-escape */
+import { Provide, Init, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { verify, sign, SignOptions } from 'jsonwebtoken';
 import * as CryptoJS from 'crypto-js';
 import * as bcrypt from 'bcryptjs';
@@ -10,6 +11,7 @@ const saltRounds = 10;
  * 工具链
  */
 @Provide()
+@Scope(ScopeEnum.Singleton)
 export class Util {
   /**
    * token盐值
@@ -172,7 +174,7 @@ export class Util {
   ParseCoefficient(fun: string, val: number) {
     if (Number(fun)) return (Number(fun) * val) as number;
     else {
-      const [arg,...f] = fun.replace(/(^\(|\)$)/g, '').split(',');
+      const [arg, ...f] = fun.replace(/(^\(|\)$)/g, '').split(',');
       const Fun = new Function(arg, `return ${f.join(',')}`);
       return Fun(val) as number;
     }

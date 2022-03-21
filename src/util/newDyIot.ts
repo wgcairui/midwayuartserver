@@ -38,7 +38,7 @@ export class NewDyIot {
    */
   private async request<T>(
     action: string,
-    params: Object = {},
+    params: object = {},
     method: 'POST' | 'GET' = 'POST'
   ) {
     return new Promise<SimResope<T>>((resolve, reject) => {
@@ -49,7 +49,7 @@ export class NewDyIot {
         ex => {
           reject(ex);
         }
-      )
+      );
     });
   }
 

@@ -1,38 +1,33 @@
+import * as devmongoConfig from './config/config.devmongo';
+import * as defaultConfig from './config/config.default';
 import { Configuration, App } from '@midwayjs/decorator';
-import { Application } from '@midwayjs/koa';
-import * as body from 'koa-body';
-import { ILifeCycle } from '@midwayjs/core';
+import * as koa from '@midwayjs/koa';
+import * as Socket from '@midwayjs/socketio';
+import * as Ws from '@midwayjs/ws';
 import * as typegoose from '@midwayjs/typegoose';
 import * as task from '@midwayjs/task';
-import { join } from 'path';
-import * as cors from '@koa/cors';
-import * as swagger from '@midwayjs/swagger';
 import * as oss from '@midwayjs/oss';
+import * as Validation from '@midwayjs/validate';
+import * as info from '@midwayjs/info';
+import { errerHandle } from './middleware/errerHandle';
 
 @Configuration({
   conflictCheck: true,
-  imports: [typegoose, task, swagger, oss],
-  importConfigs: [join(__dirname, './config')],
+  imports: [koa, Socket, Ws, typegoose, task, oss, Validation, info],
+  importConfigs: [{ default: defaultConfig, devmongo: devmongoConfig }],
 })
-export class ContainerLifeCycle implements ILifeCycle {
+export class AutoConfiguration {
   @App()
-  app: Application;
+  app: koa.Application;
 
   async onReady() {
-    this.app.proxy = true;
-    this.app
-      .use(
-        body({
-          multipart: true,
-          formidable: {
-            maxFileSize: 1024 * 1024 * 100 * 100,
-          },
-        })
-      )
-      .use(
-        cors({
-          origin: '*',
-        })
-      );
+    this.app.useMiddleware(require('@koa/cors')({ origin: '*' }));
+    /* this.app.useMiddleware(require('koa-body')({
+      multipart: true,
+      formidable: {
+        maxFileSize: 1024 * 1024 * 100 * 100,
+      }
+    })) */
+    this.app.useFilter([errerHandle]);
   }
 }

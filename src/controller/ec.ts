@@ -1,8 +1,7 @@
-import { Provide, Inject, Controller, Post, Body } from '@midwayjs/decorator';
+import { Inject, Controller, Post, Body } from '@midwayjs/decorator';
 import { Device } from '../service/deviceBase';
 import { UserService } from '../service/user';
 
-@Provide()
 @Controller('/api/ec')
 export class ControllEc {
   @Inject()
@@ -15,7 +14,7 @@ export class ControllEc {
    * ec请求数据
    */
   @Post('/syncSetup')
-  async syncSetup(@Body() mac: string) {
+  async syncSetup(@Body('mac') mac: string) {
     console.log({ mac });
     return {
       code: 200,
@@ -33,7 +32,7 @@ export class ControllEc {
    * @returns
    */
   @Post('/userSetup')
-  async userSetup(@Body() user: string) {
+  async userSetup(@Body('user') user: string) {
     return {
       code: 200,
       data: await this.UserService.getUserAlarmSetup(user),

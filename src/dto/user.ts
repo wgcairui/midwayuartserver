@@ -1,4 +1,4 @@
-import { Rule, RuleType } from '@midwayjs/decorator';
+import { Rule, RuleType } from '@midwayjs/validate';
 import { ObjectId } from '../interface';
 
 export class loginHash {
