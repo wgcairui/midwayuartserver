@@ -21,8 +21,6 @@ export class OpenControll {
    */
   @Post('/crc')
   async crc(@Body() data: any) {
-    console.log({ data });
-
     const { pid, instructN, address, value } = data;
     const c = Buffer.allocUnsafe(2);
     c.writeIntBE(address, 0, 2);

@@ -7,7 +7,6 @@ import {
   OnWSMessage,
   WSEmit,
   OnWSDisConnection,
-  Logger,
 } from '@midwayjs/decorator';
 import { Context, Application } from '@midwayjs/socketio';
 import { Device } from '../service/deviceBase';
@@ -18,12 +17,9 @@ import { SocketUart } from '../service/socketUart';
 import { SocketUser } from '../service/socketUserBase';
 import { HF } from '../util/hf';
 import { UserService } from '../service/user';
-import { ILogger } from '@midwayjs/logger';
 
 @WSController('/node')
 export class NodeSocket {
-  @Logger()
-  console: ILogger;
 
   @Inject()
   ctx: Context;
@@ -77,14 +73,14 @@ export class NodeSocket {
       // 每个连接加入到名称和ip对应的房间
       this.ctx.join([Node.Name, Node.IP]);
       this.RedisService.setSocketSid(ID, Node.Name);
-      this.console.info(
+      console.info(
         `new socket connect<id: ${ID},IP: ${IP},Name: ${Node.Name}>`
       );
       // 检查节点是否在缓存中,在的话激活旧的socket,否则创建新的socket
       this.log.saveNode({ ID, IP, type: '上线', Name: Node.Name });
       this.ctx.emit('accont');
     } else {
-      this.console.info(`有未登记或重复登记节点连接=>${IP}，断开连接`);
+      console.info(`有未登记或重复登记节点连接=>${IP}，断开连接`);
       socket.disconnect();
       // 添加日志
       this.log.saveNode({ ID, IP, type: '非法连接请求', Name: 'null' });
@@ -159,7 +155,7 @@ export class NodeSocket {
   @OnWSMessage('alarm')
   async alarm(data: any) {
     const node = await this.SocketUart.getNode(this.ctx.id);
-    this.console.info(data);
+    console.info({data});
     this.log.saveNode({
       type: '告警',
       ID: this.ctx.id,
@@ -195,7 +191,7 @@ export class NodeSocket {
         await this.UserService.addTerminalMountDev('root', data, mountDev);
         await this.Device.setTerminal(data, { PID: 'pesiv' });
         this.RedisService.initTerminalMap();
-        this.console.info(`Pesiv卡:${data}未注册,将自动注册到设备库`);
+        console.info(`Pesiv卡:${data}未注册,将自动注册到设备库`);
       }
       this.Device.setStatTerminal(data);
       // 迭代macs,从busy列表删除,写入日志,在线记录更新

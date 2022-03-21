@@ -14,18 +14,17 @@ export class nodeHttp implements IMiddleware<Context, NextFunction> {
         await ctx.requestContext.getAsync(Device)
       ).getNodes();
 
+      const nodeSet = new Set(nodes.map(({ IP }) => IP))
       const ip = ctx.ip.split(':').reverse()[0];
-      try {
-        if (nodes.some(el => el.IP === ip)) {
-          await next();
-        } else {
-          const err = new Error('nodeData premiss');
-          ctx.logger.warn(err);
-          throw err;
-        }
-      } catch (error) {
-        ctx.throw('nodeData premiss');
+
+      if (nodeSet.has(ip)) {
+        await next();
+      } else {
+        const err = new Error('nodeData premiss');
+        ctx.logger.warn(err);
+        throw err;
       }
+
     };
   }
 }

@@ -105,7 +105,7 @@ export class HF {
       });
 
       if (data.data.result) {
-        this.console.error(
+        console.error(
           '汉枫IOT Server 脚本获取token失败,详情:',
           data.data.message
         );

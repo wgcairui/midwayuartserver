@@ -26,6 +26,8 @@ import axios from 'axios';
 import { SHA384 } from 'crypto-js';
 import { getModelForClass } from '@typegoose/typegoose';
 import { ILogger } from '@midwayjs/logger';
+import { Scope } from '@midwayjs/decorator';
+import { ScopeEnum } from '@midwayjs/decorator';
 
 interface pesiv_userInfo {
   user_name: string;
@@ -50,6 +52,7 @@ interface pesivData {
 }
 
 @Provide()
+@Scope(ScopeEnum.Singleton)
 export class UserService {
   userModel: ReturnModelType<typeof Users, BeAnObject>;
   loguserModel: ReturnModelType<typeof UserLogin, BeAnObject>;
@@ -152,7 +155,7 @@ export class UserService {
         ) {
           const tel = String(u.telephone || u.real_name) as any;
           if (await this.getUser(tel)) {
-            this.console.warn({ ...userinfo, msg: '用户手机号码重复' });
+            console.warn({ ...userinfo, msg: '用户手机号码重复' });
           } else {
             userinfo.tel = tel;
           }
@@ -221,7 +224,7 @@ export class UserService {
         return null;
       }
     } catch (e) {
-      this.console.warn({ e });
+      console.warn({ e });
 
       return null;
     }

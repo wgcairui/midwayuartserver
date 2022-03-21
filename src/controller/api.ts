@@ -488,7 +488,6 @@ export class ApiControll {
   @Post('/getTerminalDatas')
   @Validate()
   async getTerminalDatas(@Body() data: terminalResults) {
-    console.log();
 
     const d = (await this.UserService.getTerminalDatas(
       data.token.user,
@@ -552,7 +551,6 @@ export class ApiControll {
   @Post('/getTerminalDatasV2')
   @Validate()
   async getTerminalDatasV2(@Body() data: terminalResultsV2) {
-    console.log();
 
     const d = await this.UserService.getTerminalDatasV2(
       data.token.user,

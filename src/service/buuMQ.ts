@@ -79,7 +79,7 @@ export class MQ {
    * @param id 队列id
    */
   private async initWork(job: Job, id: string) {
-    console.log(job, id);
+    console.log({job, id});
     const parse = {
       [QUEUE_NAME.dataCheck]: this.dataCheck(job),
       [QUEUE_NAME.inner_Message]: this.innerMessage(job),
