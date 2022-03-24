@@ -4,7 +4,6 @@ import { tencetMapConfig } from '../interface';
 import { Options as ossOptions } from 'ali-oss';
 import { IMidwayKoaConfigurationOptions } from '@midwayjs/koa';
 import { IMidwaySocketIOConfigurationOptions } from '@midwayjs/socketio';
-import { IMidwayWSConfigurationOptions } from '@midwayjs/ws';
 
 import ossKey = require('./oss.json');
 
@@ -26,6 +25,8 @@ export const redis: RedisOptions = {
   family: 4, // 4 (IPv4) or 6 (IPv6)
   password: '',
   db: 0,
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
 };
 
 export const task = {
@@ -83,11 +84,4 @@ export const socketIO: IMidwaySocketIOConfigurationOptions = {
     origin: "http://120.202.61.88:9010",
     methods: ["GET", "POST"]
   } */
-};
-
-/**
- * ws配置
- */
-export const ws: IMidwayWSConfigurationOptions = {
-  path: '/ws',
 };

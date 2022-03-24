@@ -1,18 +1,9 @@
-import {
-  Provide,
-  App,
-  MidwayFrameworkType,
-  Scope,
-  ScopeEnum,
-  Init,
-} from '@midwayjs/decorator';
+import { App, MidwayFrameworkType } from '@midwayjs/decorator';
 import { Application as IO } from '@midwayjs/socketio';
 import { Context as Ws } from '@midwayjs/ws';
 import { getBindMacUser } from '../util/base';
 
-@Provide()
-@Scope(ScopeEnum.Singleton)
-export class SocketUser {
+class Socket {
   @App(MidwayFrameworkType.WS_IO)
   app: IO;
 
@@ -26,8 +17,7 @@ export class SocketUser {
    */
   subscribeUsers: Map<string, Set<string>>;
 
-  @Init()
-  async init() {
+  constructor() {
     this.wsMap = new Map();
     this.subscribeUsers = new Map();
   }
@@ -151,3 +141,5 @@ export class SocketUser {
     this.app.of('/web').in(user).emit('message', msg);
   }
 }
+
+export const SocketUser = new Socket();

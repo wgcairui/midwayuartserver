@@ -1,6 +1,4 @@
-import { getModelForClass } from '@typegoose/typegoose';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { SecretApp } from '../entity/user';
 
 /**
  * wx axios请求
@@ -19,18 +17,6 @@ export const fetch = async <T extends Uart.WX.wxRequest>(
     throw new Error(res.data.errmsg);
   }
   return res.data;
-};
-
-/**
- * 获取wx开发key
- * @param type
- * @returns
- */
-export const getKey = async (
-  type: 'wxopen' | 'wxmp' | 'wxmpValidaton' | 'wxwp'
-) => {
-  const model = getModelForClass(SecretApp);
-  return await model.findOne({ type }).lean();
 };
 
 /**

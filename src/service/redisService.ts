@@ -1,35 +1,30 @@
-import {
-  Provide,
-  Scope,
-  ScopeEnum,
-  Config,
-  Init,
-  Inject,
-  App,
-  TaskLocal,
-} from '@midwayjs/decorator';
-import { Application } from '@midwayjs/koa';
+import { TaskLocal } from '@midwayjs/decorator';
 import * as redis from 'ioredis';
-import { Device } from './deviceBase';
-import { UserService } from '../service/user';
+import { getAlarmProtocol, getProtocol, getTerminals } from './deviceService';
+import { getUserAlarmProtocol } from './userSevice';
+import { redis as redisOpt } from '../config/config.default';
+import * as core from '@alicloud/pop-core';
+import { getSecretKey, time } from '../util/base';
+import { createTransport, Transporter } from 'nodemailer';
+import * as SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { Config } from '@alicloud/openapi-client';
+import Dyiotapi from '@alicloud/dyiotapi20171111';
 
 interface userSetupMap {
   Threshold: Map<string, Uart.Threshold>;
   AlarmStat: Map<string, Uart.ConstantAlarmStat>;
 }
 
-@Provide()
-@Scope(ScopeEnum.Singleton)
-export class RedisService {
-  @App()
-  App: Application;
-
-  @Inject()
-  private Device: Device;
-
-  @Config('redis')
-  private redisConfig: redis.RedisOptions;
-
+interface secretApp {
+  sms: core;
+  mail: Transporter<SMTPTransport.SentMessageInfo>;
+  iot: Dyiotapi;
+  newIot: core;
+}
+class Redis {
+  /**
+   * redis
+   */
   redisService: redis.Redis;
 
   /**
@@ -51,15 +46,63 @@ export class RedisService {
    */
   terminalDataMap: Map<string, string>;
 
-  @Init()
-  async init() {
-    this.redisService = new redis(this.redisConfig);
+  Secret: secretApp;
+
+  constructor() {
+    this.redisService = new redis(redisOpt);
+    this.redisService.setMaxListeners(30);
     this.protocolInstructMap = new Map();
     this.userSetup = new Map();
     this.terminalMap = new Map();
     this.terminalDataMap = new Map();
+    this.initSecret();
     //  this.clear()
     this.initTerminalMap();
+  }
+
+  initSecret() {
+    this.Secret = {} as any;
+    getSecretKey('aliSms').then(key => {
+      console.info(`${time()} 实例化sms`);
+      this.Secret.sms = new core({
+        accessKeyId: key.appid,
+        accessKeySecret: key.secret,
+        endpoint: 'https://dysmsapi.aliyuncs.com',
+        apiVersion: '2017-05-25',
+      });
+    });
+
+    getSecretKey('mail').then(key => {
+      console.info(`${time()} 实例化mail`);
+      this.Secret.mail = createTransport({
+        // host: 'smtp.ethereal.email',
+        service: 'QQ', // 使用了内置传输发送邮件 查看支持列表：https://nodemailer.com/smtp/well-known/
+        /* port: 465, // SMTP 端口
+              secureConnection: true, // 使用了 SSL */
+        auth: {
+          user: key.appid,
+          // 这里密码不是qq密码，是你设置的smtp授权码
+          pass: key.secret,
+        },
+      });
+    });
+
+    getSecretKey('dyIot').then(key => {
+      console.info(`${time()} 实例化iot`);
+      const config = new Config({
+        accessKeyId: key.appid,
+        accessKeySecret: key.secret,
+      });
+      config.endpoint = 'dyiotapi.aliyuncs.com';
+      this.Secret.iot = new Dyiotapi(config);
+
+      this.Secret.newIot = new core({
+        accessKeyId: key.appid,
+        accessKeySecret: key.secret,
+        endpoint: 'https://linkcard.aliyuncs.com',
+        apiVersion: '2021-05-20',
+      });
+    });
   }
 
   getClient() {
@@ -84,9 +127,27 @@ export class RedisService {
    */
   @TaskLocal('* * * * *')
   async initTerminalMap() {
-    const terminals =
-      (await this.Device.getTerminals()) as any as Uart.Terminal[];
+    const terminals = (await getTerminals()) as any;
     this.terminalMap = new Map(terminals.map(el => [el.DevMac, el]));
+  }
+
+  /**
+   * 保存ws连接中user和token的关系
+   * @param user 用户
+   * @param token 用户token
+   * @returns
+   */
+  addWsToken(user: string, token: string) {
+    return this.redisService.setex('ws' + user, 0, token);
+  }
+
+  /**
+   * 获取ws连接中user和token的关系
+   * @param user 用户
+   * @returns
+   */
+  getWsToken(user: string) {
+    return this.redisService.get('ws' + user);
   }
 
   /**
@@ -132,7 +193,7 @@ export class RedisService {
    * @param protocol 设备协议
    */
   async setProtocolInstruct(protocol: string) {
-    const Protocol = await this.Device.getProtocol(protocol);
+    const Protocol = await getProtocol(protocol);
     try {
       const ins = new Map(Protocol.instruct.map(el => [el.name, el]));
       // 缓存协议方法
@@ -164,11 +225,9 @@ export class RedisService {
    */
   async setUserSetup(user: string, protocol: string, forcedUpdate = false) {
     // 获取用户个性化配置实例
-    const UserSetup = await (
-      await this.App.getApplicationContext().getAsync(UserService)
-    ).getUserAlarmProtocol(user, protocol);
+    const UserSetup = await getUserAlarmProtocol(user, protocol);
     // 协议参数阀值,状态
-    const Constant = await this.Device.getAlarmProtocol(protocol);
+    const Constant = await getAlarmProtocol(protocol);
     const cache =
       this.userSetup.get(user) ||
       this.userSetup.set(user, new Map()).get(user)!;
@@ -536,3 +595,8 @@ export class RedisService {
     return this.redisService.del('sid' + id);
   }
 }
+
+/**
+ * redis
+ */
+export const RedisService = new Redis();

@@ -1,9 +1,6 @@
 import { Controller, Inject, Post, Body } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
-import { UserService } from '../service/user';
-import { Device } from '../service/deviceBase';
-import { RedisService } from '../service/redis';
-import { TencetMap } from '../service/tencetMapBase';
+import { RedisService } from '../service/redisService';
 import {
   date,
   Api,
@@ -17,7 +14,7 @@ import {
   protocol,
   terminalResults,
   InstructSet,
-  setUserSetupProtocol,
+  setUserSetupProtocol as setUserSetupProtocolDto,
   setAlias,
   id,
   setAggs,
@@ -27,39 +24,63 @@ import {
   terminalResultsV2,
 } from '../dto/user';
 import { Sms } from '../decorator/smsValidation';
-import { Util } from '../util/util';
-import { SocketUart } from '../service/socketUart';
+import { SocketUart } from '../service/socketService';
 import * as lodash from 'lodash';
 import { toDataURL } from 'qrcode';
 import { Validate } from '@midwayjs/validate';
 import { userValidation } from '../middleware/userValidation';
-import { MQ } from '../service/bullMQ';
+import { MQ } from '../service/bullService';
+import {
+  getAlarmProtocol,
+  getDevTypes,
+  getNodes,
+  getProtocol,
+  getRegisterDev,
+  getTerminal,
+  setStatTerminalDevs,
+  setAlias as setAlia,
+} from '../service/deviceService';
+import { RegexTel, ParseCoefficient } from '../util/util';
+import {
+  addUser,
+  getUserBindDevices,
+  getUserAlarm,
+  getUser,
+  confrimAlarm,
+  modifyTerminal,
+  addUserTerminal,
+  delUserTerminal,
+  delTerminalMountDev,
+  addTerminalMountDev,
+  sendValidation,
+  getUserAlarmSetup,
+  modifyUserAlarmSetupTel,
+  modifyUserInfo,
+  mpTicket,
+  wpTicket,
+  getUserAlarmProtocol,
+  getTerminalData,
+  getTerminalDatas,
+  getTerminalDatasV2,
+  isBindMac,
+  getUserLayout,
+  getTerminalDataName,
+  getAggregation,
+  setUserLayout,
+  addAggregation,
+  deleteAggregation,
+  resetUserPasswd,
+  deleteUser,
+  getAlarmunconfirmed,
+  modifyTerminalJw,
+  setUserSetupProtocol,
+} from '../service/userSevice';
+import { TencetMapGeocoder } from '../service/tencetMapService';
 
 @Controller('/api', { middleware: [userValidation] })
 export class ApiControll {
   @Inject()
-  UserService: UserService;
-
-  @Inject()
-  Device: Device;
-
-  @Inject()
-  RedisService: RedisService;
-
-  @Inject()
   ctx: Context;
-
-  @Inject()
-  TencetMap: TencetMap;
-
-  @Inject()
-  Util: Util;
-
-  @Inject()
-  SocketUart: SocketUart;
-
-  @Inject()
-  MQ: MQ;
 
   /**
    * 添加用户
@@ -79,14 +100,14 @@ export class ApiControll {
       'user' | 'name' | 'passwd' | 'tel' | 'mail' | 'company'
     >
   ) {
-    this.MQ.addJob('inner_Message', {
+    MQ.addJob('inner_Message', {
       timeStamp: Date.now(),
       user: user.user,
       nikeName: user.name,
       message: '新增用户',
       data: user,
     });
-    return this.UserService.addUser(
+    return addUser(
       user.name,
       user.user,
       user.passwd,
@@ -106,7 +127,7 @@ export class ApiControll {
   async BindDev(@Body() data: Api) {
     return {
       code: 200,
-      data: await this.UserService.getUserBindDevices(data.token.user),
+      data: await getUserBindDevices(data.token.user),
     };
   }
 
@@ -117,7 +138,7 @@ export class ApiControll {
   @Validate()
   @Post('/loguartterminaldatatransfinites')
   async loguartterminaldatatransfinites(@Body() data: date) {
-    const alarms = await this.UserService.getUserAlarm(
+    const alarms = await getUserAlarm(
       data.token.user,
       data.getStart(),
       data.getEnd(),
@@ -126,7 +147,7 @@ export class ApiControll {
     return {
       code: 200,
       data: alarms.map(el => {
-        el.mac = this.RedisService.terminalMap.get(el.mac)?.name || el.mac;
+        el.mac = RedisService.terminalMap.get(el.mac)?.name || el.mac;
         return el;
       }),
     };
@@ -142,7 +163,7 @@ export class ApiControll {
   async userinfo(@Body() data: Api) {
     return {
       code: 200,
-      data: await this.UserService.getUser(data.token.user, {
+      data: await getUser(data.token.user, {
         _id: 0,
         passwd: 0,
       }),
@@ -160,7 +181,7 @@ export class ApiControll {
   async confrimAlarm(@Body() data: mongoId) {
     return {
       code: 200,
-      data: await this.UserService.confrimAlarm(data.token.user, data.getId()),
+      data: await confrimAlarm(data.token.user, data.getId()),
     };
   }
 
@@ -172,7 +193,7 @@ export class ApiControll {
   @Post('/getTerminalOnline')
   @Validate()
   async getTerminalOnline(@Body() data: mac) {
-    const ter = await this.Device.getTerminal(data.mac);
+    const ter = await getTerminal(data.mac);
     return {
       code: 200,
       data: ter && ter.online ? ter : null,
@@ -189,11 +210,7 @@ export class ApiControll {
   async modifyTerminal(@Body() data: modifiTerminalName) {
     return {
       code: 200,
-      data: await this.UserService.modifyTerminal(
-        data.token.user,
-        data.mac,
-        data.name
-      ),
+      data: await modifyTerminal(data.token.user, data.mac, data.name),
     };
   }
 
@@ -211,7 +228,7 @@ export class ApiControll {
         msg: '测试账户无法绑定新设备',
       };
     }
-    const d = await this.UserService.addUserTerminal(data.token.user, data.mac);
+    const d = await addUserTerminal(data.token.user, data.mac);
     return {
       code: d ? 200 : 0,
       data: d,
@@ -231,7 +248,7 @@ export class ApiControll {
   async delUserTerminal(@Body() data: mac) {
     return {
       code: 200,
-      data: await this.UserService.delUserTerminal(data.token.user, data.mac),
+      data: await delUserTerminal(data.token.user, data.mac),
     };
   }
 
@@ -244,7 +261,7 @@ export class ApiControll {
   async getDevTypes(@Body('Type') Type: string) {
     return {
       code: 200,
-      data: await this.Device.getDevTypes(Type),
+      data: await getDevTypes(Type),
     };
   }
 
@@ -257,12 +274,8 @@ export class ApiControll {
   @Sms()
   @Validate()
   async delTerminalMountDev(@Body() data: macPid) {
-    const d = await this.UserService.delTerminalMountDev(
-      data.token.user,
-      data.mac,
-      data.pid
-    );
-    if (d) this.SocketUart.delTerminalMountDevCache(data.mac, data.pid);
+    const d = await delTerminalMountDev(data.token.user, data.mac, data.pid);
+    if (d) SocketUart.delTerminalMountDevCache(data.mac, data.pid);
     return {
       code: d ? 200 : 0,
       data: d,
@@ -280,12 +293,12 @@ export class ApiControll {
   @Validate()
   @Sms()
   async addTerminalMountDev(@Body() data: addMountDev) {
-    const d = await this.UserService.addTerminalMountDev(
+    const d = await addTerminalMountDev(
       data.token.user,
       data.mac,
       data.mountDev
     );
-    if (d) this.SocketUart.setTerminalMountDevCache(data.mac);
+    if (d) SocketUart.setTerminalMountDevCache(data.mac);
     return {
       code: d ? 200 : 0,
       data: d,
@@ -301,9 +314,9 @@ export class ApiControll {
   @Post('/smsValidation')
   @Validate()
   async smsValidation(@Body() data: Api) {
-    const sr = await this.UserService.sendValidation(data.token.user);
+    const sr = await sendValidation(data.token.user);
     if (sr.code) {
-      await this.RedisService.setUserSmsCode(data.token.user, sr.data);
+      await RedisService.setUserSmsCode(data.token.user, sr.data);
       return {
         code: 200,
         msg: sr.msg,
@@ -323,9 +336,9 @@ export class ApiControll {
   @Post('/smsCodeValidation')
   @Validate()
   async smsCodeValidation(@Body() data: smsCode) {
-    const code = await this.RedisService.getUserSmsCode(data.token.user);
+    const code = await RedisService.getUserSmsCode(data.token.user);
     if (code === data.code) {
-      await this.RedisService.getClient().setex(
+      await RedisService.getClient().setex(
         this.ctx.cookies.get('auth._token.local'),
         60 * 60 * 72,
         'true'
@@ -350,7 +363,7 @@ export class ApiControll {
   async getUserAlarmSetup(@Body() data: Api) {
     return {
       code: 200,
-      data: await this.UserService.getUserAlarmSetup(data.token.user, {
+      data: await getUserAlarmSetup(data.token.user, {
         tels: 1,
         mails: 1,
       }),
@@ -370,7 +383,7 @@ export class ApiControll {
   async modifyUserAlarmSetupTel(@Body() data: alarmTels) {
     return {
       code: 200,
-      data: await this.UserService.modifyUserAlarmSetupTel(
+      data: await modifyUserAlarmSetupTel(
         data.token.user,
         data.tels,
         data.mails
@@ -390,8 +403,8 @@ export class ApiControll {
     @Body('token') token: { user: string },
     @Body('data') data: Partial<Uart.UserInfo>
   ) {
-    if (data.tel && this.Util.RegexTel(data.tel)) {
-      const u = await this.UserService.getUser(data.tel as any);
+    if (data.tel && RegexTel(data.tel)) {
+      const u = await getUser(data.tel as any);
       if (u && u.user !== token.user) {
         return {
           code: 0,
@@ -401,10 +414,7 @@ export class ApiControll {
     }
     return {
       code: 200,
-      data: await this.UserService.modifyUserInfo(
-        token.user,
-        lodash.omit(data, 'user')
-      ),
+      data: await modifyUserInfo(token.user, lodash.omit(data, 'user')),
     };
   }
 
@@ -416,7 +426,7 @@ export class ApiControll {
   @Post('/mpTicket')
   @Validate()
   async mpTicket(@Body() data: Api) {
-    const d = await this.UserService.mpTicket(data.token.user);
+    const d = await mpTicket(data.token.user);
     return {
       code: typeof d === 'string' ? 200 : 0,
       data: d,
@@ -431,7 +441,7 @@ export class ApiControll {
   @Post('/wpTicket')
   @Validate()
   async wpTicket(@Body() data: Api) {
-    const d = await this.UserService.wpTicket(data.token.user);
+    const d = await wpTicket(data.token.user);
     return {
       code: typeof d === 'string' ? 200 : 0,
       data: d,
@@ -448,10 +458,7 @@ export class ApiControll {
   async getUserAlarmProtocol(@Body() data: protocol) {
     return {
       code: 200,
-      data: await this.UserService.getUserAlarmProtocol(
-        data.token.user,
-        data.protocol
-      ),
+      data: await getUserAlarmProtocol(data.token.user, data.protocol),
     };
   }
 
@@ -464,7 +471,7 @@ export class ApiControll {
   async getAlarmProtocol(@Body() data: protocol) {
     return {
       code: 200,
-      data: await this.Device.getAlarmProtocol(data.protocol),
+      data: await getAlarmProtocol(data.protocol),
     };
   }
 
@@ -477,11 +484,7 @@ export class ApiControll {
   @Post('/getTerminalData')
   @Validate()
   async getTerminalData(@Body() data: macPid) {
-    const d = await this.UserService.getTerminalData(
-      data.token.user,
-      data.mac,
-      data.pid
-    );
+    const d = await getTerminalData(data.token.user, data.mac, data.pid);
     return {
       code: d ? 200 : 0,
       data: d,
@@ -499,7 +502,7 @@ export class ApiControll {
   @Post('/getTerminalDatas')
   @Validate()
   async getTerminalDatas(@Body() data: terminalResults) {
-    const d = (await this.UserService.getTerminalDatas(
+    const d = (await getTerminalDatas(
       data.token.user,
       data.mac,
       data.pid,
@@ -561,7 +564,7 @@ export class ApiControll {
   @Post('/getTerminalDatasV2')
   @Validate()
   async getTerminalDatasV2(@Body() data: terminalResultsV2) {
-    const d = await this.UserService.getTerminalDatasV2(
+    const d = await getTerminalDatasV2(
       data.token.user,
       data.mac,
       data.pid,
@@ -597,10 +600,10 @@ export class ApiControll {
   @Post('/refreshDevTimeOut')
   @Validate()
   async refreshDevTimeOut(@Body() data: macPid) {
-    await this.SocketUart.setTerminalMountDevCache(data.mac, data.interVal);
+    await SocketUart.setTerminalMountDevCache(data.mac, data.interVal);
     return {
       code: 200,
-      data: this.Device.setStatTerminalDevs(data.mac, data.pid),
+      data: setStatTerminalDevs(data.mac, data.pid),
       msg: 'success',
     };
   }
@@ -621,8 +624,8 @@ export class ApiControll {
       item,
     } = data;
 
-    if (await this.UserService.isBindMac(user, query.DevMac)) {
-      const protocol = await this.Device.getProtocol(query.protocol);
+    if (await isBindMac(user, query.DevMac)) {
+      const protocol = await getProtocol(query.protocol);
       // 携带事件名称，触发指令查询
       const Query: Uart.instructQuery = {
         protocol: query.protocol,
@@ -637,27 +640,20 @@ export class ApiControll {
         // 如果识别字为%i%i,则把值转换为四个字节的hex字符串,否则转换为两个字节
         if (/%i%i/.test(item.value)) {
           const b = Buffer.allocUnsafe(2);
-          b.writeIntBE(
-            this.Util.ParseCoefficient(item.bl, Number(item.val)),
-            0,
-            2
-          );
+          b.writeIntBE(ParseCoefficient(item.bl, Number(item.val)), 0, 2);
           Query.content = item.value.replace(
             /(%i%i)/,
             b.slice(0, 2).toString('hex')
           );
         } else {
-          const val = this.Util.ParseCoefficient(
-            item.bl,
-            Number(item.val)
-          ).toString(16);
+          const val = ParseCoefficient(item.bl, Number(item.val)).toString(16);
           Query.content = item.value.replace(
             /(%i)/,
             val.length < 2 ? val.padStart(2, '0') : val
           );
         }
       }
-      this.MQ.addJob('inner_Message', {
+      MQ.addJob('inner_Message', {
         timeStamp: Date.now(),
         user: data.token.user,
         message: '用户操作设备',
@@ -665,7 +661,7 @@ export class ApiControll {
       });
       return {
         code: 200,
-        data: await this.SocketUart.InstructQuery(Query),
+        data: await SocketUart.InstructQuery(Query),
         msg: 'success',
       };
     } else {
@@ -689,7 +685,7 @@ export class ApiControll {
   async getProtocol(@Body() data: protocol) {
     return {
       code: 200,
-      data: await this.Device.getProtocol(data.protocol),
+      data: await getProtocol(data.protocol),
     };
   }
 
@@ -703,14 +699,14 @@ export class ApiControll {
    */
   @Post('/setUserSetupProtocol')
   @Validate()
-  async setUserSetupProtocol(@Body() data: setUserSetupProtocol) {
-    const d = await this.UserService.setUserSetupProtocol(
+  async setUserSetupProtocols(@Body() data: setUserSetupProtocolDto) {
+    const d = await setUserSetupProtocol(
       data.token.user,
       data.protocol,
       data.type,
       data.arg
     );
-    this.RedisService.setUserSetup(data.token.user, data.protocol);
+    RedisService.setUserSetup(data.token.user, data.protocol);
     return {
       code: 200,
       data: d,
@@ -731,7 +727,7 @@ export class ApiControll {
   async setAlias(@Body() { mac, pid, protocol, name, alias }: setAlias) {
     return {
       code: 200,
-      data: await this.Device.setAlias(mac, pid, protocol, name, alias),
+      data: await setAlia(mac, pid, protocol, name, alias),
     };
   }
 
@@ -746,7 +742,7 @@ export class ApiControll {
   async getTerminal(@Body() data: mac) {
     return {
       code: 200,
-      data: await this.UserService.getTerminal(data.token.user, data.mac),
+      data: await getTerminal(data.token.user, data.mac),
     };
   }
 
@@ -758,7 +754,7 @@ export class ApiControll {
   async Nodes() {
     return {
       code: 200,
-      data: await this.Device.getNodes(),
+      data: await getNodes(),
     };
   }
 
@@ -770,12 +766,9 @@ export class ApiControll {
   @Post('/getUserLayout')
   @Validate()
   async getUserLayout(@Body() data: id) {
-    const layout = await this.UserService.getUserLayout(
-      data.token.user,
-      data.id
-    );
+    const layout = await getUserLayout(data.token.user, data.id);
     for (const i of layout.Layout) {
-      (i as any).result = await this.UserService.getTerminalDataName(
+      (i as any).result = await getTerminalDataName(
         data.token.user,
         i.bind.mac,
         i.bind.pid,
@@ -798,7 +791,7 @@ export class ApiControll {
   async getAggregation(@Body() data: id) {
     return {
       code: 200,
-      data: await this.UserService.getAggregation(data.token.user, data.id),
+      data: await getAggregation(data.token.user, data.id),
     };
   }
 
@@ -814,7 +807,7 @@ export class ApiControll {
   async setUserLayout(@Body() data: setAggs) {
     return {
       code: 200,
-      data: await this.UserService.setUserLayout(
+      data: await setUserLayout(
         data.token.user,
         data.id,
         data.type,
@@ -833,11 +826,7 @@ export class ApiControll {
   @Post('/addAggregation')
   @Validate()
   async addAggregation(@Body() data: addAgg) {
-    return this.UserService.addAggregation(
-      data.token.user,
-      data.name,
-      data.aggs
-    );
+    return addAggregation(data.token.user, data.name, data.aggs);
   }
 
   /**
@@ -851,7 +840,7 @@ export class ApiControll {
   async deleteAggregation(@Body() data: id) {
     return {
       code: 200,
-      data: await this.UserService.deleteAggregation(data.token.user, data.id),
+      data: await deleteAggregation(data.token.user, data.id),
     };
   }
 
@@ -862,11 +851,11 @@ export class ApiControll {
    */
   @Post('/guest/resetPasswdValidation')
   async resetPasswdValidation(@Body('user') user: string) {
-    const u = await this.UserService.getUser(user);
+    const u = await getUser(user);
     if (u) {
-      const { code, data, msg } = await this.UserService.sendValidation(u.user);
+      const { code, data, msg } = await sendValidation(u.user);
       if (code === 200) {
-        await this.RedisService.setUserSmsCode(user, data);
+        await RedisService.setUserSmsCode(user, data);
         return {
           code,
           msg,
@@ -898,12 +887,12 @@ export class ApiControll {
     @Body('passwd') passwd: string,
     @Body('code') code: string
   ) {
-    const lcode = await this.RedisService.getUserSmsCode(user);
+    const lcode = await RedisService.getUserSmsCode(user);
     if (lcode) {
       if (lcode === code) {
         return {
           code: 200,
-          data: await this.UserService.resetUserPasswd(user, passwd),
+          data: await resetUserPasswd(user, passwd),
           msg: 'success',
         };
       } else {
@@ -930,7 +919,7 @@ export class ApiControll {
   async updateAvanter(@Body() data: updateAvanter) {
     return {
       code: 200,
-      data: await this.UserService.modifyUserInfo(data.token.user, {
+      data: await modifyUserInfo(data.token.user, {
         avanter: data.avanter,
         name: data.nickName,
       }),
@@ -944,11 +933,11 @@ export class ApiControll {
   @Validate()
   @Sms()
   async unbindwx(@Body() data: Api) {
-    const user = await this.UserService.getUser(data.token.user);
+    const user = await getUser(data.token.user);
     if (user.rgtype === 'wx') {
-      await this.UserService.deleteUser(user.user);
+      await deleteUser(user.user);
     } else {
-      await this.UserService.modifyUserInfo(user.user, {
+      await modifyUserInfo(user.user, {
         wpId: '',
         userId: '',
       });
@@ -966,7 +955,7 @@ export class ApiControll {
   async getAlarmunconfirmed(@Body() data: Api) {
     return {
       code: 200,
-      data: await this.UserService.getAlarmunconfirmed(data.token.user),
+      data: await getAlarmunconfirmed(data.token.user),
     };
   }
 
@@ -977,7 +966,7 @@ export class ApiControll {
    */
   @Post('/getGPSaddress')
   async getGPSaddress(@Body('location') location: string) {
-    const r = await this.TencetMap.geocoder(location);
+    const r = await TencetMapGeocoder(location);
     return {
       code: r.status === 0 ? 200 : 0,
       data: r.result,
@@ -995,11 +984,7 @@ export class ApiControll {
   async updateGps(@Body() data: updateJw) {
     return {
       code: 200,
-      data: await this.UserService.modifyTerminalJw(
-        data.token.user,
-        data.mac,
-        data.jw
-      ),
+      data: await modifyTerminalJw(data.token.user, data.mac, data.jw),
     };
   }
 
@@ -1012,7 +997,7 @@ export class ApiControll {
   async getRegisterDev(@Body('id') id: string) {
     return {
       code: 200,
-      data: await this.Device.getRegisterDev(id),
+      data: await getRegisterDev(id),
     };
   }
 
@@ -1035,7 +1020,7 @@ export class ApiControll {
    */
   @Post('/getTerminalPidProtocol')
   async getTerminalPidProtocol(@Body() data: macPid) {
-    const t = await this.Device.getTerminal(data.mac, { mountDevs: 1 });
+    const t = await getTerminal(data.mac, { mountDevs: 1 });
     const m = t.mountDevs?.find(el => el.pid === data.pid);
     return {
       code: 200,
@@ -1052,10 +1037,8 @@ export class ApiControll {
     @Body('type') type: Uart.ConstantThresholdType,
     @Body('user') user?: string
   ) {
-    const sys = await this.Device.getAlarmProtocol(protocol, { [type]: 1 });
-    const u = user
-      ? await this.UserService.getUserAlarmProtocol(user, protocol)
-      : undefined;
+    const sys = await getAlarmProtocol(protocol, { [type]: 1 });
+    const u = user ? await getUserAlarmProtocol(user, protocol) : undefined;
 
     return {
       code: 200,

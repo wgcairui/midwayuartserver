@@ -6,20 +6,14 @@ import {
   OnWSMessage,
 } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/ws';
-import { Util } from '../util/util';
-import { SocketUser } from '../service/socketUserBase';
+import { SocketUser } from '../service/socketUserService';
+import { Secret_JwtVerify } from '../util/util';
 
 @Provide()
 @WSController('/ws')
 export class HelloSocketController {
   @Inject()
   ctx: Context;
-
-  @Inject()
-  Util: Util;
-
-  @Inject()
-  SocketUser: SocketUser;
 
   @OnWSConnection()
   async onConnectionMethod() {
@@ -32,8 +26,8 @@ export class HelloSocketController {
       const { token } = JSON.parse(data);
       if (token) {
         try {
-          const users = await this.Util.Secret_JwtVerify<Uart.UserInfo>(token);
-          this.SocketUser.wsMap.set(users.user, this.ctx);
+          const users = await Secret_JwtVerify<Uart.UserInfo>(token);
+          SocketUser.wsMap.set(users.user, this.ctx);
         } catch (error) {
           this.ctx.send(JSON.stringify({ type: 'error' }));
         }

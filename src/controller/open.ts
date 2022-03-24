@@ -1,19 +1,9 @@
-import { Controller, Post, Get, Body, Inject } from '@midwayjs/decorator';
-import { Util } from '../util/util';
-import { Sms } from '../util/sms';
-import { Device } from '../service/deviceBase';
+import { Controller, Post, Get, Body } from '@midwayjs/decorator';
+import { getAlarmProtocol, getProtocols } from '../service/deviceService';
+import { Crc16modbus } from '../util/util';
 
 @Controller('/api/open')
 export class OpenControll {
-  @Inject()
-  Util: Util;
-
-  @Inject()
-  Sms: Sms;
-
-  @Inject()
-  Device: Device;
-
   /**
    * 生成crc校验码
    * @param param0
@@ -32,7 +22,7 @@ export class OpenControll {
 
     return {
       code: 200,
-      data: this.Util.Crc16modbus(pid, instructN + start + end),
+      data: Crc16modbus(pid, instructN + start + end),
     };
   }
 
@@ -53,7 +43,7 @@ export class OpenControll {
   @Post('/protocol')
   @Get('/protocol')
   async protocol() {
-    return await this.Device.getProtocols();
+    return await getProtocols();
   }
 
   /**
@@ -64,7 +54,7 @@ export class OpenControll {
   @Post('/protocolSetup')
   async protocolSetup(@Body('protocol') protocol: string) {
     if (protocol) {
-      return await this.Device.getAlarmProtocol(protocol);
+      return await getAlarmProtocol(protocol);
     }
   }
 }

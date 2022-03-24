@@ -7,17 +7,25 @@ import {
   Post,
 } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
-import { UserService } from '../service/user';
 import { login, loginHash, wplogin, wxlogin } from '../dto/user';
-import { Util } from '../util/util';
-import { RedisService } from '../service/redis';
-import { Wx } from '../util/wx';
-import { Logs } from '../service/logBase';
+import { RedisService } from '../service/redisService';
 import { AES, enc } from 'crypto-js';
 import { code2Session, getPhone, registerUser } from '../dto/auth';
 import { Validate } from '@midwayjs/validate';
 import { TokenParse } from '../middleware/tokenParse';
-import { MQ } from '../service/bullMQ';
+import { MQ } from '../service/bullService';
+import { Secret_JwtSign } from '../util/util';
+import {
+  getUser,
+  BcryptComparePasswd,
+  getToken,
+  updateUserLoginlog,
+  createUser,
+  modifyUserInfo,
+  getIdUser,
+} from '../service/userSevice';
+import { WeaApps } from '../util/weapp';
+import { wxWebUserInfo } from '../util/open_web';
 
 /**
  * 登录相关控制器
@@ -27,24 +35,6 @@ import { MQ } from '../service/bullMQ';
 export class AuthController {
   @Inject()
   ctx: Context;
-
-  @Inject()
-  userService: UserService;
-
-  @Inject()
-  Util: Util;
-
-  @Inject()
-  RedisService: RedisService;
-
-  @Inject()
-  Wx: Wx;
-
-  @Inject()
-  logs: Logs;
-
-  @Inject()
-  MQ: MQ;
 
   /**
    * 获取用户名
@@ -87,11 +77,11 @@ export class AuthController {
   @Get('/hash')
   @Validate()
   async hash(@Query() data: loginHash) {
-    const hash = await this.Util.Secret_JwtSign({
+    const hash = await Secret_JwtSign({
       key: data.user,
       time: Date.now(),
     });
-    this.RedisService.getClient().set(data.user, hash, 'EX', 120);
+    RedisService.getClient().set(data.user, hash, 'EX', 120);
     return {
       code: 200,
       hash,
@@ -105,7 +95,7 @@ export class AuthController {
   @Post('/login')
   @Validate()
   async login(@Body() accont: login) {
-    const hash = await this.RedisService.getClient().get(accont.user);
+    const hash = await RedisService.getClient().get(accont.user);
     if (!hash) {
       return {
         code: 1,
@@ -115,10 +105,10 @@ export class AuthController {
     // 解密hash密码
     const decryptPasswd = AES.decrypt(accont.passwd, hash!).toString(enc.Utf8);
     //
-    const user = await this.userService.getUser(accont.user);
+    const user = await getUser(accont.user);
     //
     if (!user) {
-      // user = await this.userService.syncPesivUser(accont.user, decryptPasswd);
+      // user = await syncPesivUser(accont.user, decryptPasswd);
       if (!user) {
         return {
           code: 0,
@@ -127,10 +117,7 @@ export class AuthController {
       }
     }
     // 比对校验密码
-    const PwStat = await this.userService.BcryptComparePasswd(
-      accont.user,
-      decryptPasswd
-    );
+    const PwStat = await BcryptComparePasswd(accont.user, decryptPasswd);
 
     if (!PwStat) {
       return {
@@ -138,12 +125,12 @@ export class AuthController {
         msg: 'passwd Error',
       };
     } else {
-      this.RedisService.getClient().del(user.user);
+      RedisService.getClient().del(user.user);
 
       return {
         code: 200,
-        token: await this.userService.getToken(user.user),
-        data: await this.userService.updateUserLoginlog(user.user, this.ctx.ip),
+        token: await getToken(user.user),
+        data: await updateUserLoginlog(user.user, this.ctx.ip),
       };
     }
   }
@@ -151,8 +138,8 @@ export class AuthController {
   @Post('/wxlogin')
   @Validate()
   async wxlogin(@Body() data: wxlogin) {
-    const info = await this.Wx.OP.userInfo(data.code);
-    let user = await this.userService.getUser(info.unionid);
+    const info = await wxWebUserInfo(data.code);
+    let user = await getUser(info.unionid);
     // 如果没有用户则新建
     if (!user) {
       const users: Uart.UserInfo = {
@@ -166,13 +153,13 @@ export class AuthController {
         openId: info.openid,
         address: this.ctx.ip,
       };
-      user = await this.userService.createUser(users);
+      user = await createUser(users);
     } else {
-      await this.userService.updateUserLoginlog(user.user, this.ctx.ip);
+      await updateUserLoginlog(user.user, this.ctx.ip);
     }
     return {
       code: 200,
-      token: await this.userService.getToken(user.user),
+      token: await getToken(user.user),
     };
   }
 
@@ -184,29 +171,22 @@ export class AuthController {
   @Get('/code2Session')
   async code2Session(@Query() data: code2Session) {
     // 正确的话返回sessionkey
-    const seesion = await this.Wx.WP.UserOpenID(data.js_code);
+    const seesion = await WeaApps.UserOpenID(data.js_code);
     // 存储session
-    await this.RedisService.setCode2Session(
-      seesion.openid,
-      seesion.session_key
-    );
+    await RedisService.setCode2Session(seesion.openid, seesion.session_key);
     // 检查unionid是否为已注册用户,
-    const user = await this.userService.getUser(seesion.unionid);
+    const user = await getUser(seesion.unionid);
     if (user) {
-      await this.userService.updateUserLoginlog(
-        user.user,
-        this.ctx.ip,
-        'wx_login'
-      );
+      await updateUserLoginlog(user.user, this.ctx.ip, 'wx_login');
       // 如果没有小程序id,更新
       if (!user.wpId) {
-        await this.userService.modifyUserInfo(user.user, {
+        await modifyUserInfo(user.user, {
           wpId: seesion.openid,
         });
       }
       // 如果是测试用户组,清除wxid
       if (user.userGroup === 'test') {
-        await this.userService.modifyUserInfo(user.user, {
+        await modifyUserInfo(user.user, {
           wpId: '',
           userId: '',
           wxId: '',
@@ -215,26 +195,22 @@ export class AuthController {
       return {
         code: 200,
         data: {
-          token: await this.userService.getToken(user.user),
+          token: await getToken(user.user),
         },
       };
       // 如果登录携带扫码scene值,则是绑定小程序和透传账号
     } else if (data.scene) {
-      const user = await this.userService.getIdUser(data.scene);
+      const user = await getIdUser(data.scene);
       if (user) {
-        await this.userService.updateUserLoginlog(
-          user.user,
-          this.ctx.ip,
-          'wx_bind'
-        );
-        await this.userService.modifyUserInfo(user.user, {
+        await updateUserLoginlog(user.user, this.ctx.ip, 'wx_bind');
+        await modifyUserInfo(user.user, {
           userId: seesion.unionid,
           wpId: seesion.openid,
         });
         return {
           code: 200,
           data: {
-            token: await this.userService.getToken(user.user),
+            token: await getToken(user.user),
           },
         };
       }
@@ -255,15 +231,12 @@ export class AuthController {
   @Get('/trial')
   async trial(@Query() data: code2Session) {
     // 正确的话返回sessionkey
-    const seesion = await this.Wx.WP.UserOpenID(data.js_code);
+    const seesion = await WeaApps.UserOpenID(data.js_code);
     // 存储session
-    await this.RedisService.setCode2Session(
-      seesion.openid,
-      seesion.session_key
-    );
+    await RedisService.setCode2Session(seesion.openid, seesion.session_key);
     // 检查unionid是否为已注册用户,
-    const user = await this.userService.getUser('test');
-    await this.userService.updateUserLoginlog(
+    const user = await getUser('test');
+    await updateUserLoginlog(
       user.user,
       this.ctx.ip,
       'wx_login-' + seesion.openid + '-trail'
@@ -271,7 +244,7 @@ export class AuthController {
     return {
       code: 200,
       data: {
-        token: await this.userService.getToken(user.user),
+        token: await getToken(user.user),
       },
     };
   }
@@ -283,10 +256,10 @@ export class AuthController {
   @Post('/getphonenumber')
   @Validate()
   async getphonenumber(@Body() data: getPhone) {
-    const session = await this.RedisService.getCode2Session(data.openid);
+    const session = await RedisService.getCode2Session(data.openid);
     return {
       code: 200,
-      data: await this.Wx.WP.BizDataCryptdecryptData(
+      data: await WeaApps.BizDataCryptdecryptData(
         session,
         data.encryptedData,
         data.iv
@@ -301,13 +274,13 @@ export class AuthController {
   @Post('/wxRegister')
   @Validate()
   async wxRegister(@Body() data: registerUser) {
-    if (await this.userService.getUser(data.tel)) {
+    if (await getUser(data.tel)) {
       return {
         code: 0,
         msg: '手机号已被用户注册',
       };
     } else {
-      this.MQ.addJob('inner_Message', {
+      MQ.addJob('inner_Message', {
         timeStamp: Date.now(),
         message: '微信用户注册',
         user: data.user,
@@ -315,7 +288,7 @@ export class AuthController {
       });
       return {
         code: 200,
-        data: await this.userService.createUser({
+        data: await createUser({
           user: data.user,
           userId: data.user,
           wpId: data.openid,
@@ -335,9 +308,9 @@ export class AuthController {
   @Post('/wplogin')
   @Validate()
   async wplogin(@Body() accont: wplogin) {
-    const user = await this.userService.getUser(accont.user);
+    const user = await getUser(accont.user);
     if (!user) {
-      //user = await this.userService.syncPesivUser(accont.user, accont.passwd);
+      //user = await syncPesivUser(accont.user, accont.passwd);
       if (!user) {
         return {
           code: 0,
@@ -346,9 +319,7 @@ export class AuthController {
       }
     }
 
-    if (
-      !(await this.userService.BcryptComparePasswd(accont.user, accont.passwd))
-    ) {
+    if (!(await BcryptComparePasswd(accont.user, accont.passwd))) {
       return {
         code: 0,
         msg: '用户名或密码错误',
@@ -364,20 +335,16 @@ export class AuthController {
         msg: '账号已被其他微信用户绑定,请核对账号是否正确',
       };
     } else {
-      await this.userService.modifyUserInfo(user.user, {
+      await modifyUserInfo(user.user, {
         userId: accont.unionid,
         wpId: accont.openid,
         avanter: accont.avanter,
       });
     }
-    await this.userService.updateUserLoginlog(
-      user.user,
-      this.ctx.ip,
-      'wpLogin'
-    );
+    await updateUserLoginlog(user.user, this.ctx.ip, 'wpLogin');
     return {
       code: 200,
-      data: { token: await this.userService.getToken(user.user) },
+      data: { token: await getToken(user.user) },
     };
   }
 }

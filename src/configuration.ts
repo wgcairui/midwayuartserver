@@ -3,7 +3,7 @@ import * as defaultConfig from './config/config.default';
 import { Configuration, App } from '@midwayjs/decorator';
 import * as koa from '@midwayjs/koa';
 import * as Socket from '@midwayjs/socketio';
-import * as Ws from '@midwayjs/ws';
+// import * as Ws from '@midwayjs/ws';
 import * as typegoose from '@midwayjs/typegoose';
 import * as task from '@midwayjs/task';
 import * as oss from '@midwayjs/oss';
@@ -13,7 +13,7 @@ import { errerHandle } from './middleware/errerHandle';
 
 @Configuration({
   conflictCheck: true,
-  imports: [koa, Socket, Ws, typegoose, task, oss, Validation, info],
+  imports: [koa, Socket, typegoose, task, oss, Validation, info],
   importConfigs: [{ default: defaultConfig, devmongo: devmongoConfig }],
 })
 export class AutoConfiguration {

@@ -1,32 +1,24 @@
-import { Provide, Inject, TaskLocal } from '@midwayjs/decorator';
-import { Device } from '../service/deviceBase';
-import { DyIot } from '../util/dyiot';
-import { SocketUart } from '../service/socketUart';
-import { Alarm } from '../service/alarm';
-import { NewDyIot } from '../util/newDyIot';
+import { Provide, TaskLocal } from '@midwayjs/decorator';
+import { SocketUart } from '../service/socketService';
 import { isEmpty } from 'lodash';
 import * as moment from 'moment';
+import {
+  getTerminals,
+  setTerminal,
+  getMountDevInterval,
+} from '../service/deviceService';
+import { IccidExpire } from '../service/alarmService';
+import { GetCardDetailV2 } from '../service/newDyIotService';
+import {
+  QueryCardFlowInfo,
+  QueryIotCardOfferDtl,
+} from '../service/dyiotService';
 
 /**
  * 每天更新iccid数据
  */
 @Provide()
 export class UpdateIccid {
-  @Inject()
-  DyIot: DyIot;
-
-  @Inject()
-  newDyIot: NewDyIot;
-
-  @Inject()
-  Device: Device;
-
-  @Inject()
-  SocketUart: SocketUart;
-
-  @Inject()
-  Alarm: Alarm;
-
   /**
    * 每小时更新一次
    * @returns
@@ -34,7 +26,7 @@ export class UpdateIccid {
   @TaskLocal('0 * * * * ')
   async up() {
     const now = Date.now();
-    const terminals = await this.Device.getTerminals();
+    const terminals = await getTerminals();
     // 刷选出有效的物联卡
     const terminalsFilter = terminals.filter(
       el =>
@@ -49,7 +41,7 @@ export class UpdateIccid {
       const Info = { statu: false, version: 'ali_1' } as Uart.iccidInfo;
 
       try {
-        const { Success, Data } = await this.newDyIot.GetCardDetail(Iccid);
+        const { Success, Data } = await GetCardDetailV2(Iccid);
 
         if (Success) {
           const CardInfo = Data.VsimCardInfo;
@@ -78,21 +70,21 @@ export class UpdateIccid {
         }
         // 如果是老版本物联卡接口会报错
       } catch (error) {
-        const info = await this.DyIot.QueryCardFlowInfo(Iccid);
+        const info = await QueryCardFlowInfo(Iccid);
         if (info.code === 'OK' && !isEmpty(info.cardFlowInfos?.cardFlowInfo)) {
           const data = info.cardFlowInfos
             .cardFlowInfo[0] as any as Uart.iccidInfo;
           Object.assign(Info, data, { statu: true });
         } else {
           // 保存数据
-          await this.Device.setTerminal(ter.DevMac, {
+          await setTerminal(ter.DevMac, {
             remark: info.message,
             name: info.code,
           });
         }
       }
       // 保存数据
-      await this.Device.setTerminal(ter.DevMac, {
+      await setTerminal(ter.DevMac, {
         iccidInfo: Info,
       });
 
@@ -113,10 +105,10 @@ export class UpdateIccid {
         // 小于10MB
         if (afterUse < 10240) {
           // 当前计算间隔
-          const interVal = await this.Device.getMountDevInterval(ter.DevMac);
+          const interVal = await getMountDevInterval(ter.DevMac);
 
           // Math.ceil(afterUse / dayUse);
-          this.SocketUart.setTerminalMountDevCache(
+          SocketUart.setTerminalMountDevCache(
             ter.DevMac,
             interVal * (Math.ceil(10240 / afterUse) + 1)
           );
@@ -128,22 +120,12 @@ export class UpdateIccid {
 
         if (hasExpireDate <= 5) {
           if (data.version === 'ali_1') {
-            const dtl = await this.DyIot.QueryIotCardOfferDtl(ter.ICCID);
+            const dtl = await QueryIotCardOfferDtl(ter.ICCID);
             if (dtl.code !== 'OK' || dtl.cardOfferDetail.detail.length < 2) {
-              this.Alarm.IccidExpire(
-                'root',
-                ter.DevMac,
-                ter.ICCID,
-                data.expireDate
-              );
+              IccidExpire('root', ter.DevMac, ter.ICCID, data.expireDate);
             }
           } else {
-            this.Alarm.IccidExpire(
-              'root',
-              ter.DevMac,
-              ter.ICCID,
-              data.expireDate
-            );
+            IccidExpire('root', ter.DevMac, ter.ICCID, data.expireDate);
           }
         }
       }

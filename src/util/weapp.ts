@@ -1,42 +1,37 @@
-import { fetch, getKey } from './fetch';
+import { fetch } from './fetch';
 import { createDecipheriv } from 'crypto';
-import { Init, Inject, Provide, Scope, ScopeEnum } from '@midwayjs/decorator';
-import { RedisService } from '../service/redis';
+import { RedisService } from '../service/redisService';
+import { getSecretKey } from './base';
 
 /**
  * 微信小程序api
  */
-@Provide()
-@Scope(ScopeEnum.Singleton)
-export class WxApps {
+class App {
   /**
    * 用户session缓存
    */
   private sessionCache: Map<string, string>;
 
-  @Inject()
-  redis: RedisService;
-
   secret: Uart.Secret_app;
 
-  @Init()
-  async init() {
-    this.secret = (await getKey('wxwp')) as any;
-    this.sessionCache = new Map();
+  constructor() {
+    getSecretKey('wxwp').then((el: any) => {
+      this.secret = el;
+    });
   }
   /**
    * 获取请求密匙
    * @returns
    */
   private async getToken() {
-    const token = await this.redis.redisService.get('wxapptoken');
+    const token = await RedisService.redisService.get('wxapptoken');
     // 如果没有密匙或密匙已超时,重新请求密匙
     if (!token) {
       const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${this.secret.appid}&secret=${this.secret.secret}`;
       const { access_token, expires_in, errcode, errmsg } =
         await fetch<Uart.WX.wxRequestAccess_token>({ url, method: 'GET' });
       if (errcode) throw new Error(errmsg);
-      await this.redis.redisService.setex(
+      await RedisService.redisService.setex(
         'wxapptoken',
         expires_in,
         access_token
@@ -149,3 +144,8 @@ export class WxApps {
     return decodeParse;
   }
 }
+
+/**
+ * 小程序接口
+ */
+export const WeaApps = new App();

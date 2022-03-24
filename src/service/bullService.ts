@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Init, Inject, Provide, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq';
-import { RedisService } from './redis';
-import { Logs } from './logBase';
+import { Secret_JwtVerify } from '../util/util';
+import { saveInnerMessage } from './logService';
+import { RedisService } from './redisService';
 
 export enum QUEUE_NAME {
   /**
@@ -41,39 +40,41 @@ interface QUENAME_TYPE {
 /**
  * 消息队列
  */
-@Provide()
-@Scope(ScopeEnum.Singleton)
-export class MQ {
+class App {
   private QueueMap: Map<QUEUE_NAME, Queue>;
   private QueueSchedulerMap: Map<QUEUE_NAME, QueueScheduler>;
   private WorkMap: Map<QUEUE_NAME, Worker>;
 
-  @Inject()
-  private redis: RedisService;
+  constructor() {
+    this.QueueMap = new Map();
+    this.QueueSchedulerMap = new Map();
+    this.WorkMap = new Map();
+    this.start();
+  }
 
-  @Inject()
-  private Logs: Logs;
-
-  @Init()
-  private init() {
+  private start() {
     // 迭代事件,创建队列
     Object.values(QUEUE_NAME).forEach(name => {
       this.QueueMap.set(
         name,
-        new Queue(name, { connection: this.redis.redisService })
+        new Queue(name, { connection: RedisService.redisService })
       );
 
       this.QueueSchedulerMap.set(
         name,
-        new QueueScheduler(name, { connection: this.redis.redisService })
+        new QueueScheduler(name, { connection: RedisService.redisService })
       );
 
       this.WorkMap.set(
         name,
         new Worker(name, this.initWork, {
-          connection: this.redis.redisService,
+          connection: RedisService.redisService,
         })
       );
+    });
+
+    new Worker('wsInput', this.wsConnect, {
+      connection: RedisService.redisService,
     });
   }
 
@@ -85,20 +86,35 @@ export class MQ {
   private async initWork(job: Job, id: string) {
     console.log({ job, id });
     const parse = {
-      [QUEUE_NAME.dataCheck]: this.dataCheck(job),
+      [QUEUE_NAME.dataCheck]: this.dataCheck(),
       [QUEUE_NAME.inner_Message]: this.innerMessage(job),
     };
     parse[job.name](job.data);
   }
 
-  private dataCheck(data: any) {}
+  private dataCheck() {}
 
   /**
    * 保存处理内部消息
    * @param job
    */
   private async innerMessage(job: Job<Uart.logInnerMessages>) {
-    await this.Logs.saveInnerMessage(job.data);
+    await saveInnerMessage(job.data);
+  }
+
+  /**
+   * 处理wx ws接受程序触发的队列
+   * @param job
+   */
+  private async wsConnect(job: Job<{ token: string }>) {
+    const token = job.data.token;
+    console.log(token);
+    try {
+      const users = await Secret_JwtVerify<Uart.UserInfo>(token);
+      RedisService.addWsToken(users.user, token);
+    } catch (error: any) {
+      console.error('wsConnect Error', error.message || '');
+    }
   }
 
   /**
@@ -111,3 +127,5 @@ export class MQ {
     Queue && Queue.add(data.mac || data.user || data.message, data);
   }
 }
+
+export const MQ = new App();

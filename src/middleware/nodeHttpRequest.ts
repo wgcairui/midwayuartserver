@@ -1,7 +1,7 @@
 import { IMiddleware } from '@midwayjs/core';
 import { Provide } from '@midwayjs/decorator';
 import { Context, NextFunction } from '@midwayjs/koa';
-import { Device } from '../service/deviceBase';
+import { getNodes } from '../service/deviceService';
 
 /**
  * 校验数据来源
@@ -10,11 +10,9 @@ import { Device } from '../service/deviceBase';
 export class nodeHttp implements IMiddleware<Context, NextFunction> {
   resolve() {
     return async (ctx: Context, next: NextFunction) => {
-      const nodes = await (
-        await ctx.requestContext.getAsync(Device)
-      ).getNodes();
+      const nodes = await getNodes();
 
-      const nodeSet = new Set(nodes.map(({ IP }) => IP))
+      const nodeSet = new Set(nodes.map(({ IP }) => IP));
       const ip = ctx.ip.split(':').reverse()[0];
 
       if (nodeSet.has(ip)) {
@@ -24,7 +22,6 @@ export class nodeHttp implements IMiddleware<Context, NextFunction> {
         ctx.logger.warn(err);
         throw err;
       }
-
     };
   }
 }

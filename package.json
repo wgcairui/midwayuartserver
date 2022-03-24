@@ -37,11 +37,12 @@
     "@typegoose/typegoose": "^9.0.0",
     "axios": "^0.24.0",
     "bcryptjs": "^2.4.3",
-    "bullmq": "^1.74.1",
+    "bullmq": "^1.78.0",
     "class-validator": "^0.13.1",
     "co": "^4.6.0",
     "crc": "^3.8.0",
     "crypto-js": "^4.0.0",
+    "dayjs": "^1.11.0",
     "ioredis": "^4.27.6",
     "jsonwebtoken": "^8.5.1",
     "koa-body": "^4.2.0",
@@ -76,7 +77,7 @@
     "mwts": "^1.0.5",
     "swagger-ui-dist": "^4.1.2",
     "ts-jest": "^26.2.0",
-    "types-uart": "2.0.6",
+    "types-uart": "2.0.7",
     "typescript": "^4.5.4"
   },
   "engines": {

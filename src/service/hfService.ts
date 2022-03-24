@@ -1,8 +1,6 @@
-import { Provide, Init, Logger } from '@midwayjs/decorator';
 import { getModelForClass } from '@typegoose/typegoose';
 import axios from 'axios';
 import { SecretApp } from '../entity/user';
-import { ILogger } from '@midwayjs/logger';
 interface hfRequst {
   message: string;
   result: number;
@@ -73,19 +71,14 @@ interface hf_macInfo extends hfRequst {
   };
 }
 
-@Provide()
 /**
  * 汉枫IOT Server获取数据方法
  */
-export class HF {
-  @Logger()
-  console: ILogger;
-
+class App {
   token: string;
   uerId: string;
 
-  @Init()
-  async init() {
+  constructor() {
     this.token = '';
     this.uerId = '';
   }
@@ -188,3 +181,8 @@ export class HF {
       .then(el => el.data);
   }
 }
+
+/**
+ *
+ */
+export const HF = new App();

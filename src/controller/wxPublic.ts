@@ -1,11 +1,22 @@
 import { Controller, Inject, Post } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
-import { Wx } from '../util/wx';
-import { Logs } from '../service/logBase';
-import { Util } from '../util/util';
-import { UserService } from '../service/user';
 import { parseStringPromise } from 'xml2js';
 import { SHA1 } from 'crypto-js';
+import { saveWxEvent } from '../service/logService';
+import { parseTime } from '../util/util';
+import {
+  getUserSecret,
+  updateWxUser,
+  getIdUser,
+  modifyUserInfo,
+  delWxUser,
+  getWxUser,
+  getUser,
+  seach_user_keywords,
+  userModel,
+} from '../service/userSevice';
+import { WxPublics } from '../util/wxpublic';
+import { SendsubscribeMessageDevAlarm } from '../service/wxService';
 /**
  * xml2Js解析出来的数据格式
  */
@@ -21,19 +32,7 @@ interface xmlObj {
 @Controller('/api/wxPublic')
 export class WxPublic {
   @Inject()
-  Wx: Wx;
-
-  @Inject()
-  logs: Logs;
-
-  @Inject()
   ctx: Context;
-
-  @Inject()
-  UserService: UserService;
-
-  @Inject()
-  Util: Util;
 
   @Post('/')
   async wxPublic() {
@@ -41,11 +40,11 @@ export class WxPublic {
       await parseStringPromise(this.ctx.request.body).then(
         el => this.parseXmlObj(el) as any
       );
-    this.logs.saveWxEvent(body);
+    saveWxEvent(body);
     // 微信校验接口
     if ('signature' in body) {
       const { signature, timestamp, nonce, echostr } = body;
-      const secret = await this.UserService.getUserSecret('wxmpValidaton');
+      const secret = await getUserSecret('wxmpValidaton');
       const sha = SHA1([secret?.appid, timestamp, nonce].sort().join(''));
       return sha.toString() === signature ? echostr : false;
     }
@@ -60,8 +59,8 @@ export class WxPublic {
         // 关注公众号
         case 'subscribe':
           {
-            const wxUser = await this.Wx.MP.getUserInfo(FromUserName);
-            const u = await this.UserService.updateWxUser(wxUser);
+            const wxUser = await WxPublics.getUserInfo(FromUserName);
+            const u = await updateWxUser(wxUser);
             // 如果可以根据unidid找到用户
             if (u && u.wpId) {
               return this.TextMessege(
@@ -80,16 +79,14 @@ export class WxPublic {
                */
               const { EventKey, FromUserName } = body;
               // EventKey是用户的数据库文档id字符串
-              const user = await this.UserService.getIdUser(
-                EventKey.replace('qrscene_', '')
-              );
+              const user = await getIdUser(EventKey.replace('qrscene_', ''));
               // 如果有用户和用户还没有绑定公众号
               if (user && !user.wxId) {
                 const { headimgurl } = wxUser;
                 // 如果用户没有绑定微信或绑定的微信是扫码的微信
                 //if (!user.userId || user.userId === unionid) {
                 //if(!user.userId)
-                await this.UserService.modifyUserInfo(user.user, {
+                await modifyUserInfo(user.user, {
                   wxId: FromUserName,
                   avanter: headimgurl,
                 });
@@ -109,14 +106,14 @@ export class WxPublic {
              * 当用户公众号和小程序不是同一个主体绑定时,userId会是后一个绑定主体的unionid
              * 此种情况会导致解绑的时候找不到用户
              */
-            const users = await this.UserService.userModel
+            const users = await userModel
               .find({ wxId: body.FromUserName })
               .lean();
             // 如果有用户,解绑用户的公众号关联
             users.forEach(user => {
-              this.UserService.modifyUserInfo(user.user, { wxId: '' });
+              modifyUserInfo(user.user, { wxId: '' });
             });
-            await this.UserService.delWxUser(FromUserName);
+            await delWxUser(FromUserName);
           }
           break;
 
@@ -130,14 +127,14 @@ export class WxPublic {
             if ('Ticket' in body) {
               const { EventKey, FromUserName } = body;
               // EventKey是用户的数据库文档id字符串
-              const user = await this.UserService.getIdUser(EventKey);
+              const user = await getIdUser(EventKey);
               if (user && !user.wxId) {
-                const { headimgurl } = await this.Wx.MP.getUserInfo(
+                const { headimgurl } = await WxPublics.getUserInfo(
                   FromUserName
                 );
                 // 如果用户没有绑定微信或绑定的微信是扫码的微信
                 //if (!user.userId || user.userId === unionid) {
-                await this.UserService.modifyUserInfo(user.user, {
+                await modifyUserInfo(user.user, {
                   wxId: FromUserName,
                   avanter: headimgurl,
                 });
@@ -155,10 +152,8 @@ export class WxPublic {
         // 激活绑定策略
         case '绑定':
           {
-            const { unionid } = await this.UserService.getWxUser(
-              body.FromUserName
-            );
-            const u = await this.UserService.getUser(unionid);
+            const { unionid } = await getWxUser(body.FromUserName);
+            const u = await getUser(unionid);
             if (u && u.wpId) {
               return this.TextMessege(
                 body,
@@ -170,11 +165,9 @@ export class WxPublic {
 
         case '告警测试':
           {
-            const { unionid } = await this.UserService.getWxUser(
-              body.FromUserName
-            );
-            const user = await this.UserService.getUser(unionid);
-            await this.Wx.SendsubscribeMessageDevAlarm({
+            const { unionid } = await getWxUser(body.FromUserName);
+            const user = await getUser(unionid);
+            await SendsubscribeMessageDevAlarm({
               touser: FromUserName,
               template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
               miniprogram: {
@@ -191,7 +184,7 @@ export class WxPublic {
                   color: '#173177',
                 },
                 time: {
-                  value: this.Util.parseTime(),
+                  value: parseTime(),
                   color: '#173177',
                 },
                 remark: {
@@ -206,9 +199,7 @@ export class WxPublic {
         default: {
           let text = '详情请咨询400-6655778';
           if (body.MsgType === 'text' && body.Content && body.Content !== '') {
-            const data = await this.UserService.seach_user_keywords(
-              body.Content
-            );
+            const data = await seach_user_keywords(body.Content);
             text = data + text;
           }
           // 自动回复信息

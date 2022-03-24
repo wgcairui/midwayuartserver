@@ -1,11 +1,8 @@
-import { Controller, Inject, Post, Body } from '@midwayjs/decorator';
-import { Amap } from '../service/amap';
+import { Controller, Post, Body } from '@midwayjs/decorator';
+import { AmapIP2loction, AmapGPS2autonavi } from '../service/amapService';
 
 @Controller('/api/util')
 export class UtilControll {
-  @Inject()
-  Amap: Amap;
-
   /**
    * 获取ip地址映射的物理地址
    * @param ip
@@ -15,7 +12,7 @@ export class UtilControll {
   async IP2loction(@Body('ip') ip: string) {
     return {
       code: 200,
-      data: await this.Amap.IP2loction(ip),
+      data: await AmapIP2loction(ip),
     };
   }
 
@@ -32,7 +29,7 @@ export class UtilControll {
   ) {
     return {
       code: 200,
-      data: await this.Amap.GPS2autonavi(locations, coordsys),
+      data: await AmapGPS2autonavi(locations, coordsys),
     };
   }
 }

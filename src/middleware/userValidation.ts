@@ -1,8 +1,8 @@
 import { Provide } from '@midwayjs/decorator';
 import { Context, NextFunction } from '@midwayjs/koa';
-import { Util } from '../util/util';
-import { Logs } from '../service/logBase';
 import { IMiddleware } from '@midwayjs/core';
+import { Secret_JwtVerify } from '../util/util';
+import { saveUserRequst } from '../service/logService';
 
 /**
  * 判断请求是否是
@@ -17,31 +17,20 @@ export class userValidation implements IMiddleware<Context, NextFunction> {
         await next();
       } else {
         if (token && token !== 'false') {
-          const util = await ctx.requestContext.getAsync(Util);
-
-          const user = await util
-            .Secret_JwtVerify<Uart.UserInfo>(
-              token.split('%20').reverse()[0].trim()
-            )
-            .catch(err => {
-              ctx.logger.warn(err);
-              ctx.throw('token error');
-              //throw new Error('token error');
-            });
+          const user = await Secret_JwtVerify<Uart.UserInfo>(
+            token.split('%20').reverse()[0].trim()
+          ).catch(err => {
+            ctx.logger.warn(err);
+            ctx.throw('token error');
+            //throw new Error('token error');
+          });
           ctx.request.body.token = {
             user: user.user,
             userGroup: user.userGroup,
             type: ctx.type || 'web',
           };
 
-          ctx.requestContext.getAsync(Logs).then(el => {
-            el.saveUserRequst(
-              user.user,
-              user.userGroup,
-              ctx.path,
-              ctx.request.body
-            );
-          });
+          saveUserRequst(user.user, user.userGroup, ctx.path, ctx.request.body);
         } else {
           ctx.body = {
             code: 0,

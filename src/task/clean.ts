@@ -1,6 +1,4 @@
-import { Provide, Inject, TaskLocal } from '@midwayjs/decorator';
-import { Logs } from '../service/logBase';
-import { Device } from '../service/deviceBase';
+import { Provide, TaskLocal } from '@midwayjs/decorator';
 import {
   DtuBusy,
   UartTerminalDataTransfinite,
@@ -11,18 +9,13 @@ import { Types } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { chunk } from 'lodash';
 import { getModel } from '../util/base';
+import { saveClean } from '../service/logService';
 
 /**
  * 每天清理历史记录中重复的数据
  */
 @Provide()
 export class Clean {
-  @Inject()
-  logs: Logs;
-
-  @Inject()
-  Device: Device;
-
   @TaskLocal('0 3 * * * ')
   async clean() {
     console.log(`${new Date().toString()} ### start clean Data.....`);
@@ -37,7 +30,7 @@ export class Clean {
     await this.CleanDtuBusy();
     count.useTime = Date.now() - now;
     console.log(`${new Date().toString()} ### end clean Data.....`, count);
-    this.logs.saveClean(count);
+    saveClean(count);
     return count;
   }
 

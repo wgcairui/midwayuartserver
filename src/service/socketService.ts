@@ -1,21 +1,20 @@
-import {
-  Provide,
-  Init,
-  Scope,
-  ScopeEnum,
-  Inject,
-  TaskLocal,
-  App,
-  MidwayFrameworkType,
-  Logger,
-} from '@midwayjs/decorator';
+import { TaskLocal, App, MidwayFrameworkType } from '@midwayjs/decorator';
 import { Application } from '@midwayjs/socketio';
-import { Util } from '../util/util';
-import { Logs } from './logBase';
-import { RedisService } from './redis';
-import { Device } from './deviceBase';
+import { RedisService } from './redisService';
 import { EventEmitter } from 'events';
-import { ILogger } from '@midwayjs/logger';
+import {
+  getMountDevInterval,
+  getNode,
+  getNodes,
+  getProtocol,
+  getStatTerminal,
+  getTerminal,
+  getTerminals,
+  setStatTerminal,
+  setStatTerminalDevs,
+} from './deviceService';
+import { Crc16modbus, ParseFunction } from '../util/util';
+import { saveTerminal } from './logService';
 
 interface mountDevEx extends Uart.TerminalMountDevs {
   TerminalMac: string;
@@ -23,24 +22,7 @@ interface mountDevEx extends Uart.TerminalMountDevs {
   mountNode: string;
 }
 
-@Provide()
-@Scope(ScopeEnum.Singleton)
-export class SocketUart {
-  @Logger()
-  logger: ILogger;
-
-  @Inject()
-  private Util: Util;
-
-  @Inject()
-  private log: Logs;
-
-  @Inject()
-  private RedisService: RedisService;
-
-  @Inject()
-  private Device: Device;
-
+class Socket {
   @App(MidwayFrameworkType.WS_IO)
   private app: Application;
 
@@ -69,8 +51,7 @@ export class SocketUart {
    */
   event: EventEmitter;
 
-  @Init()
-  async init() {
+  constructor() {
     this.nodeMap = new Map();
 
     this.cache = new Map();
@@ -99,9 +80,9 @@ export class SocketUart {
 
     // 设置所有终端为离线状态
     if (process.env.NODE_ENV === 'production') {
-      this.Device.getTerminals({ DevMac: 1, _id: 0 }).then(els => {
+      getTerminals({ DevMac: 1, _id: 0 }).then(els => {
         els.forEach(el => {
-          this.Device.setStatTerminal(el.DevMac, false);
+          setStatTerminal(el.DevMac, false);
         });
       });
     }
@@ -113,7 +94,7 @@ export class SocketUart {
    */
   private async cacheProtocol(protocol: string) {
     if (!this.proMap.has(protocol)) {
-      const pro = (await this.Device.getProtocol(protocol)) as Uart.protocol;
+      const pro = (await getProtocol(protocol)) as Uart.protocol;
       /**
        * 刷选出正在使用的指令
        */
@@ -136,9 +117,9 @@ export class SocketUart {
    * @param id
    */
   async getNode(id: string) {
-    const name = await this.RedisService.getSocketSid(id);
+    const name = await RedisService.getSocketSid(id);
     if (!this.nodeMap.has(name)) {
-      const node = await this.Device.getNode(name);
+      const node = await getNode(name);
       if (node) this.nodeMap.set(name, node);
     }
     return this.nodeMap.get(name);
@@ -165,7 +146,7 @@ export class SocketUart {
    */
   @TaskLocal('* * * * *')
   async nodeInfo() {
-    const nodes = await this.Device.getNodes();
+    const nodes = await getNodes();
     nodes.forEach(node => {
       this.getCtx(node.Name).emit('nodeInfo', node.Name);
     });
@@ -190,8 +171,7 @@ export class SocketUart {
    */
   @TaskLocal('0 5 * * *')
   async clear_Cache() {
-    this.logger.info(`${new Date().toLocaleString()}===clear_Cache`);
-    const nodes = await this.Device.getNodes();
+    const nodes = await getNodes();
     this.cache.clear();
     nodes.forEach(node => this.setNodeCache(node.Name));
   }
@@ -202,7 +182,7 @@ export class SocketUart {
    */
   async setNodeCache(nodeName: string) {
     const terminals = (
-      await this.Device.getTerminals({
+      await getTerminals({
         _id: 0,
         createdAt: 0,
         updatedAt: 0,
@@ -213,7 +193,7 @@ export class SocketUart {
     terminals.forEach(async ({ DevMac, mountDevs, mountNode }) => {
       //if (mountNode !== 'test' && mountDevs) {
       if (mountDevs) {
-        const Interval = await this.Device.getMountDevInterval(DevMac);
+        const Interval = await getMountDevInterval(DevMac);
         mountDevs.forEach(mountDev => {
           this.cache.set(DevMac + mountDev.pid, {
             ...mountDev,
@@ -232,9 +212,9 @@ export class SocketUart {
    * @param interVal 查询间隔
    */
   async setTerminalMountDevCache(mac: string, interVal?: number) {
-    const { mountDevs, DevMac, mountNode } = await this.Device.getTerminal(mac);
+    const { mountDevs, DevMac, mountNode } = await getTerminal(mac);
     if (mountNode !== 'test' && mountDevs) {
-      const Interval = interVal || (await this.Device.getMountDevInterval(mac));
+      const Interval = interVal || (await getMountDevInterval(mac));
       mountDevs.forEach(mountDev => {
         this.cache.set(DevMac + mountDev.pid, {
           ...mountDev,
@@ -272,8 +252,8 @@ export class SocketUart {
     const mac = Query.TerminalMac;
 
     if (
-      !(await this.RedisService.hasDtuWorkBus(mac)) &&
-      (await this.Device.getStatTerminal(mac))
+      !(await RedisService.hasDtuWorkBus(mac)) &&
+      (await getStatTerminal(mac))
     ) {
       // 获取设备协议
       const Protocol = await this.cacheProtocol(Query.protocol);
@@ -303,24 +283,16 @@ export class SocketUart {
                   ProtocolInstruct.scriptStart
                 ) {
                   // 转换脚本字符串为Fun函数,此处不保证字符串为规定的格式,请在添加协议的时候手工校验
-                  const Fun = this.Util.ParseFunction(
-                    ProtocolInstruct.scriptStart
-                  );
+                  const Fun = ParseFunction(ProtocolInstruct.scriptStart);
                   content = Fun(Query.pid, ProtocolInstruct.name);
                 } else {
-                  content = this.Util.Crc16modbus(
-                    Query.pid,
-                    ProtocolInstruct.name
-                  );
+                  content = Crc16modbus(Query.pid, ProtocolInstruct.name);
                 }
               }
               break;
           }
           CacheQueryIntruct.set(IntructName, content);
-          this.RedisService.setContentToInstructName(
-            content,
-            ProtocolInstruct.name
-          );
+          RedisService.setContentToInstructName(content, ProtocolInstruct.name);
           return content;
         }
       });
@@ -344,7 +316,7 @@ export class SocketUart {
    * @param Query 指令对象
    */
   public async InstructQuery(Query: Uart.instructQuery) {
-    const terminal = await this.Device.getTerminal(Query.DevMac);
+    const terminal = await getTerminal(Query.DevMac);
     if (terminal) {
       if (
         (await this.app.of('/node').in(terminal.mountNode).fetchSockets())
@@ -353,10 +325,7 @@ export class SocketUart {
         // 取出查询间隔
         Query.Interval = 20000;
         // 构建指令
-        if (
-          (await this.Device.getProtocol(Query.protocol, { Type: 1 })).Type ===
-          485
-        ) {
+        if ((await getProtocol(Query.protocol, { Type: 1 })).Type === 485) {
           const instructs = (await this.cacheProtocol(Query.protocol)).instruct;
           // 如果包含非标协议,取第一个协议指令的前处理脚本处理指令内容
           if (
@@ -364,16 +333,16 @@ export class SocketUart {
             instructs[0].noStandard &&
             instructs[0].scriptStart
           ) {
-            const Fun = this.Util.ParseFunction(instructs[0].scriptStart);
+            const Fun = ParseFunction(instructs[0].scriptStart);
             Query.content = Fun(Query.pid, Query.content);
           } else {
-            Query.content = this.Util.Crc16modbus(Query.pid, Query.content);
+            Query.content = Crc16modbus(Query.pid, Query.content);
           }
         }
         return new Promise<Partial<Uart.ApolloMongoResult>>(resolve => {
           // 创建一次性监听，监听来自Node节点指令查询操作结果
           this.event.once(Query.events, result => {
-            this.log.saveTerminal({
+            saveTerminal({
               NodeIP: '',
               NodeName: terminal.mountNode,
               TerminalMac: Query.DevMac,
@@ -381,8 +350,7 @@ export class SocketUart {
               query: Query,
               result,
             });
-            if (result.ok)
-              this.Device.setStatTerminalDevs(Query.DevMac, Query.pid);
+            if (result.ok) setStatTerminalDevs(Query.DevMac, Query.pid);
             resolve(result);
           });
           this.getApp().in(terminal.mountNode).emit('instructQuery', Query);
@@ -407,7 +375,7 @@ export class SocketUart {
    * @param Query 指令对象
    */
   public async OprateDTU(Query: Uart.DTUoprate) {
-    const terminal = await this.Device.getTerminal(Query.DevMac);
+    const terminal = await getTerminal(Query.DevMac);
     if (terminal) {
       if (
         (await this.app.of('/node').in(terminal.mountNode).fetchSockets())
@@ -417,7 +385,7 @@ export class SocketUart {
         return new Promise<Partial<Uart.ApolloMongoResult>>(resolve => {
           // 创建一次性监听，监听来自Node节点指令查询操作结果
           this.event.once(Query.events, (result: Uart.ApolloMongoResult) => {
-            this.log.saveTerminal({
+            saveTerminal({
               NodeIP: '',
               NodeName: terminal.mountNode,
               TerminalMac: Query.DevMac,
@@ -490,3 +458,5 @@ export class SocketUart {
     return this.sendMessagetoNode(node, 'restart');
   }
 }
+
+export const SocketUart = new Socket();
