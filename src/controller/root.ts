@@ -12,13 +12,11 @@ import { Application as SocketApp } from '@midwayjs/socketio';
 import { date, IdDate, macDate, registerDev, userDate } from '../dto/root';
 import { SocketUart } from '../service/socketService';
 import { Clean } from '../task/clean';
-import { DyIot } from '../service/dyiotService';
 import { UpdateIccid } from '../task/updateIccid';
 import { SocketUser } from '../service/socketUserService';
 import { loginHash } from '../dto/user';
 import { getBindMacUser } from '../util/base';
 
-import { NewDyIot } from '../service/newDyIotService';
 import { Validate } from '@midwayjs/validate';
 import { root } from '../middleware/root';
 import {
@@ -91,6 +89,14 @@ import {
   getUserAlarm,
 } from '../service/userSevice';
 import { WxPublics } from '../util/wxpublic';
+import {
+  DoIotRecharge,
+  DoIotUnbindResume,
+  QueryCardFlowInfo,
+  QueryCardInfo,
+  QueryIotCardOfferDtl,
+} from '../service/dyiotService';
+import { GetCardDetailV2 } from '../service/newDyIotService';
 
 @Controller('/api/root', { middleware: [root] })
 export class RootControll {
@@ -409,7 +415,7 @@ export class RootControll {
   async updateProtocol(@Body('protocol') protocol: Uart.protocol) {
     const d = await updateProtocol(protocol);
     RedisService.setProtocolInstruct(protocol.Protocol);
-    SocketUart.UpdateCacheProtocol(protocol.Protocol);
+    (await SocketUart()).UpdateCacheProtocol(protocol.Protocol);
     return {
       code: 200,
       data: d,
@@ -433,7 +439,7 @@ export class RootControll {
   ) {
     const d = await setProtocol(Type, ProtocolType, Protocol, instruct);
     RedisService.setProtocolInstruct(Protocol);
-    SocketUart.UpdateCacheProtocol(Protocol);
+    (await SocketUart()).UpdateCacheProtocol(Protocol);
     return {
       code: 200,
       data: d,
@@ -639,7 +645,7 @@ export class RootControll {
       events: 'QueryAT' + Date.now() + mac,
       content,
     };
-    const result = await SocketUart.OprateDTU(Query);
+    const result = await (await SocketUart()).OprateDTU(Query);
     return {
       code: result.ok ? 200 : 0,
       data: result,
@@ -774,7 +780,7 @@ export class RootControll {
     return {
       code: 200,
       data: [
-        ...SocketUart.cache.values(),
+        ...(await SocketUart()).cache.values(),
       ] as unknown as Uart.TerminalMountDevsEX,
     };
   }
@@ -791,7 +797,7 @@ export class RootControll {
   ) {
     return {
       code: 200,
-      data: SocketUart.cache.get(mac + pid)?.Interval || 3000,
+      data: (await SocketUart()).cache.get(mac + pid)?.Interval || 3000,
     };
   }
 
@@ -807,7 +813,7 @@ export class RootControll {
       .flat();
     const names = rooms.filter(el => el);
 
-    const wsUsers = [...SocketUser.wsMap.keys()];
+    const wsUsers = [...(await SocketUser()).wsMap.keys()];
 
     return {
       code: 200,
@@ -828,7 +834,7 @@ export class RootControll {
 
     return {
       code: 200,
-      data: names.includes(user) || SocketUser.wsMap.has(user),
+      data: names.includes(user) || (await SocketUser()).wsMap.has(user),
     };
   }
 
@@ -845,7 +851,7 @@ export class RootControll {
   ) {
     return {
       code: 200,
-      data: SocketUser.toUserInfo(user, 'info', msg),
+      data: (await SocketUser()).toUserInfo(user, 'info', msg),
     };
   }
 
@@ -1253,7 +1259,7 @@ export class RootControll {
     };
     return {
       code: 200,
-      data: await SocketUart.InstructQuery(Query),
+      data: await (await SocketUart()).InstructQuery(Query),
       msg: 'success',
     };
   }
@@ -1265,7 +1271,7 @@ export class RootControll {
    */
   @Post('/IotDoIotUnbindResume')
   async IotDoIotUnbindResume(@Body('iccid') iccid: string) {
-    const res = await DyIot.DoIotUnbindResume(iccid);
+    const res = await DoIotUnbindResume(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
       data: res.data,
@@ -1282,7 +1288,7 @@ export class RootControll {
     const ter = await getTerminal(mac);
     if (ter && ter.iccidInfo) {
       if (ter.iccidInfo.version === 'ali_1') {
-        const data = await DyIot.DoIotRecharge(ter.ICCID);
+        const data = await DoIotRecharge(ter.ICCID);
         return {
           code: 200,
           data,
@@ -1303,7 +1309,7 @@ export class RootControll {
    */
   @Post('/IotQueryCardInfo')
   async IotQueryCardInfo(@Body('iccid') iccid: string) {
-    const res = await DyIot.QueryCardInfo(iccid);
+    const res = await QueryCardInfo(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
       data: res.cardInfo,
@@ -1317,7 +1323,7 @@ export class RootControll {
    */
   @Post('/IotQueryCardFlowInfo')
   async IotQueryCardFlowInfo(@Body('iccid') iccid: string) {
-    const res = await DyIot.QueryCardFlowInfo(iccid);
+    const res = await QueryCardFlowInfo(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
       data: res.cardFlowInfos.cardFlowInfo[0],
@@ -1331,7 +1337,7 @@ export class RootControll {
    */
   @Post('/IotQueryIotCardOfferDtl')
   async IotQueryIotCardOfferDtl(@Body('iccid') iccid: string) {
-    const res = await DyIot.QueryIotCardOfferDtl(iccid);
+    const res = await QueryIotCardOfferDtl(iccid);
     return {
       code: res.code === 'OK' ? 200 : 0,
       data: res.cardOfferDetail.detail,
@@ -1468,7 +1474,7 @@ export class RootControll {
   @Post('/nodeRestart')
   async nodeRestart(@Body('node') node: string) {
     try {
-      const el = await SocketUart.nodeRestart(node);
+      const el = await (await SocketUart()).nodeRestart(node);
       return { code: 200, data: el };
     } catch (e) {
       return { code: 0, data: e };
@@ -1482,7 +1488,7 @@ export class RootControll {
   @Post('/getSimInfo')
   async getSimInfo(@Body('Iccid') Iccid: string) {
     try {
-      const data = await NewDyIot.GetCardDetail(Iccid);
+      const data = await GetCardDetailV2(Iccid);
       return {
         code: 200,
         data,

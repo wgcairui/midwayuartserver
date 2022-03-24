@@ -1,9 +1,19 @@
-import { App, MidwayFrameworkType } from '@midwayjs/decorator';
+import { getCurrentApplicationContext } from '@midwayjs/core';
+import {
+  App,
+  Init,
+  MidwayFrameworkType,
+  Provide,
+  Scope,
+  ScopeEnum,
+} from '@midwayjs/decorator';
 import { Application as IO } from '@midwayjs/socketio';
 import { Context as Ws } from '@midwayjs/ws';
 import { getBindMacUser } from '../util/base';
 
-class Socket {
+@Provide()
+@Scope(ScopeEnum.Singleton)
+export class ProvideSocketUser {
   @App(MidwayFrameworkType.WS_IO)
   app: IO;
 
@@ -17,13 +27,12 @@ class Socket {
    */
   subscribeUsers: Map<string, Set<string>>;
 
-  constructor() {
+  @Init()
+  init() {
     this.wsMap = new Map();
     this.subscribeUsers = new Map();
+    console.log({ app: this.app });
   }
-
-  /* @App(MidwayFrameworkType.WS)
-    ws: WS */
 
   /**
    *
@@ -142,4 +151,6 @@ class Socket {
   }
 }
 
-export const SocketUser = new Socket();
+export const SocketUser = async () => {
+  return getCurrentApplicationContext().getAsync(ProvideSocketUser);
+};

@@ -1,4 +1,12 @@
-import { TaskLocal, App, MidwayFrameworkType } from '@midwayjs/decorator';
+import {
+  TaskLocal,
+  App,
+  MidwayFrameworkType,
+  Provide,
+  Scope,
+  ScopeEnum,
+  Init,
+} from '@midwayjs/decorator';
 import { Application } from '@midwayjs/socketio';
 import { RedisService } from './redisService';
 import { EventEmitter } from 'events';
@@ -15,6 +23,7 @@ import {
 } from './deviceService';
 import { Crc16modbus, ParseFunction } from '../util/util';
 import { saveTerminal } from './logService';
+import { getCurrentApplicationContext } from '@midwayjs/core';
 
 interface mountDevEx extends Uart.TerminalMountDevs {
   TerminalMac: string;
@@ -22,7 +31,9 @@ interface mountDevEx extends Uart.TerminalMountDevs {
   mountNode: string;
 }
 
-class Socket {
+@Provide()
+@Scope(ScopeEnum.Singleton)
+export class ProvideSocketUart {
   @App(MidwayFrameworkType.WS_IO)
   private app: Application;
 
@@ -51,7 +62,8 @@ class Socket {
    */
   event: EventEmitter;
 
-  constructor() {
+  @Init()
+  init() {
     this.nodeMap = new Map();
 
     this.cache = new Map();
@@ -65,6 +77,7 @@ class Socket {
     this.event = new EventEmitter();
 
     this.event.setMaxListeners(100);
+    console.log(this.app);
 
     // 循环迭代缓存,发送查询指令
     // 设置定时器
@@ -459,4 +472,6 @@ class Socket {
   }
 }
 
-export const SocketUart = new Socket();
+export const SocketUart = async () => {
+  return getCurrentApplicationContext().getAsync(ProvideSocketUart);
+};

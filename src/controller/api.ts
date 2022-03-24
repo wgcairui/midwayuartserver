@@ -275,7 +275,7 @@ export class ApiControll {
   @Validate()
   async delTerminalMountDev(@Body() data: macPid) {
     const d = await delTerminalMountDev(data.token.user, data.mac, data.pid);
-    if (d) SocketUart.delTerminalMountDevCache(data.mac, data.pid);
+    if (d) (await SocketUart()).delTerminalMountDevCache(data.mac, data.pid);
     return {
       code: d ? 200 : 0,
       data: d,
@@ -298,7 +298,7 @@ export class ApiControll {
       data.mac,
       data.mountDev
     );
-    if (d) SocketUart.setTerminalMountDevCache(data.mac);
+    if (d) (await SocketUart()).setTerminalMountDevCache(data.mac);
     return {
       code: d ? 200 : 0,
       data: d,
@@ -600,7 +600,9 @@ export class ApiControll {
   @Post('/refreshDevTimeOut')
   @Validate()
   async refreshDevTimeOut(@Body() data: macPid) {
-    await SocketUart.setTerminalMountDevCache(data.mac, data.interVal);
+    await (
+      await SocketUart()
+    ).setTerminalMountDevCache(data.mac, data.interVal);
     return {
       code: 200,
       data: setStatTerminalDevs(data.mac, data.pid),
@@ -661,7 +663,7 @@ export class ApiControll {
       });
       return {
         code: 200,
-        data: await SocketUart.InstructQuery(Query),
+        data: await (await SocketUart()).InstructQuery(Query),
         msg: 'success',
       };
     } else {

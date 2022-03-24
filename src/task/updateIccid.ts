@@ -108,7 +108,7 @@ export class UpdateIccid {
           const interVal = await getMountDevInterval(ter.DevMac);
 
           // Math.ceil(afterUse / dayUse);
-          SocketUart.setTerminalMountDevCache(
+          (await SocketUart()).setTerminalMountDevCache(
             ter.DevMac,
             interVal * (Math.ceil(10240 / afterUse) + 1)
           );

@@ -113,7 +113,9 @@ export async function checkUPS(Query: Uart.queryResult): Promise<alarm | void> {
       // 在 b4位置的数据位为1还是0，为1时表示UPS有故障了，则使用“QFS”故障查询指令，查询UPS故障信息。返回的信息数据
       if (b4) {
         // console.log({ b9, b8, b7, b6, b5, b4, b3, b2, b1, b0, a9, a8 });
-        const { ok, upserted } = await SocketUart.InstructQuery({
+        const { ok, upserted } = await (
+          await SocketUart()
+        ).InstructQuery({
           DevMac: Query.mac,
           protocol: Query.protocol,
           pid: Query.pid,
