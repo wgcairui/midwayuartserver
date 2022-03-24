@@ -14,6 +14,7 @@ import {
   UserRequst,
   DataClean,
   wxsubscribeMessage,
+  innerMessages,
 } from '../entity/log';
 import * as _ from 'lodash';
 import { getModelForClass } from '@typegoose/typegoose';
@@ -36,6 +37,15 @@ export class Logs {
     doc: D
   ) {
     return getModelForClass(cl).create({ ...doc, timeStamp: Date.now() });
+  }
+
+  /**
+   * 保存站内信信息
+   * @param doc
+   * @returns
+   */
+  async saveInnerMessage(doc: Uart.logInnerMessages) {
+    return await this.creatDoc(innerMessages, doc);
   }
 
   /**
@@ -381,6 +391,18 @@ export class Logs {
    */
   logwxsubscribes(start: number, end: number) {
     return getModel(wxsubscribeMessage)
+      .find({ timeStamp: { $lte: end, $gte: start } })
+      .lean();
+  }
+
+  /**
+   * 获取站内信
+   * @param start
+   * @param end
+   * @returns
+   */
+  getloginnerMessage(start: number, end: number) {
+    return getModel(innerMessages)
       .find({ timeStamp: { $lte: end, $gte: start } })
       .lean();
   }

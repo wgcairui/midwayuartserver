@@ -33,6 +33,7 @@ import * as lodash from 'lodash';
 import { toDataURL } from 'qrcode';
 import { Validate } from '@midwayjs/validate';
 import { userValidation } from '../middleware/userValidation';
+import { MQ } from '../service/bullMQ';
 
 @Controller('/api', { middleware: [userValidation] })
 export class ApiControll {
@@ -57,6 +58,9 @@ export class ApiControll {
   @Inject()
   SocketUart: SocketUart;
 
+  @Inject()
+  MQ: MQ;
+
   /**
    * 添加用户
    * @param name
@@ -75,6 +79,13 @@ export class ApiControll {
       'user' | 'name' | 'passwd' | 'tel' | 'mail' | 'company'
     >
   ) {
+    this.MQ.addJob('inner_Message', {
+      timeStamp: Date.now(),
+      user: user.user,
+      nikeName: user.name,
+      message: '新增用户',
+      data: user,
+    });
     return this.UserService.addUser(
       user.name,
       user.user,
@@ -488,7 +499,6 @@ export class ApiControll {
   @Post('/getTerminalDatas')
   @Validate()
   async getTerminalDatas(@Body() data: terminalResults) {
-
     const d = (await this.UserService.getTerminalDatas(
       data.token.user,
       data.mac,
@@ -551,7 +561,6 @@ export class ApiControll {
   @Post('/getTerminalDatasV2')
   @Validate()
   async getTerminalDatasV2(@Body() data: terminalResultsV2) {
-
     const d = await this.UserService.getTerminalDatasV2(
       data.token.user,
       data.mac,
@@ -648,6 +657,12 @@ export class ApiControll {
           );
         }
       }
+      this.MQ.addJob('inner_Message', {
+        timeStamp: Date.now(),
+        user: data.token.user,
+        message: '用户操作设备',
+        data: { query, item },
+      });
       return {
         code: 200,
         data: await this.SocketUart.InstructQuery(Query),

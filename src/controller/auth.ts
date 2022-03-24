@@ -17,6 +17,7 @@ import { AES, enc } from 'crypto-js';
 import { code2Session, getPhone, registerUser } from '../dto/auth';
 import { Validate } from '@midwayjs/validate';
 import { TokenParse } from '../middleware/tokenParse';
+import { MQ } from '../service/bullMQ';
 
 /**
  * 登录相关控制器
@@ -41,6 +42,9 @@ export class AuthController {
 
   @Inject()
   logs: Logs;
+
+  @Inject()
+  MQ: MQ;
 
   /**
    * 获取用户名
@@ -303,6 +307,12 @@ export class AuthController {
         msg: '手机号已被用户注册',
       };
     } else {
+      this.MQ.addJob('inner_Message', {
+        timeStamp: Date.now(),
+        message: '微信用户注册',
+        user: data.user,
+        nikeName: data.getName(),
+      });
       return {
         code: 200,
         data: await this.userService.createUser({

@@ -17,7 +17,6 @@ import { nodeHttp } from '../middleware/nodeHttpRequest';
 
 @Controller('/api/node', { middleware: [nodeHttp] })
 export class NodeControll {
-
   @Inject()
   Device: Device;
 
@@ -137,7 +136,6 @@ export class NodeControll {
    */
   @Post('/queryData')
   async queryData(@Body('data') data: Uart.queryResult) {
-    
     // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
     if (
       data.mac &&

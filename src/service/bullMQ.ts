@@ -2,6 +2,7 @@
 import { Init, Inject, Provide, Scope, ScopeEnum } from '@midwayjs/decorator';
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq';
 import { RedisService } from './redis';
+import { Logs } from './logBase';
 
 export enum QUEUE_NAME {
   /**
@@ -43,15 +44,18 @@ interface QUENAME_TYPE {
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class MQ {
-  QueueMap: Map<QUEUE_NAME, Queue>;
-  QueueSchedulerMap: Map<QUEUE_NAME, QueueScheduler>;
-  WorkMap: Map<QUEUE_NAME, Worker>;
+  private QueueMap: Map<QUEUE_NAME, Queue>;
+  private QueueSchedulerMap: Map<QUEUE_NAME, QueueScheduler>;
+  private WorkMap: Map<QUEUE_NAME, Worker>;
 
   @Inject()
-  redis: RedisService;
+  private redis: RedisService;
+
+  @Inject()
+  private Logs: Logs;
 
   @Init()
-  init() {
+  private init() {
     // 迭代事件,创建队列
     Object.values(QUEUE_NAME).forEach(name => {
       this.QueueMap.set(
@@ -79,7 +83,7 @@ export class MQ {
    * @param id 队列id
    */
   private async initWork(job: Job, id: string) {
-    console.log({job, id});
+    console.log({ job, id });
     const parse = {
       [QUEUE_NAME.dataCheck]: this.dataCheck(job),
       [QUEUE_NAME.inner_Message]: this.innerMessage(job),
@@ -90,10 +94,12 @@ export class MQ {
   private dataCheck(data: any) {}
 
   /**
-   * 处理内部消息
+   * 保存处理内部消息
    * @param job
    */
-  private innerMessage(job: Job<Uart.logInnerMessages>) {}
+  private async innerMessage(job: Job<Uart.logInnerMessages>) {
+    await this.Logs.saveInnerMessage(job.data);
+  }
 
   /**
    * 添加消息到队列
