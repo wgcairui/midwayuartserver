@@ -8,19 +8,14 @@ import {
   ScopeEnum,
 } from '@midwayjs/decorator';
 import { Application as IO } from '@midwayjs/socketio';
-import { Context as Ws } from '@midwayjs/ws';
 import { getBindMacUser } from '../util/base';
-
+import { MQ } from './bullService';
+import { RedisService } from './redisService';
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class ProvideSocketUser {
   @App(MidwayFrameworkType.WS_IO)
   app: IO;
-
-  /**
-   * 微信用户ws
-   */
-  wsMap: Map<string, Ws>;
 
   /**
    * 用户订阅
@@ -29,9 +24,7 @@ export class ProvideSocketUser {
 
   @Init()
   init() {
-    this.wsMap = new Map();
     this.subscribeUsers = new Map();
-    console.log({ app: this.app });
   }
 
   /**
@@ -39,8 +32,6 @@ export class ProvideSocketUser {
    * @param mac 向订阅ˇ端发送设备变更日志
    */
   async sendMacUpdate(mac: string) {
-    this.toUser(mac, 'MacUpdate', { mac });
-
     /**
      * 适用于root,监控所有设备变更
      */
@@ -89,7 +80,6 @@ export class ProvideSocketUser {
     if (users && users.size > 0) {
       this.toUserInfo([...users.values()], event);
     }
-    this.toUser(mac, 'MacDateUpdate' + mac + pid, { mac, pid });
   }
 
   /**
@@ -98,24 +88,8 @@ export class ProvideSocketUser {
    * @param alarm
    */
   async sendMacAlarm(mac: string, alarm: Uart.uartAlarmObject) {
-    this.toUser(mac, 'alarm', alarm);
-  }
-
-  /**
-   * 向用户发送socket事件
-   * @param mac
-   * @param events
-   * @param data
-   * @deprecated 下个大版本取消操作,全部使用订阅模式
-   */
-  private async toUser(mac: string, events: string, data: any = {}) {
     const user = await getBindMacUser(mac);
-    if (user) {
-      this.app.of('/web').in(user).emit(events, data);
-      if (this.wsMap.has(user)) {
-        this.wsMap.get(user).send(JSON.stringify({ type: events, data }));
-      }
-    }
+    user && this.toUserInfo(user, 'alarm', alarm);
   }
 
   /**
@@ -125,18 +99,23 @@ export class ProvideSocketUser {
    * @param data
    */
   toUserInfo(user: string | string[], events: string, data: any = {}) {
+    // 发送web.io信息
     this.app.of('/web').in(user).emit(events, data);
-    if (typeof user === 'string') {
-      if (this.wsMap.has(user)) {
-        this.wsMap.get(user).send(JSON.stringify({ type: events, data }));
+
+    /**
+     * 发送ws信息
+     */
+    const users = [user].flat();
+    users.forEach(async u => {
+      const token = await RedisService.getWsToken(u);
+      if (token) {
+        MQ.addJobWs({
+          token,
+          type: events,
+          data,
+        });
       }
-    } else {
-      user.forEach(u => {
-        if (this.wsMap.has(u)) {
-          this.wsMap.get(u).send(JSON.stringify({ type: events, data }));
-        }
-      });
-    }
+    });
   }
 
   /**
@@ -151,6 +130,10 @@ export class ProvideSocketUser {
   }
 }
 
+/**
+ * socketUserApp
+ * @returns
+ */
 export const SocketUser = async () => {
   return getCurrentApplicationContext().getAsync(ProvideSocketUser);
 };

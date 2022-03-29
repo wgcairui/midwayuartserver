@@ -160,13 +160,14 @@ export class ApiControll {
    */
   @Post('/userInfo')
   @Validate()
-  async userinfo(@Body() data: Api) {
+  async userinfo(@Body() { token }: Api) {
+    const data = await getUser(token.user, {
+      _id: 0,
+      passwd: 0,
+    });
     return {
       code: 200,
-      data: await getUser(data.token.user, {
-        _id: 0,
-        passwd: 0,
-      }),
+      data,
     };
   }
 
@@ -741,10 +742,12 @@ export class ApiControll {
    */
   @Post('/getTerminal')
   @Validate()
-  async getTerminal(@Body() data: mac) {
+  async getTerminalSingle(@Body() datas: mac) {
+    const data = await getTerminal(datas.mac);
+
     return {
       code: 200,
-      data: await getTerminal(data.token.user, data.mac),
+      data,
     };
   }
 

@@ -26,7 +26,10 @@ import {
   Secret_JwtSign,
 } from '../util/util';
 import { addRegisterTerminal, setTerminal, getTerminal } from './deviceService';
-import { FindFilter } from '../interface';
+import { FindFilter, MongoTypesId, ObjectId } from '../interface';
+import { WeaApps } from '../util/weapp';
+import { WxPublics } from '../util/wxpublic';
+import { SendValidation } from './smsService';
 
 interface pesiv_userInfo {
   user_name: string;
@@ -214,11 +217,13 @@ export async function isBindMac(user: string, mac: string) {
 export async function sendValidation(user: string) {
   const users = await getUser(user, { tel: 1, mail: 1, wxId: 1 });
   if (users.tel) {
-    const r = await Sms.SendValidation(users.tel);
+    const r = await SendValidation(users.tel);
     return {
       code: r.data.Code === 'OK' ? 200 : 0,
       data: r.code,
-      msg: `手机号:${users.tel.slice(0, 3)}***${users.tel.slice(7)}`,
+      msg: `手机号:${users.tel.toString().slice(0, 3)}***${users.tel
+        .toString()
+        .slice(7)}`,
     };
   } else {
     return {
@@ -376,7 +381,7 @@ export async function initUserAlarmSetup(user: string) {
  */
 export async function createUser(user: Partial<Uart.UserInfo>) {
   user.passwd = await BcryptDo(user.passwd || user.user);
-  const u = await userModel.create(user as any);
+  const u = (await userModel.create(user as any)) as any as Uart.UserInfo;
   await initUserAlarmSetup(u.user);
   await loguserModel.create({
     user: u.user,
@@ -712,7 +717,7 @@ export async function modifyUserInfo(
  */
 export async function mpTicket(user: string) {
   const { _id } = await getUser(user, { _id: 1 });
-  return Wx.MP.getTicket(_id);
+  return WxPublics.getTicket(_id);
 }
 
 /**
@@ -722,7 +727,7 @@ export async function mpTicket(user: string) {
  */
 export async function wpTicket(user: string) {
   const { _id } = await getUser(user, { _id: 1 });
-  return Wx.WP.getTicket(_id);
+  return WeaApps.getTicket(_id);
 }
 
 /**

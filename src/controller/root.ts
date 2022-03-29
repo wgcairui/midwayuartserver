@@ -10,10 +10,9 @@ import { RedisService } from '../service/redisService';
 import { HF } from '../service/hfService';
 import { Application as SocketApp } from '@midwayjs/socketio';
 import { date, IdDate, macDate, registerDev, userDate } from '../dto/root';
-import { SocketUart } from '../service/socketService';
+import { ProvideSocketUart } from '../service/socketService';
 import { Clean } from '../task/clean';
 import { UpdateIccid } from '../task/updateIccid';
-import { SocketUser } from '../service/socketUserService';
 import { loginHash } from '../dto/user';
 import { getBindMacUser } from '../util/base';
 
@@ -97,6 +96,8 @@ import {
   QueryIotCardOfferDtl,
 } from '../service/dyiotService';
 import { GetCardDetailV2 } from '../service/newDyIotService';
+import { ProvideSocketUser } from '../service/socketUserService';
+import { MQ } from '../service/bullService';
 
 @Controller('/api/root', { middleware: [root] })
 export class RootControll {
@@ -105,6 +106,12 @@ export class RootControll {
 
   @Inject()
   UpdateIccid: UpdateIccid;
+
+  @Inject()
+  SocketUart: ProvideSocketUart;
+
+  @Inject()
+  SocketUser: ProvideSocketUser;
 
   @App(MidwayFrameworkType.WS_IO)
   private SocketApp: SocketApp;
@@ -177,7 +184,7 @@ export class RootControll {
   async getTerminal(@Body('mac') mac: string) {
     return {
       code: 200,
-      data: await getTerminal('root', mac),
+      data: await getTerminal(mac),
     };
   }
 
@@ -282,34 +289,35 @@ export class RootControll {
     @Body('content') content: string
   ) {
     if (openid) {
+      const postData: Uart.WX.wxsubscribeMessage = {
+        touser: openid,
+        template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
+        miniprogram: {
+          appid: 'wx38800d0139103920',
+          pagepath: 'pages/index/index',
+        },
+        data: {
+          first: {
+            value: content,
+            color: '#173177',
+          },
+          device: {
+            value: 'test',
+            color: '#173177',
+          },
+          time: {
+            value: parseTime(),
+            color: '#173177',
+          },
+          remark: {
+            value: 'test',
+            color: '#173177',
+          },
+        },
+      };
+      MQ.addJob('wx', postData);
       return {
         code: 200,
-        data: await WxPublics.SendsubscribeMessageDevAlarm({
-          touser: openid,
-          template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
-          miniprogram: {
-            appid: 'wx38800d0139103920',
-            pagepath: 'pages/index/index',
-          },
-          data: {
-            first: {
-              value: content,
-              color: '#173177',
-            },
-            device: {
-              value: 'test',
-              color: '#173177',
-            },
-            time: {
-              value: parseTime(),
-              color: '#173177',
-            },
-            remark: {
-              value: 'test',
-              color: '#173177',
-            },
-          },
-        }),
       };
     }
   }
@@ -335,7 +343,7 @@ export class RootControll {
   async setSecret(
     @Body('type') type: any,
     @Body('appid') appid: string,
-    @Body('secre') secret: string
+    @Body('secret') secret: string
   ) {
     return {
       code: 200,
@@ -377,7 +385,7 @@ export class RootControll {
    * @returns
    */
   @Post('/addDevConstent')
-  async addDevConstent(
+  async addDevConstentSingle(
     @Body('ProtocolType') ProtocolType: string,
     @Body('Protocol') Protocol: string,
     @Body('type') type: Uart.ConstantThresholdType,
@@ -415,7 +423,7 @@ export class RootControll {
   async updateProtocol(@Body('protocol') protocol: Uart.protocol) {
     const d = await updateProtocol(protocol);
     RedisService.setProtocolInstruct(protocol.Protocol);
-    (await SocketUart()).UpdateCacheProtocol(protocol.Protocol);
+    this.SocketUart.UpdateCacheProtocol(protocol.Protocol);
     return {
       code: 200,
       data: d,
@@ -439,7 +447,7 @@ export class RootControll {
   ) {
     const d = await setProtocol(Type, ProtocolType, Protocol, instruct);
     RedisService.setProtocolInstruct(Protocol);
-    (await SocketUart()).UpdateCacheProtocol(Protocol);
+    this.SocketUart.UpdateCacheProtocol(Protocol);
     return {
       code: 200,
       data: d,
@@ -607,7 +615,7 @@ export class RootControll {
    */
   @Post('/getDtuBusy')
   @Validate()
-  async getDtuBusy(@Body('data') data: macDate) {
+  async getDtuBusyStat(@Body() data: macDate) {
     return {
       code: 200,
       data: await getDtuBusy(data.mac, data.getStart(), data.getEnd()),
@@ -645,7 +653,7 @@ export class RootControll {
       events: 'QueryAT' + Date.now() + mac,
       content,
     };
-    const result = await (await SocketUart()).OprateDTU(Query);
+    const result = await this.SocketUart.OprateDTU(Query);
     return {
       code: result.ok ? 200 : 0,
       data: result,
@@ -780,7 +788,7 @@ export class RootControll {
     return {
       code: 200,
       data: [
-        ...(await SocketUart()).cache.values(),
+        ...this.SocketUart.cache.values(),
       ] as unknown as Uart.TerminalMountDevsEX,
     };
   }
@@ -797,7 +805,7 @@ export class RootControll {
   ) {
     return {
       code: 200,
-      data: (await SocketUart()).cache.get(mac + pid)?.Interval || 3000,
+      data: this.SocketUart.cache.get(mac + pid)?.Interval || 3000,
     };
   }
 
@@ -813,7 +821,7 @@ export class RootControll {
       .flat();
     const names = rooms.filter(el => el);
 
-    const wsUsers = [...(await SocketUser()).wsMap.keys()];
+    const wsUsers = [...this.SocketUser.wsMap.keys()];
 
     return {
       code: 200,
@@ -834,7 +842,7 @@ export class RootControll {
 
     return {
       code: 200,
-      data: names.includes(user) || (await SocketUser()).wsMap.has(user),
+      data: names.includes(user) || this.SocketUser.wsMap.has(user),
     };
   }
 
@@ -851,7 +859,7 @@ export class RootControll {
   ) {
     return {
       code: 200,
-      data: (await SocketUser()).toUserInfo(user, 'info', msg),
+      data: this.SocketUser.toUserInfo(user, 'info', msg),
     };
   }
 
@@ -1259,7 +1267,7 @@ export class RootControll {
     };
     return {
       code: 200,
-      data: await (await SocketUart()).InstructQuery(Query),
+      data: await this.SocketUart.InstructQuery(Query),
       msg: 'success',
     };
   }
@@ -1474,7 +1482,7 @@ export class RootControll {
   @Post('/nodeRestart')
   async nodeRestart(@Body('node') node: string) {
     try {
-      const el = await (await SocketUart()).nodeRestart(node);
+      const el = await this.SocketUart.nodeRestart(node);
       return { code: 200, data: el };
     } catch (e) {
       return { code: 0, data: e };

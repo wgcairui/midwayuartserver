@@ -11,6 +11,25 @@ interface params {
   TemplateParam: string;
 }
 
+export type SmsParams = params;
+
+type SmsUartAlarmType =
+  | '透传设备下线提醒'
+  | '透传设备上线提醒'
+  | '透传设备告警';
+
+interface SmsUartAlarmParam {
+  name: string;
+  devname: string;
+  air: string;
+  event: string;
+}
+export interface SmsUartAlarm {
+  tels: string[];
+  type: SmsUartAlarmType;
+  query: SmsUartAlarmParam;
+}
+
 /**
  * 发送短信
  * @param params
@@ -49,13 +68,13 @@ function d() {
  * @param code 验证码
  */
 export async function SendValidation(
-  tel: string,
+  tel: string | number,
   code: string = (Math.random() * 10000).toFixed(0).padStart(4, '0')
 ) {
   const TemplateParam = JSON.stringify({ code });
   const params: params = {
     RegionId: 'cn-hangzhou',
-    PhoneNumbers: tel,
+    PhoneNumbers: tel.toString(),
     SignName: '雷迪司科技湖北有限公司',
     TemplateCode: 'SMS_190275627',
     TemplateParam,
@@ -122,8 +141,8 @@ export async function SmsDTU(
  */
 export async function SendUartAlarm(
   tels: string[],
-  type: '透传设备下线提醒' | '透传设备上线提醒' | '透传设备告警',
-  query: { name: string; devname: string; air: string; event: string }
+  type: SmsUartAlarmType,
+  query: SmsUartAlarmParam
 ) {
   const smsCode = {
     透传设备下线提醒: 'SMS_189710812',

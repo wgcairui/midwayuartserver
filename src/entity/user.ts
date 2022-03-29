@@ -37,7 +37,7 @@ export class Users {
   @prop({ unique: true, sparse: true })
   public tel: string;
 
-  @prop()
+  @prop({ default: new Date() })
   public creatTime: Date;
 
   @prop()

@@ -16,7 +16,7 @@ import {
   userModel,
 } from '../service/userSevice';
 import { WxPublics } from '../util/wxpublic';
-import { SendsubscribeMessageDevAlarm } from '../service/wxService';
+import { MQ } from '../service/bullService';
 /**
  * xml2Js解析出来的数据格式
  */
@@ -167,7 +167,7 @@ export class WxPublic {
           {
             const { unionid } = await getWxUser(body.FromUserName);
             const user = await getUser(unionid);
-            await SendsubscribeMessageDevAlarm({
+            const postData: Uart.WX.wxsubscribeMessage = {
               touser: FromUserName,
               template_id: 'rIFS7MnXotNoNifuTfFpfh4vFGzCGlhh-DmWZDcXpWg',
               miniprogram: {
@@ -192,7 +192,8 @@ export class WxPublic {
                   color: '#173177',
                 },
               },
-            });
+            };
+            MQ.addJob('wx', postData);
           }
           break;
 

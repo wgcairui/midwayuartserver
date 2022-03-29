@@ -1,7 +1,6 @@
 import { fetch } from './fetch';
 import { createDecipheriv } from 'crypto';
 import { RedisService } from '../service/redisService';
-import { getSecretKey } from './base';
 
 /**
  * 微信小程序api
@@ -12,13 +11,14 @@ class App {
    */
   private sessionCache: Map<string, string>;
 
-  secret: Uart.Secret_app;
-
   constructor() {
-    getSecretKey('wxwp').then((el: any) => {
-      this.secret = el;
-    });
+    this.sessionCache = new Map();
   }
+
+  secret() {
+    return RedisService.Secret.wp;
+  }
+
   /**
    * 获取请求密匙
    * @returns
@@ -27,7 +27,9 @@ class App {
     const token = await RedisService.redisService.get('wxapptoken');
     // 如果没有密匙或密匙已超时,重新请求密匙
     if (!token) {
-      const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${this.secret.appid}&secret=${this.secret.secret}`;
+      const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${
+        this.secret().appid
+      }&secret=${this.secret().secret}`;
       const { access_token, expires_in, errcode, errmsg } =
         await fetch<Uart.WX.wxRequestAccess_token>({ url, method: 'GET' });
       if (errcode) throw new Error(errmsg);
@@ -47,7 +49,11 @@ class App {
    * @author https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html
    */
   async UserOpenID(code: string) {
-    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${this.secret.appid}&secret=${this.secret.secret}&js_code=${code}&grant_type=authorization_code`;
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${
+      this.secret().appid
+    }&secret=${
+      this.secret().secret
+    }&js_code=${code}&grant_type=authorization_code`;
     const { openid, session_key, unionid } =
       await fetch<Uart.WX.wxRequestCode2Session>({ url, method: 'GET' });
     this.sessionCache.set(openid, session_key);
@@ -138,7 +144,7 @@ class App {
       throw new Error('Illegal Buffer');
     }
 
-    if (decodeParse.watermark.appid !== this.secret.appid) {
+    if (decodeParse.watermark.appid !== this.secret().appid) {
       throw new Error('Illegal Buffer');
     }
     return decodeParse;

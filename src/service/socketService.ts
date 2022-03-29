@@ -77,7 +77,6 @@ export class ProvideSocketUart {
     this.event = new EventEmitter();
 
     this.event.setMaxListeners(100);
-    console.log(this.app);
 
     // 循环迭代缓存,发送查询指令
     // 设置定时器

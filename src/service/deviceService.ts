@@ -15,7 +15,6 @@ import {
   DevType as DType,
   Protocols,
 } from '../entity/protocol';
-import { filter } from '../interface';
 import { UserAlarmSetup, UserBindDevice } from '../entity/user';
 import {
   UartTerminalDataTransfinite,
@@ -25,17 +24,20 @@ import {
 } from '../entity/log';
 import { getModelForClass } from '@typegoose/typegoose';
 import { getModel } from '../util/base';
+import { FindFilter } from '../interface';
 
 /**
  * 获取all终端
  * @returns
  */
-export async function getTerminals(filter: filter<Uart.Terminal> = {}) {
-  return await getModel(Terminal).find({}, filter).lean();
+export async function getTerminals(filter: FindFilter<Uart.Terminal> = {}) {
+  return (await getModel(Terminal)
+    .find({}, filter)
+    .lean()) as any as Uart.Terminal[];
 }
 
-/* getTerminal(macs: string, filter: filter<Uart.Terminal>): Promise<DocumentDefinition<DocumentType<Terminal>>>
-    getTerminal(macs: string[], filter: filter<Uart.Terminal>): Promise<DocumentDefinition<DocumentType<Terminal>>[]> */
+/* getTerminal(macs: string, filter: FindFilter<Uart.Terminal>): Promise<DocumentDefinition<DocumentType<Terminal>>>
+    getTerminal(macs: string[], filter: FindFilter<Uart.Terminal>): Promise<DocumentDefinition<DocumentType<Terminal>>[]> */
 
 /**
  * 获取指定终端
@@ -44,7 +46,7 @@ export async function getTerminals(filter: filter<Uart.Terminal> = {}) {
  */
 export async function getTerminal<T extends string | string[]>(
   macs: T,
-  filter: filter<Uart.Terminal> = { _id: 0 }
+  filter: FindFilter<Uart.Terminal> = { _id: 0 }
 ): Promise<T extends string ? Terminal : Terminal[]> {
   const model = getModel(Terminal);
   if (typeof macs === 'string') {
@@ -108,7 +110,7 @@ export async function getDevTypes(Type: string) {
  */
 export async function getAlarmProtocol(
   protocol: string,
-  filter: filter<Uart.ProtocolConstantThreshold> = { _id: 0 }
+  filter: FindFilter<Uart.ProtocolConstantThreshold> = { _id: 0 }
 ) {
   const model = getModel(DevConstant);
   const setup = (await model
@@ -141,7 +143,7 @@ export async function getAlarmProtocols() {
  */
 export async function getProtocol(
   protocol: string,
-  filter: filter<Uart.protocol> = { _id: 0 }
+  filter: FindFilter<Uart.protocol> = { _id: 0 }
 ) {
   const model = getModel(Protocols);
   return await model.findOne({ Protocol: protocol }, filter).lean();

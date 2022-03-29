@@ -1,8 +1,8 @@
-import { Controller, Post, Body } from '@midwayjs/decorator';
+import { Controller, Post, Body, Inject } from '@midwayjs/decorator';
 import { RedisService } from '../service/redisService';
 import * as _ from 'lodash';
-import { SocketUser } from '../service/socketUserService';
-import { SocketUart } from '../service/socketService';
+import { ProvideSocketUser } from '../service/socketUserService';
+import { ProvideSocketUart } from '../service/socketService';
 import { alarm } from '../interface';
 import axios from 'axios';
 import { getBindMacUser } from '../util/base';
@@ -28,6 +28,11 @@ import { argumentAlarm, argumentAlarmReload } from '../service/alarmService';
 
 @Controller('/api/node', { middleware: [nodeHttp] })
 export class NodeControll {
+  @Inject()
+  SocketUart: ProvideSocketUart;
+
+  @Inject()
+  SocketUser: ProvideSocketUser;
   /**
    * 上传dtu信息
    * @param info
@@ -125,7 +130,7 @@ export class NodeControll {
           if (!els) {
             // 设置
             setStatTerminalDevs(data.mac, data.pid, true);
-            (await SocketUser()).sendMacUpdate(data.mac);
+            this.SocketUser.sendMacUpdate(data.mac);
           }
         });
         // 保存每个终端使用的数字节数
@@ -171,7 +176,7 @@ export class NodeControll {
        */
       if (parse.length === 0) {
         const interval = await getMountDevInterval(data.mac);
-        (await SocketUart()).setTerminalMountDevCache(data.mac, interval * 3);
+        this.SocketUart.setTerminalMountDevCache(data.mac, interval * 3);
         console.error({
           msg: '解析数据为空,跳过后续操作',
           data,
@@ -184,7 +189,7 @@ export class NodeControll {
       const { a, r } = await this.check(data, parse);
 
       // 发送数据更新消息
-      (await SocketUser()).sendMacDateUpdate(data.mac, data.pid);
+      this.SocketUser.sendMacDateUpdate(data.mac, data.pid);
 
       {
         const alarmTag = await RedisService.hasArgumentAlarmLog(
@@ -212,7 +217,7 @@ export class NodeControll {
                     tag: el2.tag,
                     msg: `${el2.argument}[${el2.data.parseValue}]`,
                   }).then(async el => {
-                    (await SocketUser()).sendMacAlarm(data.mac, el as any);
+                    this.SocketUser.sendMacAlarm(data.mac, el as any);
                   });
                 });
               }
@@ -276,7 +281,7 @@ export class NodeControll {
 
       //判断数据间隔时间大于30秒
       if (data.Interval > 3e4) {
-        (await SocketUart()).setTerminalMountDevCache(data.mac);
+        this.SocketUart.setTerminalMountDevCache(data.mac);
       }
     }
     return { a, r };

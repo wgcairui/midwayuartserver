@@ -1,19 +1,15 @@
 import { fetch } from './fetch';
 import { RedisService } from '../service/redisService';
-import { getSecretKey } from './base';
 
 /**
  * 微信公众号api
  */
 export class App {
-  secret: Uart.Secret_app;
   primary_industry_first: string;
   primary_industry_second: string;
 
-  constructor() {
-    getSecretKey('wxmp').then((el: any) => {
-      this.secret = el;
-    });
+  secret() {
+    return RedisService.Secret.wxPublic;
   }
 
   /**
@@ -24,7 +20,9 @@ export class App {
     const token = await RedisService.redisService.get('wxpublictoken');
     // 如果没有密匙或密匙已超时,重新请求密匙
     if (!token) {
-      const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${this.secret.appid}&secret=${this.secret.secret}`;
+      const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${
+        this.secret().appid
+      }&secret=${this.secret().secret}`;
       const { access_token, expires_in, errcode, errmsg } =
         await fetch<Uart.WX.wxRequestAccess_token>({ url, method: 'GET' });
       if (errcode) throw new Error(errmsg);
@@ -38,7 +36,7 @@ export class App {
     return token;
     // 如果没有密匙或密匙已超时,重新请求密匙
     /*  if (!this.token || Date.now() > (this.expires_in * 1000) + this.expreTime) {
-             const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${this.appid}&secret=${this.secret}`
+             const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${this.appid}&secret=${this.secret()}`
              const { access_token, expires_in } = await fetch<Uart.WX.wxRequestAccess_token>({ url, method: 'GET' })
              this.token = access_token
              this.expires_in = expires_in

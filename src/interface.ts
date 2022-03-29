@@ -14,7 +14,7 @@ export interface f {
   [x: string]: any;
 }
 
-export type FindFilter<T> = Partial<Record<keyof f & keyof T, 0 | 1>> &
+export type FindFilter<T> = Partial<Record<keyof f, 0 | 1>> &
   Partial<Record<keyof T, 0 | 1>>;
 
 export const ObjectId = Types.ObjectId;

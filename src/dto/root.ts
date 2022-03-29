@@ -20,7 +20,6 @@ export class date {
   }
 }
 
-@Rule(date)
 export class macDate extends date {
   @Rule(RuleType.string())
   mac: string;

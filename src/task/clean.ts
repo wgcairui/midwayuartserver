@@ -18,20 +18,24 @@ import { saveClean } from '../service/logService';
 export class Clean {
   @TaskLocal('0 3 * * * ')
   async clean() {
-    console.log(`${new Date().toString()} ### start clean Data.....`);
-    const now = Date.now();
-    const count = {
-      NumUserRequst: await this.CleanUserRequst(),
-      useTime: 0,
-      NumClientresults: await this.CleanClientresults(),
-      CleanClientresultsTimeOut: await this.CleanClientresultsTimeOut(),
-      timeStamp: Date.now(),
-    };
-    await this.CleanDtuBusy();
-    count.useTime = Date.now() - now;
-    console.log(`${new Date().toString()} ### end clean Data.....`, count);
-    saveClean(count);
-    return count;
+    try {
+      console.log(`${new Date().toString()} ### start clean Data.....`);
+      const now = Date.now();
+      const count = {
+        NumUserRequst: await this.CleanUserRequst(),
+        useTime: 0,
+        NumClientresults: await this.CleanClientresults(),
+        CleanClientresultsTimeOut: await this.CleanClientresultsTimeOut(),
+        timeStamp: Date.now(),
+      };
+      await this.CleanDtuBusy();
+      count.useTime = Date.now() - now;
+      console.log(`${new Date().toString()} ### end clean Data.....`, count);
+      await saveClean(count);
+      return count;
+    } catch (error) {
+      console.error('Data Clean Error', error?.message);
+    }
   }
 
   /**

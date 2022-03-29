@@ -1,26 +1,41 @@
+import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq';
+import { getModel } from '../util/base';
 import { Secret_JwtVerify } from '../util/util';
-import { saveInnerMessage } from './logService';
+import { WxPublics } from '../util/wxpublic';
+import { saveInnerMessage, saveWxsubscribeMessage } from './logService';
+import { sendMail } from './mailService';
 import { RedisService } from './redisService';
+import { sendSMS, SmsParams } from './smsService';
+
+export interface WsData {
+  token: string;
+  type: string;
+  data: any;
+}
+
+export interface MailData {
+  mail: string;
+  title: string;
+  subject: string;
+  body: string;
+}
 
 export enum QUEUE_NAME {
   /**
    * 短信
    */
   sms = 'sms',
+
   /**
-   * 微信
+   * 微信设备
    */
   wx = 'wx',
 
   /**
-   * 数据解析
+   * 邮件
    */
-  dataParse = 'dataParse',
-  /**
-   * 数据检查
-   */
-  dataCheck = 'dataCheck',
+  mail = 'mail',
 
   /**
    * 日志
@@ -35,6 +50,11 @@ export enum QUEUE_NAME {
 
 interface QUENAME_TYPE {
   inner_Message: Uart.logInnerMessages;
+  log: Record<string, any>;
+  mail: MailData;
+  wx: Uart.WX.wxsubscribeMessage;
+  // smsUartAlarm: SmsUartAlarm;
+  sms: SmsParams;
 }
 
 /**
@@ -44,11 +64,23 @@ class App {
   private QueueMap: Map<QUEUE_NAME, Queue>;
   private QueueSchedulerMap: Map<QUEUE_NAME, QueueScheduler>;
   private WorkMap: Map<QUEUE_NAME, Worker>;
+  private parse: Record<
+    QUEUE_NAME,
+    (job: Job<any, any, string>) => Promise<void>
+  >;
 
   constructor() {
     this.QueueMap = new Map();
     this.QueueSchedulerMap = new Map();
     this.WorkMap = new Map();
+
+    this.parse = {
+      [QUEUE_NAME.inner_Message]: this.innerMessage,
+      [QUEUE_NAME.log]: this.log,
+      [QUEUE_NAME.mail]: this.mail,
+      [QUEUE_NAME.wx]: this.wx,
+      [QUEUE_NAME.sms]: this.sms,
+    };
     this.start();
   }
 
@@ -73,6 +105,14 @@ class App {
       );
     });
 
+    /**
+     * 创建一个ws输出的队列
+     */
+    this.QueueMap.set(
+      'wsOutput' as any,
+      new Queue('wsOutput', { connection: RedisService.redisService })
+    );
+
     new Worker('wsInput', this.wsConnect, {
       connection: RedisService.redisService,
     });
@@ -85,14 +125,37 @@ class App {
    */
   private async initWork(job: Job, id: string) {
     console.log({ job, id });
-    const parse = {
-      [QUEUE_NAME.dataCheck]: this.dataCheck(),
-      [QUEUE_NAME.inner_Message]: this.innerMessage(job),
-    };
-    parse[job.name](job.data);
+    this.parse[job.name](job.data);
   }
 
-  private dataCheck() {}
+  /**
+   * 短信发送
+   * @param job
+   */
+  private async sms(job: Job<SmsParams>) {
+    await sendSMS(job.data);
+  }
+
+  /**
+   * 邮件发送
+   * @param job
+   * @param {*} mail 接受邮箱
+   * @param {*} title 标题
+   * @param {*} subject 主题
+   * @param {*} body  发送text或者html格式 // text: 'Hello world?', // plain text body
+   */
+  private async mail({ data }: Job<MailData>) {
+    await sendMail(data.mail, data.title, data.subject, data.body);
+  }
+
+  /**
+   * 微信告警推送消息
+   * @param job
+   */
+  private async wx(job: Job<Uart.WX.wxsubscribeMessage>) {
+    const el = await WxPublics.SendsubscribeMessageDevAlarm(job.data);
+    await saveWxsubscribeMessage({ ...job.data, result: el });
+  }
 
   /**
    * 保存处理内部消息
@@ -100,6 +163,17 @@ class App {
    */
   private async innerMessage(job: Job<Uart.logInnerMessages>) {
     await saveInnerMessage(job.data);
+  }
+
+  /**
+   * 保存日志记录
+   * @param job
+   */
+  private async log<T extends object>(
+    job: Job<{ entity: AnyParamConstructor<T>; doc: T }>
+  ) {
+    const model = getModel(job.data.entity);
+    await model.create(job.data.doc);
   }
 
   /**
@@ -124,7 +198,25 @@ class App {
    */
   addJob<T extends keyof QUENAME_TYPE>(name: T, data: QUENAME_TYPE[T]) {
     const Queue = this.QueueMap.get(name as any);
-    Queue && Queue.add(data.mac || data.user || data.message, data);
+    Queue && Queue.add(name, data);
+  }
+
+  /**
+   * 添加日志记录
+   * @param entity
+   * @param doc
+   */
+  addJobLog<T extends object>(entity: AnyParamConstructor<T>, doc: T) {
+    const Queue = this.QueueMap.get(QUEUE_NAME.log)!;
+    Queue.add('log', {
+      entity,
+      doc,
+    });
+  }
+
+  addJobWs(data: WsData) {
+    const Queue = this.QueueMap.get('wsOutput' as any);
+    Queue.add('wsOutput', data);
   }
 }
 

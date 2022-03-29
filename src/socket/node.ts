@@ -10,8 +10,8 @@ import {
 } from '@midwayjs/decorator';
 import { Context, Application } from '@midwayjs/socketio';
 import { RedisService } from '../service/redisService';
-import { SocketUart } from '../service/socketService';
-import { SocketUser } from '../service/socketUserService';
+import { ProvideSocketUart } from '../service/socketService';
+import { ProvideSocketUser } from '../service/socketUserService';
 import { HF } from '../service/hfService';
 import {
   getNode,
@@ -35,6 +35,12 @@ import { macOnOff_line, timeOutAlarm } from '../service/alarmService';
 export class NodeSocket {
   @Inject()
   ctx: Context;
+
+  @Inject()
+  SocketUart: ProvideSocketUart;
+
+  @Inject()
+  SocketUser: ProvideSocketUser;
 
   @App(MidwayFrameworkType.WS_IO)
   app: Application;
@@ -81,7 +87,7 @@ export class NodeSocket {
    */
   @OnWSDisConnection()
   async DisConnection() {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     if (node) {
       //
       this.ctx.leave(node.Name);
@@ -93,7 +99,7 @@ export class NodeSocket {
         .map(el => el.DevMac);
       // 批量设置终端离线
       await setStatTerminal(macs, false);
-      await (await SocketUart()).delNodeCache(node.Name);
+      this.SocketUart.delNodeCache(node.Name);
 
       // 添加日志
       //await saveNode({ type: "断开", ID: this.ctx.id, IP: node.IP, Name: node.Name })
@@ -116,7 +122,7 @@ export class NodeSocket {
   @OnWSMessage('register')
   @WSEmit('registerSuccess')
   async register() {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = this.SocketUart.getNode(this.ctx.id);
     const UserID = await HF.getUserId();
     return { ...node, UserID };
   }
@@ -127,7 +133,7 @@ export class NodeSocket {
    */
   @OnWSMessage('startError')
   async startError() {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     saveNode({
       type: 'TcpServer启动失败',
       ID: this.ctx.id,
@@ -142,7 +148,7 @@ export class NodeSocket {
    */
   @OnWSMessage('alarm')
   async alarm(data: any) {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     console.info({ data });
     saveNode({
       type: '告警',
@@ -159,7 +165,7 @@ export class NodeSocket {
    */
   @OnWSMessage('terminalOn')
   async terminalOn(data: string | string[], reline = false) {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     if (node) {
       // 如果是pesiv节点的设备和设备未注册,自动注册设备信息
       // 如果设备是百事服卡且未注册,自动注册设备型号
@@ -188,7 +194,7 @@ export class NodeSocket {
         ters.forEach(async t => {
           if (t) {
             RedisService.delDtuWorkBus(t.DevMac);
-            (await SocketUser()).sendMacUpdate(t.DevMac);
+            this.SocketUser.sendMacUpdate(t.DevMac);
             saveTerminal({
               NodeIP: node.IP,
               NodeName: node.Name,
@@ -225,10 +231,10 @@ export class NodeSocket {
    */
   @OnWSMessage('terminalOff')
   async terminalOff(mac: string, active: boolean) {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     if (node) {
       setStatTerminal(mac, false);
-      (await SocketUser()).sendMacUpdate(mac);
+      this.SocketUser.sendMacUpdate(mac);
       RedisService.delDtuWorkBus(mac);
       if (!active) {
         const onTime = await RedisService.getMacOnlineTime(mac);
@@ -255,14 +261,14 @@ export class NodeSocket {
    */
   @OnWSMessage('instructTimeOut')
   async instructTimeOut(mac: string, pid: number, instruct: string[]) {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     if (node) {
       // console.log('部分指令超时', mac, pid, instruct);
       setStatTerminalDevs(mac, pid);
-      (await SocketUser()).sendMacUpdate(mac);
-      const EX = (await SocketUart()).cache.get(mac + pid);
+      this.SocketUser.sendMacUpdate(mac);
+      const EX = this.SocketUart.cache.get(mac + pid);
       if (EX) EX.Interval += 500 * instruct.length;
-      (await SocketUser()).sendRootSocketMessage(
+      this.SocketUser.sendRootSocketMessage(
         `部分指令超时,mac:${mac}/pid:${pid}/instruct:${instruct.join(',')}`
       );
       /*  saveDataTransfinite({
@@ -287,15 +293,15 @@ export class NodeSocket {
    */
   @OnWSMessage('terminalMountDevTimeOut')
   async terminalMountDevTimeOut(mac: string, pid: number, timeOut: number) {
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     if (node) {
       const hash = mac + pid;
-      const Query = (await SocketUart()).cache.get(hash);
+      const Query = this.SocketUart.cache.get(hash);
       if (Query) {
         // 如果超时次数>10和短信发送状态为false
         if (timeOut > 10) {
           setStatTerminalDevs(mac, pid, false);
-          (await SocketUser()).sendMacUpdate(mac);
+          this.SocketUser.sendMacUpdate(mac);
           // 把查询超时间隔修改为1分钟
           Query.Interval = 6e4;
           if (!(await RedisService.hasTimeOutMonutDevSmsSend(hash))) {
@@ -351,9 +357,9 @@ export class NodeSocket {
   @WSEmit('nodeInfo')
   async ready() {
     // 迭代所有设备,加入缓存
-    const node = await (await SocketUart()).getNode(this.ctx.id);
+    const node = await this.SocketUart.getNode(this.ctx.id);
     if (node) {
-      (await SocketUart()).setNodeCache(node.Name);
+      this.SocketUart.setNodeCache(node.Name);
       return node.Name;
     }
   }
@@ -367,6 +373,6 @@ export class NodeSocket {
   @OnWSMessage('dtuopratesuccess')
   @OnWSMessage('result')
   async dtuOprateSuccess(events: string, result: Uart.ApolloMongoResult) {
-    (await SocketUart()).event.emit(events, result);
+    this.SocketUart.event.emit(events, result);
   }
 }

@@ -1,7 +1,9 @@
+import { Options } from 'nodemailer/lib/mailer';
 import * as SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { saveMail } from './logService';
 import { RedisService } from './redisService';
 
+export type MailOption = Options;
 /**
  *
  *
@@ -22,7 +24,7 @@ export async function sendMail(
   if (title === '注册') body = `注册验证码：<strong>${body}</strong>`;
   if (title === '重置密码') body = `重置验证码：<strong>${body}</strong>`;
   subject = subject + title;
-  const mailOptions = {
+  const mailOptions: Options = {
     from: `"${title}" <705085231@qq.com>`,
     to: mail,
     subject,
@@ -38,7 +40,7 @@ export async function sendMail(
     .then(el => {
       const data: Uart.logMailSend = {
         mails: mail.split(','),
-        sendParams: mailOptions,
+        sendParams: mailOptions as any,
         Success: el as any,
       };
       saveMail(data);
@@ -47,7 +49,7 @@ export async function sendMail(
     .catch(e => {
       const data: Uart.logMailSend = {
         mails: mail.split(','),
-        sendParams: mailOptions,
+        sendParams: mailOptions as any,
         Error: e.response,
       };
       saveMail(data);

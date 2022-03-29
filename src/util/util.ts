@@ -4,6 +4,7 @@ import * as CryptoJS from 'crypto-js';
 import * as bcrypt from 'bcryptjs';
 import { crc16modbus } from 'crc';
 import * as os from 'os';
+import * as moment from 'moment';
 
 const saltRounds = 10;
 /**
@@ -170,13 +171,7 @@ export function ParseCoefficient(fun: string, val: number) {
  * @param time
  */
 export function parseTime(time: string | number | Date = new Date()) {
-  const date = new Date(time);
-  const M = date.getMonth() + 1;
-  const d = date.getDate();
-  const h = date.getHours();
-  const m = date.getMinutes();
-  const s = date.getSeconds();
-  return `${M}-${d} ${h}:${m}:${s}`;
+  return moment(time).format('M-D H:m:s');
 }
 
 /**

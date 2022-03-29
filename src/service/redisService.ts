@@ -1,4 +1,3 @@
-import { TaskLocal } from '@midwayjs/decorator';
 import * as redis from 'ioredis';
 import { getAlarmProtocol, getProtocol, getTerminals } from './deviceService';
 import { getUserAlarmProtocol } from './userSevice';
@@ -20,6 +19,15 @@ interface secretApp {
   mail: Transporter<SMTPTransport.SentMessageInfo>;
   iot: Dyiotapi;
   newIot: core;
+  /**
+   * 微信小程序
+   */
+  wp: Uart.Secret_app;
+
+  /**
+   * 微信公众号
+   */
+  wxPublic: Uart.Secret_app;
 }
 class Redis {
   /**
@@ -103,6 +111,14 @@ class Redis {
         apiVersion: '2021-05-20',
       });
     });
+
+    getSecretKey('wxwp').then((el: any) => {
+      this.Secret.wp = el;
+    });
+
+    getSecretKey('wxmp').then((el: any) => {
+      this.Secret.wxPublic = el;
+    });
   }
 
   getClient() {
@@ -125,7 +141,6 @@ class Redis {
   /**
    * 每分钟更新一次终端信息
    */
-  @TaskLocal('* * * * *')
   async initTerminalMap() {
     const terminals = (await getTerminals()) as any;
     this.terminalMap = new Map(terminals.map(el => [el.DevMac, el]));

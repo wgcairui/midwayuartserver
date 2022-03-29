@@ -1,13 +1,11 @@
 import { alarm } from '../interface';
-import { SmsResult } from '../interface';
 import { parseTime } from '../util/util';
 import { getTerminal } from './deviceService';
 import { getUser } from './userSevice';
-import { SendsubscribeMessageDevAlarm } from './wxService';
 import { TencetMapGeocoder, TencetMapIp } from './tencetMapService';
 import { getMactoUser } from '../util/base';
-import { sendSMS, SmsDTUDevTimeOut } from './smsService';
-import { sendMail } from './mailService';
+import { MQ } from './bullService';
+import { SmsParams } from './smsService';
 
 const enum Config {
   /**
@@ -40,48 +38,52 @@ export async function timeOutAlarm(
   if (user) {
     const ter = await getTerminal(mac);
     if (user.wxid) {
-      return {
-        type: 'wx',
-        data: await SendsubscribeMessageDevAlarm({
-          touser: user.wxid,
-          template_id: Config.TemplateIdUniversal,
-          miniprogram: {
-            appid: Config.wpId,
-            pagepath: '/pages/index/alarm/alarm',
+      const postData: Uart.WX.wxsubscribeMessage = {
+        touser: user.wxid,
+        template_id: Config.TemplateIdUniversal,
+        miniprogram: {
+          appid: Config.wpId,
+          pagepath: '/pages/index/alarm/alarm',
+        },
+        data: {
+          first: {
+            value: `设备[${ter.name}/${devName}]连接${event}${
+              event === '超时' ? `,请检查设备 ${devName} 连接状态` : ''
+            }`,
+            color: '#173177',
           },
-          data: {
-            first: {
-              value: `设备[${ter.name}/${devName}]连接${event}${
-                event === '超时' ? `,请检查设备 ${devName} 连接状态` : ''
-              }`,
-              color: '#173177',
-            },
-            device: {
-              value: `${ter.name}/${devName}`,
-              color: '#173177',
-            },
-            time: {
-              value: parseTime(time),
-              color: '#173177',
-            },
-            remark: {
-              value: event,
-              color: '#173177',
-            },
+          device: {
+            value: `${ter.name}/${devName}`,
+            color: '#173177',
           },
-        }),
+          time: {
+            value: parseTime(time),
+            color: '#173177',
+          },
+          remark: {
+            value: event,
+            color: '#173177',
+          },
+        },
       };
+      MQ.addJob('wx', postData);
     } else if (user.tels && user.tels.length > 0) {
-      return {
-        type: 'sms',
-        data: await SmsDTUDevTimeOut(user.tels, {
-          pid,
-          devName,
-          event,
-          name: user.name,
-          DTU: ter.name,
-        }),
+      const Template = {
+        pid,
+        devName,
+        event,
+        name: user.name,
+        DTU: ter.name,
       };
+      const TemplateParam = JSON.stringify({ ...Template, time: parseTime() });
+      const params: SmsParams = {
+        RegionId: 'cn-hangzhou',
+        PhoneNumbers: user.tels.join(','),
+        SignName: '雷迪司科技湖北有限公司',
+        TemplateCode: 'SMS_200701321',
+        TemplateParam,
+      };
+      MQ.addJob('sms', params);
     } else if (user.mails && user.mails.length > 0) {
       const body = `<p><strong>尊敬的${user.name}</strong></p>
                 <hr />
@@ -96,15 +98,13 @@ export async function timeOutAlarm(
                 <p>扫码使用微信小程序查看</p>
                 <p><img src="https://www.ladishb.com/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></p>
                 <p>&nbsp;</p>`;
-      return {
-        type: 'mail',
-        data: await sendMail(
-          user.mails.join(','),
-          'Ladis透传平台',
-          '设备告警',
-          body
-        ),
-      };
+
+      MQ.addJob('mail', {
+        mail: user.mails.join(','),
+        title: 'Ladis透传平台',
+        subject: '设备告警',
+        body,
+      });
     }
   }
 }
@@ -125,53 +125,50 @@ export async function offline(
   if (user) {
     const ter = await getTerminal(mac);
     if (user.wxid) {
-      return {
-        type: 'wx',
-        data: await SendsubscribeMessageDevAlarm({
-          touser: user.wxid,
-          template_id: Config.TemplateIdUniversal,
-          miniprogram: {
-            appid: Config.wpId,
-            pagepath: '/pages/index/alarm/alarm',
+      const postData: Uart.WX.wxsubscribeMessage = {
+        touser: user.wxid,
+        template_id: Config.TemplateIdUniversal,
+        miniprogram: {
+          appid: Config.wpId,
+          pagepath: '/pages/index/alarm/alarm',
+        },
+        data: {
+          first: {
+            value: `设备[${ter.name}]${event}${
+              event === '离线' ? ',请检查设备或网络状态' : ''
+            }`,
+            color: '#173177',
           },
-          data: {
-            first: {
-              value: `设备[${ter.name}]${event}${
-                event === '离线' ? ',请检查设备或网络状态' : ''
-              }`,
-              color: '#173177',
-            },
-            device: {
-              value: `${ter.name}`,
-              color: '#173177',
-            },
-            time: {
-              value: parseTime(time),
-              color: '#173177',
-            },
-            remark: {
-              value: event,
-              color: '#173177',
-            },
+          device: {
+            value: `${ter.name}`,
+            color: '#173177',
           },
+          time: {
+            value: parseTime(time),
+            color: '#173177',
+          },
+          remark: {
+            value: event,
+            color: '#173177',
+          },
+        },
+      };
+      // eslint-disable-next-line quotes
+      MQ.addJob('wx', postData);
+    } else if (user.tels?.length > 0) {
+      const data: SmsParams = {
+        RegionId: 'cn-hangzhou',
+        PhoneNumbers: user.tels.join(','),
+        SignName: '雷迪司科技湖北有限公司',
+        TemplateCode: 'SMS_200691431',
+        TemplateParam: JSON.stringify({
+          name: user.name,
+          DTU: ter.name,
+          time: parseTime(time),
+          remind: event,
         }),
       };
-    } else if (user.tels?.length > 0) {
-      return {
-        type: 'sms',
-        data: await sendSMS({
-          RegionId: 'cn-hangzhou',
-          PhoneNumbers: user.tels.join(','),
-          SignName: '雷迪司科技湖北有限公司',
-          TemplateCode: 'SMS_200691431',
-          TemplateParam: JSON.stringify({
-            name: user.name,
-            DTU: ter.name,
-            time: parseTime(time),
-            remind: event,
-          }),
-        }), //.SmsDTUDevTimeOut(user.tels, { pid, devName, event, name: user.name, DTU: ter.name })
-      };
+      MQ.addJob('sms', data);
     } else if (user.mails?.length > 0) {
       const body = `<p><strong>尊敬的${user.name}</strong></p>
                 <hr />
@@ -184,15 +181,12 @@ export async function offline(
                 <p>扫码使用微信小程序查看</p>
                 <p><img src="https://www.ladishb.com/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></p>
                 <p>&nbsp;</p>`;
-      return {
-        type: 'mail',
-        data: await sendMail(
-          user.mails.join(','),
-          'Ladis透传平台',
-          '设备告警',
-          body
-        ),
-      };
+      MQ.addJob('mail', {
+        mail: user.mails.join(','),
+        title: 'Ladis透传平台',
+        subject: '设备告警',
+        body,
+      });
     }
   }
 }
@@ -208,11 +202,6 @@ export async function argumentAlarm(mac: string, pid: number, alarm: alarm[]) {
   if (user) {
     const ter = await getTerminal(mac);
     const dev = ter.mountDevs.find(el => el.pid === pid);
-    const result = {
-      wx: null as null | Uart.WX.wxRequest,
-      sms: null as null | SmsResult,
-      mail: null as null | Uart.logMailSend,
-    };
 
     if (user.wxid) {
       const param: Uart.WX.wxsubscribeMessage = {
@@ -256,7 +245,7 @@ export async function argumentAlarm(mac: string, pid: number, alarm: alarm[]) {
           },
         },
       };
-      result.wx = await SendsubscribeMessageDevAlarm(param);
+      MQ.addJob('wx', param);
     }
     if (user.tels) {
       const remind =
@@ -274,13 +263,14 @@ export async function argumentAlarm(mac: string, pid: number, alarm: alarm[]) {
         time: parseTime(alarm[0].timeStamp),
         remind,
       });
-      result.sms = await sendSMS({
+      const param: SmsParams = {
         RegionId: 'cn-hangzhou',
         PhoneNumbers: user.tels.join(','),
         SignName: '雷迪司科技湖北有限公司',
         TemplateCode: 'SMS_200701342',
         TemplateParam,
-      });
+      };
+      MQ.addJob('sms', param);
     }
     if (user.mails) {
       const body = `<p><strong>尊敬的${user.name}</strong></p>
@@ -312,15 +302,13 @@ export async function argumentAlarm(mac: string, pid: number, alarm: alarm[]) {
                 <a href="weixin://dl/business/?t=203U27hghyu" target="_blank"><img src="https://www.ladishb.com/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></a>
                 <p>&nbsp;</p>`;
 
-      result.mail = await sendMail(
-        user.mails.join(','),
-        'Ladis透传平台',
-        '设备告警',
-        body
-      );
+      MQ.addJob('mail', {
+        mail: user.mails.join(','),
+        title: 'Ladis透传平台',
+        subject: '设备告警',
+        body,
+      });
     }
-
-    return result;
   }
 }
 
@@ -336,7 +324,7 @@ export async function argumentAlarmReload(mac: string, pid: number) {
     const dev = ter.mountDevs.find(el => el.pid === pid);
 
     if (user.wxid) {
-      SendsubscribeMessageDevAlarm({
+      const postData: Uart.WX.wxsubscribeMessage = {
         touser: user.wxid,
         template_id: Config.TemplateIdUniversal,
         miniprogram: {
@@ -361,7 +349,9 @@ export async function argumentAlarmReload(mac: string, pid: number) {
             color: '#67C23A',
           },
         },
-      });
+      };
+
+      MQ.addJob('wx', postData);
     }
 
     if (user.tels) {
@@ -373,13 +363,14 @@ export async function argumentAlarmReload(mac: string, pid: number) {
         time: parseTime(),
         remind: `设备 ${dev.mountDev} 异常告警已全部消除`,
       });
-      await sendSMS({
+      const param: SmsParams = {
         RegionId: 'cn-hangzhou',
         PhoneNumbers: user.tels.join(','),
         SignName: '雷迪司科技湖北有限公司',
         TemplateCode: 'SMS_200701342',
         TemplateParam,
-      });
+      };
+      MQ.addJob('sms', param);
     }
     if (user.mails) {
       const body = `<p><strong>尊敬的${user.name}</strong></p>
@@ -395,12 +386,12 @@ export async function argumentAlarmReload(mac: string, pid: number) {
                 <a href="weixin://dl/business/?t=203U27hghyu" target="_blank"><img src="https://www.ladishb.com/upload/3312021__LADS_Uart.5df2cc6.png" alt="weapp" width="430" height="430" /></a>
                 <p>&nbsp;</p>`;
 
-      await sendMail(
-        user.mails.join(','),
-        'Ladis透传平台',
-        '设备告警恢复',
-        body
-      );
+      MQ.addJob('mail', {
+        mail: user.mails.join(','),
+        title: 'Ladis透传平台',
+        subject: '设备告警恢复',
+        body,
+      });
     }
   }
 }
@@ -408,7 +399,7 @@ export async function argumentAlarmReload(mac: string, pid: number) {
 /**
  * 设备上下线提醒
  * @param mac
- * @param pid
+ * @param type
  */
 export async function macOnOff_line(mac: string, type: '上线' | '离线') {
   const user = await getMactoUser(mac);
@@ -421,35 +412,34 @@ export async function macOnOff_line(mac: string, type: '上线' | '离线') {
           .then(el => el.result.ad_info.city)
           .catch(() => '未获取到地址');
 
-    return {
-      type: 'wx',
-      data: await SendsubscribeMessageDevAlarm({
-        touser: user.wxid,
-        template_id: Config.TemplateIdUniversal,
-        miniprogram: {
-          appid: Config.wpId,
-          pagepath: '/pages/index/alarm/alarm',
+    const postData: Uart.WX.wxsubscribeMessage = {
+      touser: user.wxid,
+      template_id: Config.TemplateIdUniversal,
+      miniprogram: {
+        appid: Config.wpId,
+        pagepath: '/pages/index/alarm/alarm',
+      },
+      data: {
+        first: {
+          value: `[ ${ter.name} ] 已${type}`,
+          color: '#303133',
         },
-        data: {
-          first: {
-            value: `[ ${ter.name} ] 已${type}`,
-            color: '#303133',
-          },
-          device: {
-            value: `${ter.name}`,
-            color: '#303133',
-          },
-          time: {
-            value: parseTime(),
-            color: '#303133',
-          },
-          remark: {
-            value: `${type}地址:${address}(依赖ip定位,不保证精确,仅供参考)`,
-            color: '#303133',
-          },
+        device: {
+          value: `${ter.name}`,
+          color: '#303133',
         },
-      }),
+        time: {
+          value: parseTime(),
+          color: '#303133',
+        },
+        remark: {
+          value: `${type}地址:${address}(依赖ip定位,不保证精确,仅供参考)`,
+          color: '#303133',
+        },
+      },
     };
+
+    MQ.addJob('wx', postData);
   }
 }
 
@@ -469,7 +459,7 @@ export async function IccidExpire(
   const user = await getUser(u);
   const ter = await getTerminal(mac);
   if (user && user.wxId) {
-    await SendsubscribeMessageDevAlarm({
+    const postData: Uart.WX.wxsubscribeMessage = {
       touser: user.wxId,
       template_id: Config.TemplateIdUniversal,
       data: {
@@ -490,7 +480,8 @@ export async function IccidExpire(
           color: '#303133',
         },
       },
-    });
+    };
+    MQ.addJob('wx', postData);
   }
   if (user && user.mail) {
     const body = `<p><strong>尊敬的${u}</strong></p>
@@ -500,6 +491,11 @@ export async function IccidExpire(
             }</em> 使用的物联卡 ${iccid} 即将失效</strong></p>
             <p><strong>告警时间:&nbsp; </strong>${parseTime(expire)}</p>
            `;
-    await sendMail(user.mail, 'Ladis透传平台', 'ICCID即将失效', body);
+    MQ.addJob('mail', {
+      mail: user.mail,
+      title: 'Ladis透传平台',
+      subject: 'ICCID即将失效',
+      body,
+    });
   }
 }

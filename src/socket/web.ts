@@ -10,13 +10,16 @@ import {
   WSEmit,
 } from '@midwayjs/decorator';
 import { Context, Application } from '@midwayjs/socketio';
-import { SocketUser } from '../service/socketUserService';
+import { ProvideSocketUser } from '../service/socketUserService';
 
 @Provide()
 @WSController('/web')
 export class WebSocket {
   @Inject()
   ctx: Context;
+
+  @Inject()
+  SocketUser: ProvideSocketUser;
 
   /* @Inject()
     Alarm: Alarm */
@@ -68,10 +71,10 @@ export class WebSocket {
   subscribe(data: { event: string }) {
     // console.log("subscribe",data);
 
-    if (!SocketUser.subscribeUsers.has(data.event)) {
-      SocketUser.subscribeUsers.set(data.event, new Set());
+    if (!this.SocketUser.subscribeUsers.has(data.event)) {
+      this.SocketUser.subscribeUsers.set(data.event, new Set());
     }
-    SocketUser.subscribeUsers.get(data.event).add(this.ctx.id);
+    this.SocketUser.subscribeUsers.get(data.event).add(this.ctx.id);
   }
 
   /**
@@ -81,8 +84,8 @@ export class WebSocket {
   @OnWSMessage('unSubscribe')
   unSubscribe(data: { event: string }) {
     // console.log("unsubscribe",data);
-    if (SocketUser.subscribeUsers.has(data.event)) {
-      SocketUser.subscribeUsers.get(data.event).delete(this.ctx.id);
+    if (this.SocketUser.subscribeUsers.has(data.event)) {
+      this.SocketUser.subscribeUsers.get(data.event).delete(this.ctx.id);
     }
   }
 }
