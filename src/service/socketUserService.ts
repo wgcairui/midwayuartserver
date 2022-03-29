@@ -9,8 +9,10 @@ import {
 } from '@midwayjs/decorator';
 import { Application as IO } from '@midwayjs/socketio';
 import { getBindMacUser } from '../util/base';
-import { MQ } from './bullService';
+import { MQ, WsData } from './bullService';
 import { RedisService } from './redisService';
+import { Job, Worker } from 'bullmq';
+import { Secret_JwtVerify } from '../util/util';
 @Provide()
 @Scope(ScopeEnum.Singleton)
 export class ProvideSocketUser {
@@ -25,8 +27,34 @@ export class ProvideSocketUser {
   @Init()
   init() {
     this.subscribeUsers = new Map();
+
+    new Worker('wsInput', this.wsConnect, {
+      connection: RedisService.redisService,
+    });
   }
 
+  /**
+   * 处理wx ws接受程序触发的队列
+   * 把用户信息传递
+   * 微信ws事件触发
+   * @param job
+   */
+  private async wsConnect(job: Job<WsData>) {
+    const { token, event } = job.data;
+    try {
+      const { user } = await Secret_JwtVerify<Uart.UserInfo>(token);
+      console.log({ user, token, event });
+      await RedisService.addWsToken(user, token);
+      if (event) {
+        if (!this.subscribeUsers.has(event)) {
+          this.subscribeUsers.set(event, new Set());
+        }
+        this.subscribeUsers.get(event).add(user);
+      }
+    } catch (error: any) {
+      console.error('bull wsConnect Error', error.message || '');
+    }
+  }
   /**
    *
    * @param mac 向订阅ˇ端发送设备变更日志
@@ -111,7 +139,7 @@ export class ProvideSocketUser {
       if (token) {
         MQ.addJobWs({
           token,
-          type: events,
+          event: events,
           data,
         });
       }

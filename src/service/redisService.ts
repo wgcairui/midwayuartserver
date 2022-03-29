@@ -153,7 +153,7 @@ class Redis {
    * @returns
    */
   addWsToken(user: string, token: string) {
-    return this.redisService.setex('ws' + user, 0, token);
+    return this.redisService.set('ws' + user, token);
   }
 
   /**

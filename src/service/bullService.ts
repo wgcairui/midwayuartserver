@@ -1,7 +1,6 @@
 import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq';
 import { getModel } from '../util/base';
-import { Secret_JwtVerify } from '../util/util';
 import { WxPublics } from '../util/wxpublic';
 import { saveInnerMessage, saveWxsubscribeMessage } from './logService';
 import { sendMail } from './mailService';
@@ -10,7 +9,7 @@ import { sendSMS, SmsParams } from './smsService';
 
 export interface WsData {
   token: string;
-  type: string;
+  event: string;
   data: any;
 }
 
@@ -112,10 +111,6 @@ class App {
       'wsOutput' as any,
       new Queue('wsOutput', { connection: RedisService.redisService })
     );
-
-    new Worker('wsInput', this.wsConnect, {
-      connection: RedisService.redisService,
-    });
   }
 
   /**
@@ -174,21 +169,6 @@ class App {
   ) {
     const model = getModel(job.data.entity);
     await model.create(job.data.doc);
-  }
-
-  /**
-   * 处理wx ws接受程序触发的队列
-   * @param job
-   */
-  private async wsConnect(job: Job<{ token: string }>) {
-    const token = job.data.token;
-    console.log(token);
-    try {
-      const users = await Secret_JwtVerify<Uart.UserInfo>(token);
-      RedisService.addWsToken(users.user, token);
-    } catch (error: any) {
-      console.error('wsConnect Error', error.message || '');
-    }
   }
 
   /**
