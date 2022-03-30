@@ -66,6 +66,7 @@ export async function parse232(
       )
 
       .map(el => {
+        
         // 解析规则
         const instructs = InstructMap.get(el.content)!;
         // 把buffer转换为utf8字符串并掐头去尾

@@ -28,7 +28,21 @@ export class ProvideSocketUser {
   init() {
     this.subscribeUsers = new Map();
 
-    new Worker('wsInput', this.wsConnect, {
+    new Worker('wsInput', async (job: Job<WsData>)=>{
+      const { token, event } = job.data;
+      try {
+        const { user } = await Secret_JwtVerify<Uart.UserInfo>(token);
+        await RedisService.addWsToken(user, token);
+        if (event) {
+          if (!this.subscribeUsers.has(event)) {
+            this.subscribeUsers.set(event, new Set());
+          }
+          this.subscribeUsers.get(event).add(user);
+        }
+      } catch (error: any) {
+        console.error('bull wsConnect Error:', error.message || '');
+      }
+    }, {
       connection: RedisService.redisService,
     });
   }
@@ -39,22 +53,9 @@ export class ProvideSocketUser {
    * 微信ws事件触发
    * @param job
    */
-  private async wsConnect(job: Job<WsData>) {
-    const { token, event } = job.data;
-    try {
-      const { user } = await Secret_JwtVerify<Uart.UserInfo>(token);
-      console.log({ user, token, event });
-      await RedisService.addWsToken(user, token);
-      if (event) {
-        if (!this.subscribeUsers.has(event)) {
-          this.subscribeUsers.set(event, new Set());
-        }
-        this.subscribeUsers.get(event).add(user);
-      }
-    } catch (error: any) {
-      console.error('bull wsConnect Error', error.message || '');
-    }
-  }
+  /* private async wsConnect(job: Job<WsData>) {
+    
+  } */
   /**
    *
    * @param mac 向订阅ˇ端发送设备变更日志
@@ -105,6 +106,7 @@ export class ProvideSocketUser {
   async sendMacDateUpdate(mac: string, pid: number) {
     const event = mac + pid;
     const users = this.subscribeUsers.get(mac + pid);
+    
     if (users && users.size > 0) {
       this.toUserInfo([...users.values()], event);
     }
@@ -136,6 +138,7 @@ export class ProvideSocketUser {
     const users = [user].flat();
     users.forEach(async u => {
       const token = await RedisService.getWsToken(u);
+      
       if (token) {
         MQ.addJobWs({
           token,

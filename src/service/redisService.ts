@@ -54,6 +54,8 @@ class Redis {
    */
   terminalDataMap: Map<string, string>;
 
+  terminalDataParseCache:Map<string, any>
+
   Secret: secretApp;
 
   constructor() {
@@ -153,7 +155,7 @@ class Redis {
    * @returns
    */
   addWsToken(user: string, token: string) {
-    return this.redisService.set('ws' + user, token);
+    return this.redisService.setex('ws' + user, 1000, token);
   }
 
   /**
