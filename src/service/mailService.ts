@@ -19,6 +19,9 @@ export async function sendMail(
   subject: string,
   body: string
 ) {
+  if (!mail) {
+    throw new Error('email is null');
+  }
   body = String(body);
   title = title || 'Ladis';
   if (title === '注册') body = `注册验证码：<strong>${body}</strong>`;
