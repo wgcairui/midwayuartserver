@@ -2,7 +2,11 @@ import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq';
 import { getModel } from '../util/base';
 import { WxPublics } from '../util/wxpublic';
-import { saveInnerMessage, saveWxsubscribeMessage } from './logService';
+import {
+  saveBull,
+  saveInnerMessage,
+  saveWxsubscribeMessage,
+} from './logService';
 import { sendMail } from './mailService';
 import { RedisService } from './redisService';
 import { sendSMS, SmsParams } from './smsService';
@@ -103,8 +107,14 @@ class App {
           name,
           new Worker(
             name,
-            async (job: Job) => {
+            async (job: Job, id: string) => {
               await this.parse[job.name](job);
+              await saveBull({
+                name: job.name,
+                jobName: name,
+                id,
+                data: job.data,
+              });
             },
             {
               connection: RedisService.redisService,

@@ -53,6 +53,8 @@ import {
 import { NodeInfo, ParseFunction, parseTime } from '../util/util';
 import {
   getDtuBusy,
+  getlogBull,
+  getloginnerMessage,
   getUseBtyes,
   getWxEvent,
   logdataclean,
@@ -1041,6 +1043,36 @@ export class RootControll {
     return {
       code: 200,
       data: await logwxsubscribes(data.getStart(), data.getEnd()),
+    };
+  }
+
+  /**
+   * 获取wx告警推送
+   * @param start
+   * @param end
+   * @returns
+   */
+  @Post('/loginnerMessages')
+  @Validate()
+  async loginnerMessages(@Body() data: date) {
+    return {
+      code: 200,
+      data: await getloginnerMessage(data.getStart(), data.getEnd()),
+    };
+  }
+
+  /**
+   * 获取wx告警推送
+   * @param start
+   * @param end
+   * @returns
+   */
+  @Post('/logbulls')
+  @Validate()
+  async logbulls(@Body() data: date) {
+    return {
+      code: 200,
+      data: await getlogBull(data.getStart(), data.getEnd()),
     };
   }
 

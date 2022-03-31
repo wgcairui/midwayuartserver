@@ -510,3 +510,30 @@ export class innerMessages {
   @prop()
   public message: string;
 }
+
+/**
+ * 记录站内信
+ */
+@modelOptions({
+  schemaOptions: { collection: 'log.bull' },
+  options: { allowMixed: 0 },
+})
+export class logbull {
+  @prop({ default: Date.now(), required: true })
+  public timeStamp?: number;
+
+  @prop()
+  jobName: string;
+
+  @prop()
+  name: string;
+
+  @prop()
+  id: string;
+
+  /**
+   * 数据
+   */
+  @prop({ type: Schema.Types.Mixed })
+  public data?: any;
+}

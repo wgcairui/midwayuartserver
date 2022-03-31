@@ -14,6 +14,7 @@ import {
   DataClean,
   wxsubscribeMessage,
   innerMessages,
+  logbull,
 } from '../entity/log';
 import * as _ from 'lodash';
 import { getModelForClass } from '@typegoose/typegoose';
@@ -37,8 +38,17 @@ function creatDoc<D extends { [x: string]: any; timeStamp?: number }, T>(
  * @param doc
  * @returns
  */
-export async function saveInnerMessage(doc: Uart.logInnerMessages) {
+export async function saveInnerMessage(doc: innerMessages) {
   return await creatDoc(innerMessages, doc);
+}
+
+/**
+ * 保存站内信信息
+ * @param doc
+ * @returns
+ */
+export async function saveBull(doc: logbull) {
+  return await creatDoc(logbull, doc);
 }
 
 /**
@@ -402,6 +412,18 @@ export async function logwxsubscribes(start: number, end: number) {
  */
 export async function getloginnerMessage(start: number, end: number) {
   return getModel(innerMessages)
+    .find({ timeStamp: { $lte: end, $gte: start } })
+    .lean();
+}
+
+/**
+ * 获取bull
+ * @param start
+ * @param end
+ * @returns
+ */
+export async function getlogBull(start: number, end: number) {
+  return getModel(logbull)
     .find({ timeStamp: { $lte: end, $gte: start } })
     .lean();
 }
