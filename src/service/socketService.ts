@@ -361,6 +361,7 @@ export class ProvideSocketUart {
               type: '操作设备',
               query: Query,
               result,
+              msg: '用户操作设备',
             });
             if (result.ok) setStatTerminalDevs(Query.DevMac, Query.pid);
             resolve(result);
@@ -404,6 +405,7 @@ export class ProvideSocketUart {
               type: 'DTU操作',
               query: Query,
               result,
+              msg: '用户DTU操作',
             });
 
             resolve(result);

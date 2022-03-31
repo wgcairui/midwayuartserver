@@ -771,7 +771,7 @@ export async function getUserAlarmProtocol(user: string, protocol: string) {
     },
   ])) as any;
 
-  const { setup } = p || { setup:undefined }
+  const { setup } = p || { setup: undefined };
   return {
     Protocol: protocol,
     ShowTag: setup?.ShowTag || [],

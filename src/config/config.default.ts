@@ -1,6 +1,7 @@
 import { RedisOptions } from 'ioredis';
 import { ConnectOptions } from 'mongoose';
 import { tencetMapConfig } from '../interface';
+// eslint-disable-next-line node/no-extraneous-import
 import { Options as ossOptions } from 'ali-oss';
 import { IMidwayKoaConfigurationOptions } from '@midwayjs/koa';
 import { IMidwaySocketIOConfigurationOptions } from '@midwayjs/socketio';
@@ -81,7 +82,7 @@ export const bodyParser = {
   jsonLimit: '1mb',
   textLimit: '1mb',
   xmlLimit: '1mb',
-}
+};
 
 /**
  * socketio配置

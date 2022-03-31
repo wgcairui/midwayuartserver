@@ -2,6 +2,7 @@
 import { RedisService } from './redisService';
 import { SocketUart } from './socketService';
 import { alarm } from '../interface';
+import { getBindMacUser } from '../util/base';
 // 优化方向-> 把每个用户的每条协议参数检查都缓存起来，管理员或用户更新设置的时候更新指定的缓存
 
 /**
@@ -22,12 +23,13 @@ import { alarm } from '../interface';
  * @param query 设备参数集
  */
 export async function terminalDataCheck(
-  user: string,
   query: Uart.queryResult,
   result: Uart.queryResultArgument[]
 ) {
+  // 获取设备用户
+  const user = await getBindMacUser(query.mac);
   const AlarmEvents: alarm[] = [];
-  const setup = await RedisService.getUserSetup(user, query.protocol);
+  const setup = await RedisService.getUserSetup(query.protocol, user);
   if (setup.Threshold.size > 0) {
     checkThreshold(result, setup.Threshold).forEach(el => {
       el.alarm = true;

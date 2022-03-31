@@ -35,16 +35,14 @@ export class WxPublic {
   ctx: Context;
 
   @Post('/')
-  async wxPublic(@Body() data:any) {
+  async wxPublic(@Body() data: any) {
     const body: Uart.WX.wxValidation | Uart.WX.WxEvent =
       await parseStringPromise(this.ctx.request.body)
         .then(this.parseXmlObj)
         .catch(err => {
           console.log({ err, body: this.ctx.request.body, data });
-          console.log(this.ctx);
-          
-          return {} as any
-        })
+          return {} as any;
+        });
     saveWxEvent(body);
     // 微信校验接口
     if ('signature' in body) {

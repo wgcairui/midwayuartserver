@@ -69,7 +69,9 @@ export class NodeSocket {
       this.ctx.join([Node.Name, Node.IP]);
       RedisService.setSocketSid(ID, Node.Name);
       console.info(
-        `${moment().format("YYYY-MM-DD H:m:s")} new socket connect<id: ${ID},IP: ${IP},Name: ${Node.Name}>`
+        `${moment().format(
+          'YYYY-MM-DD H:m:s'
+        )} new socket connect<id: ${ID},IP: ${IP},Name: ${Node.Name}>`
       );
       // 检查节点是否在缓存中,在的话激活旧的socket,否则创建新的socket
       saveNode({ ID, IP, type: '上线', Name: Node.Name });
@@ -110,6 +112,7 @@ export class NodeSocket {
           NodeName: node.Name,
           TerminalMac: mac,
           type: '节点断开',
+          msg: '节点断开',
         });
       });
     }
@@ -123,15 +126,16 @@ export class NodeSocket {
   @OnWSMessage('register')
   @WSEmit('registerSuccess')
   async register() {
-    const Name = await RedisService.getSocketSid(this.ctx.id) //this.SocketUart.getNode(this.ctx.id);
+    const Name = await RedisService.getSocketSid(this.ctx.id); //this.SocketUart.getNode(this.ctx.id);
     if (Name) {
-      console.log(`${moment().format("YYYY-MM-DD H:m:s")}: ${Name} 请求注册信息`);
+      console.log(
+        `${moment().format('YYYY-MM-DD H:m:s')}: ${Name} 请求注册信息`
+      );
 
-      const node = await getNode(Name)
+      const node = await getNode(Name);
       const UserID = await HF.getUserId();
       return { ...node, UserID };
     }
-
   }
 
   /**
@@ -205,8 +209,9 @@ export class NodeSocket {
             saveTerminal({
               NodeIP: node.IP,
               NodeName: node.Name,
-              TerminalMac: data[0],
+              TerminalMac: typeof data === 'string' ? data : data[0],
               type: reline ? '重新连接' : '连接',
+              msg: '连接',
             });
 
             {
@@ -256,6 +261,7 @@ export class NodeSocket {
         NodeName: node.Name,
         TerminalMac: mac,
         type: active ? 'dtu主动断开' : 'dtu断开',
+        msg: '断开',
       });
     }
   }
@@ -332,6 +338,8 @@ export class NodeSocket {
               tag: '连接',
               msg: `${terminal.name}/${Query.pid}/${Query.mountDev} 查询超时`,
               timeStamp: Date.now(),
+              parentId: '',
+              type: '连接',
             });
             saveTerminal({
               NodeIP: node.IP,
@@ -339,6 +347,7 @@ export class NodeSocket {
               TerminalMac: mac,
               type: '查询超时',
               query: Query,
+              msg: '查询超时',
             });
           }
         }

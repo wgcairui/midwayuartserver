@@ -1,6 +1,4 @@
-import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq';
-import { getModel } from '../util/base';
 import { WxPublics } from '../util/wxpublic';
 import {
   saveBull,
@@ -41,11 +39,6 @@ export enum QUEUE_NAME {
   mail = 'mail',
 
   /**
-   * 日志
-   */
-  log = 'log',
-
-  /**
    * 站内信
    */
   inner_Message = 'inner_Message',
@@ -53,7 +46,6 @@ export enum QUEUE_NAME {
 
 interface QUENAME_TYPE {
   inner_Message: Uart.logInnerMessages;
-  log: Record<string, any>;
   mail: MailData;
   wx: Uart.WX.wxsubscribeMessage;
   // smsUartAlarm: SmsUartAlarm;
@@ -79,7 +71,6 @@ class App {
 
     this.parse = {
       [QUEUE_NAME.inner_Message]: this.innerMessage,
-      [QUEUE_NAME.log]: this.log,
       [QUEUE_NAME.mail]: this.mail,
       [QUEUE_NAME.wx]: this.wx,
       [QUEUE_NAME.sms]: this.sms,
@@ -171,17 +162,6 @@ class App {
   }
 
   /**
-   * 保存日志记录
-   * @param job
-   */
-  private async log<T extends object>(
-    job: Job<{ entity: AnyParamConstructor<T>; doc: T }>
-  ) {
-    const model = getModel(job.data.entity);
-    await model.create(job.data.doc);
-  }
-
-  /**
    * 添加消息到队列
    * @param name
    * @param data
@@ -189,19 +169,6 @@ class App {
   addJob<T extends keyof QUENAME_TYPE>(name: T, data: QUENAME_TYPE[T]) {
     const Queue = this.QueueMap.get(name as any);
     Queue && Queue.add(name, data);
-  }
-
-  /**
-   * 添加日志记录
-   * @param entity
-   * @param doc
-   */
-  addJobLog<T extends object>(entity: AnyParamConstructor<T>, doc: T) {
-    const Queue = this.QueueMap.get(QUEUE_NAME.log)!;
-    Queue.add('log', {
-      entity,
-      doc,
-    });
   }
 
   addJobWs(data: WsData) {

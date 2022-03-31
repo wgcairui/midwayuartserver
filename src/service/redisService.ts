@@ -54,8 +54,6 @@ class Redis {
    */
   terminalDataMap: Map<string, string>;
 
-  terminalDataParseCache:Map<string, any>
-
   Secret: secretApp;
 
   constructor() {
@@ -225,7 +223,7 @@ class Redis {
    * @param user 用户名称
    * @param protocol 设备协议名称
    */
-  async getUserSetup(user: string, protocol: string) {
+  async getUserSetup(protocol: string, user = 'root') {
     const setup = this.userSetup.get(user)?.get(protocol);
     if (!setup) {
       return this.setUserSetup(user, protocol);
@@ -241,10 +239,13 @@ class Redis {
    * @param forcedUpdate 强制更新用户缓存配置,特别是在后台修改协议配置的时候
    */
   async setUserSetup(user: string, protocol: string, forcedUpdate = false) {
-    // 获取用户个性化配置实例
-    const UserSetup = await getUserAlarmProtocol(user, protocol);
     // 协议参数阀值,状态
     const Constant = await getAlarmProtocol(protocol);
+
+    // 获取用户个性化配置实例
+    const UserSetup =
+      user === 'root' ? Constant : await getUserAlarmProtocol(user, protocol);
+
     const cache =
       this.userSetup.get(user) ||
       this.userSetup.set(user, new Map()).get(user)!;

@@ -54,6 +54,7 @@ import { NodeInfo, ParseFunction, parseTime } from '../util/util';
 import {
   getDtuBusy,
   getlogBull,
+  getlogDevUseTime,
   getloginnerMessage,
   getUseBtyes,
   getWxEvent,
@@ -1073,6 +1074,21 @@ export class RootControll {
     return {
       code: 200,
       data: await getlogBull(data.getStart(), data.getEnd()),
+    };
+  }
+
+  /**
+   * 获取wx告警推送
+   * @param start
+   * @param end
+   * @returns
+   */
+  @Post('/logDevUseTime')
+  @Validate()
+  async logDevUseTimes(@Body() data: macDate) {
+    return {
+      code: 200,
+      data: await getlogDevUseTime(data.mac, data.getStart(), data.getEnd()),
     };
   }
 

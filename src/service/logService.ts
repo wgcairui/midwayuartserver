@@ -15,6 +15,7 @@ import {
   wxsubscribeMessage,
   innerMessages,
   logbull,
+  logDevUseTime,
 } from '../entity/log';
 import * as _ from 'lodash';
 import { getModelForClass } from '@typegoose/typegoose';
@@ -52,11 +53,20 @@ export async function saveBull(doc: logbull) {
 }
 
 /**
+ * 保存设备查询间隔耗时
+ * @param doc
+ * @returns
+ */
+export async function saveDevUseTime(doc: logDevUseTime) {
+  return await creatDoc(logDevUseTime, doc);
+}
+
+/**
  * 保存节点操作日志
  * @param doc
  * @returns
  */
-export async function saveNode(doc: Uart.logNodes) {
+export async function saveNode(doc: Nodes) {
   return await creatDoc(Nodes, doc); //.creatDoc(Nodes,doc);
 }
 
@@ -65,7 +75,7 @@ export async function saveNode(doc: Uart.logNodes) {
  * @param doc
  * @returns
  */
-export async function saveTerminal(doc: Uart.logTerminals) {
+export async function saveTerminal(doc: Terminals) {
   return await creatDoc(Terminals, doc); //.creatDoc(Terminals,doc);
 }
 
@@ -74,7 +84,7 @@ export async function saveTerminal(doc: Uart.logTerminals) {
  * @param doc
  * @returns
  */
-export async function saveDataTransfinite(doc: Uart.uartAlarmObject) {
+export async function saveDataTransfinite(doc: UartTerminalDataTransfinite) {
   // SocketUser.sendMacAlarm(doc.mac, doc)
   return await creatDoc(UartTerminalDataTransfinite, doc); //.creatDoc(UartTerminalDataTransfinite,doc);
 }
@@ -84,14 +94,14 @@ export async function saveDataTransfinite(doc: Uart.uartAlarmObject) {
  * @param doc
  * @returns
  */
-export async function saveDtuBusy(doc: Uart.logDtuBusy) {
+export async function saveDtuBusy(doc: DtuBusy) {
   return await creatDoc(DtuBusy, doc);
 }
 
 /**
  * 保存邮箱发送记录
  */
-export async function saveMail(doc: Uart.logMailSend) {
+export async function saveMail(doc: MailSend) {
   return await creatDoc(MailSend, doc);
 }
 
@@ -100,7 +110,7 @@ export async function saveMail(doc: Uart.logMailSend) {
  * @param doc
  * @returns
  */
-export async function saveSms(doc: Uart.logSmsSend) {
+export async function saveSms(doc: SmsSend) {
   return await creatDoc(SmsSend, doc);
 }
 
@@ -131,7 +141,7 @@ export async function saveUserRequst(
  * @param doc
  * @returns
  */
-export async function saveClean(doc: any) {
+export async function saveClean(doc: DataClean) {
   return creatDoc(DataClean, doc);
 }
 
@@ -425,5 +435,22 @@ export async function getloginnerMessage(start: number, end: number) {
 export async function getlogBull(start: number, end: number) {
   return getModel(logbull)
     .find({ timeStamp: { $lte: end, $gte: start } })
+    .lean();
+}
+
+/**
+ * 获取设备查询间隔和耗时
+ * @param mac
+ * @param start
+ * @param end
+ * @returns
+ */
+export async function getlogDevUseTime(
+  mac: string,
+  start: number,
+  end: number
+) {
+  return getModel(logDevUseTime)
+    .find({ mac, timeStamp: { $lte: end, $gte: start } })
     .lean();
 }

@@ -122,7 +122,7 @@ export class UartTerminalDataTransfinite {
   public msg: string;
 
   @prop({ default: false })
-  public isOk: boolean;
+  public isOk?: boolean;
 }
 
 /**
@@ -221,10 +221,10 @@ export class Terminals {
   public msg: string;
 
   @prop({ type: Schema.Types.Mixed, _id: false })
-  public query: any;
+  public query?: any;
 
   @prop({ type: Schema.Types.Mixed, _id: false })
-  public result: any;
+  public result?: any;
 }
 
 /**
@@ -512,7 +512,7 @@ export class innerMessages {
 }
 
 /**
- * 记录站内信
+ * 记录bull队列
  */
 @modelOptions({
   schemaOptions: { collection: 'log.bull' },
@@ -536,4 +536,38 @@ export class logbull {
    */
   @prop({ type: Schema.Types.Mixed })
   public data?: any;
+}
+
+/**
+ * 记录设备查询
+ */
+@modelOptions({
+  schemaOptions: { collection: 'log.usetime' },
+  options: { allowMixed: 0 },
+})
+export class logDevUseTime {
+  @prop({ default: Date.now(), required: true })
+  public timeStamp?: number;
+  /**
+   * 设备mac
+   */
+  @prop()
+  mac: string;
+  /**
+   * 设备pid
+   */
+  @prop()
+  pid: number;
+
+  /**
+   * 查询间隔
+   */
+  @prop()
+  Interval: number;
+
+  /**
+   * 查询耗时
+   */
+  @prop()
+  useTime: number;
 }

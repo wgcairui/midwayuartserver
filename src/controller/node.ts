@@ -20,7 +20,11 @@ import {
   saveTerminalResultColletion,
 } from '../service/deviceService';
 import { RegexIP, RegexLocation, RegexUart, RegexICCID } from '../util/util';
-import { incUseBytes, saveDataTransfinite } from '../service/logService';
+import {
+  incUseBytes,
+  saveDataTransfinite,
+  saveDevUseTime,
+} from '../service/logService';
 import { getUser } from '../service/userSevice';
 import { terminalDataParse } from '../service/parseService';
 import { terminalDataCheck } from '../service/checkService';
@@ -120,6 +124,13 @@ export class NodeControll {
    */
   @Post('/queryData')
   async queryData(@Body('data') data: Uart.queryResult) {
+    saveDevUseTime({
+      timeStamp: data.timeStamp,
+      useTime: data.useTime,
+      Interval: data.Interval,
+      mac: data.mac,
+      pid: data.pid,
+    });
     // 同一时间只处理设备的一次结果,避免处理同一设备异步之间告警错误提醒
     if (data.mac && !(await RedisService.hasParseSet(data.mac + data.pid))) {
       // 标记数据正在处理
@@ -177,10 +188,10 @@ export class NodeControll {
       if (parse.length === 0) {
         const interval = await getMountDevInterval(data.mac);
         this.SocketUart.setTerminalMountDevCache(data.mac, interval * 3);
-        console.error({
+        /* console.error({
           msg: '解析数据为空,跳过后续操作',
           data,
-        });
+        }); */
         return;
       }
 
@@ -216,6 +227,7 @@ export class NodeControll {
                     timeStamp: el2.timeStamp,
                     tag: el2.tag,
                     msg: `${el2.argument}[${el2.data.parseValue}]`,
+                    type: 'alarm',
                   }).then(async el => {
                     this.SocketUser.sendMacAlarm(data.mac, el as any);
                   });
@@ -249,8 +261,6 @@ export class NodeControll {
   async check(data: Uart.queryResult, parse: Uart.queryResultArgument[]) {
     const a: alarm[] = [];
     const r: Uart.queryResultArgument[] = [];
-    // 获取设备用户
-    const user = await getBindMacUser(data.mac);
     // 获取协议指令条数
     const instructLen = (await getProtocol(data.protocol)).instruct
       .map(data => data.formResize.length)
@@ -267,8 +277,8 @@ export class NodeControll {
       data.pid,
       _.omit({ ...data, result: parse }, ['mac', 'pid'])
     );
-    if (user && parse.length === instructLen) {
-      const { alarm, result } = await terminalDataCheck(user, data, parse);
+    if (parse.length === instructLen) {
+      const { alarm, result } = await terminalDataCheck(data, parse);
       // 如果有告警
       if (alarm.length > 0) {
         a.push(...alarm);
