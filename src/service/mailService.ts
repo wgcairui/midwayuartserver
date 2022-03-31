@@ -28,7 +28,7 @@ export async function sendMail(
   if (title === '重置密码') body = `重置验证码：<strong>${body}</strong>`;
   subject = subject + title;
   const mailOptions: Options = {
-    from: `"${title}" <705085231@qq.com>`,
+    from: `"${title}" <260338538@qq.com>`,
     to: mail,
     subject,
     html: body,
