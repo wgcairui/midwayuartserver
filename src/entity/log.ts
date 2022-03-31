@@ -43,10 +43,10 @@ export class SmsSend {
   public sendParams: smssendParams;
 
   @prop({ _id: false })
-  public Success: Success;
+  public Success?: Success;
 
   @prop({ type: Schema.Types.Mixed, _id: false })
-  public Error: any;
+  public Error?: any;
 }
 
 class mailsendParams {
@@ -81,10 +81,10 @@ export class MailSend {
   public sendParams: mailsendParams;
 
   @prop({ type: Schema.Types.Mixed, _id: false })
-  public Success: any;
+  public Success?: any;
 
   @prop({ type: Schema.Types.Mixed, _id: false })
-  public Error: any;
+  public Error?: any;
 }
 
 /**
