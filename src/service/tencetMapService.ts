@@ -76,6 +76,7 @@ async function fecth(
     }
     return result_1;
   } catch (e) {
+    console.log({ type, data });
     throw new Error(e);
   }
 }

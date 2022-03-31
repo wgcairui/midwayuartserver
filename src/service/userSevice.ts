@@ -745,12 +745,30 @@ export async function getUserAlarmProtocol(user: string, protocol: string) {
     const setup = data
       ?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null; */
 
-  const { setup } = (await userAlarmSetupModel.aggregate([
-    { $match: { user } },
-    { $project: { ProtocolSetup: 1 } },
-    { $project: { setup: 'ProtocolSetup' } },
-    { $unwind: '$setup' },
-    { $match: { 'setup.Protocol': '卡乐控制器' } },
+  const [{ setup }] = (await userAlarmSetupModel.aggregate([
+    {
+      $match: {
+        user,
+      },
+    },
+    {
+      $project: {
+        ProtocolSetup: 1,
+      },
+    },
+    {
+      $project: {
+        setup: '$ProtocolSetup',
+      },
+    },
+    {
+      $unwind: '$setup',
+    },
+    {
+      $match: {
+        'setup.Protocol': protocol,
+      },
+    },
   ])) as any;
   return {
     Protocol: protocol,
@@ -977,10 +995,12 @@ export async function setUserSetupProtocol(
         const { data }: { type: 'del' | 'add'; data: Uart.Threshold } = arg;
 
         if (arg.type === 'del') {
-          result = await userAlarmSetupModel.updateOne(
-            { user, 'ProtocolSetup.Protocol': Protocol },
-            { $pull: { 'ProtocolSetup.$.Threshold': { name: data.name } } }
-          );
+          result = await userAlarmSetupModel
+            .findOneAndUpdate(
+              { user, 'ProtocolSetup.Protocol': Protocol },
+              { $pull: { 'ProtocolSetup.$.Threshold': { name: data.name } } }
+            )
+            .lean();
         } else {
           const has = await userAlarmSetupModel.findOne({
             user,
@@ -990,37 +1010,43 @@ export async function setUserSetupProtocol(
           });
           if (has) {
             // https://www.cnblogs.com/zhongchengyi/p/12162792.html
-            result = await userAlarmSetupModel.updateOne(
-              { user },
-              { $set: { 'ProtocolSetup.$[i1].Threshold.$[i2]': data } },
-              {
-                arrayFilters: [
-                  { 'i1.Protocol': Protocol },
-                  { 'i2.name': data.name },
-                ],
-              }
-            );
+            result = await userAlarmSetupModel
+              .findOneAndUpdate(
+                { user },
+                { $set: { 'ProtocolSetup.$[i1].Threshold.$[i2]': data } },
+                {
+                  arrayFilters: [
+                    { 'i1.Protocol': Protocol },
+                    { 'i2.name': data.name },
+                  ],
+                }
+              )
+              .lean();
           } else {
-            result = await userAlarmSetupModel.updateOne(
-              { user, 'ProtocolSetup.Protocol': Protocol },
-              { $push: { 'ProtocolSetup.$.Threshold': data } },
-              { upsert: true }
-            );
+            result = await userAlarmSetupModel
+              .findOneAndUpdate(
+                { user, 'ProtocolSetup.Protocol': Protocol },
+                { $push: { 'ProtocolSetup.$.Threshold': data } },
+                { upsert: true }
+              )
+              .lean();
           }
         }
       }
       break;
     case 'ShowTag':
       {
-        result = await userAlarmSetupModel.updateOne(
-          { user, 'ProtocolSetup.Protocol': Protocol },
-          {
-            $set: {
-              'ProtocolSetup.$.ShowTag': lodash.compact(arg as string[]),
+        result = await userAlarmSetupModel
+          .findOneAndUpdate(
+            { user, 'ProtocolSetup.Protocol': Protocol },
+            {
+              $set: {
+                'ProtocolSetup.$.ShowTag': lodash.compact(arg as string[]),
+              },
             },
-          },
-          { upsert: true }
-        );
+            { upsert: true }
+          )
+          .lean();
       }
       break;
     case 'AlarmStat':
@@ -1035,19 +1061,24 @@ export async function setUserSetupProtocol(
         });
         if (has) {
           // https://www.cnblogs.com/zhongchengyi/p/12162792.html
-          result = await userAlarmSetupModel.updateOne(
-            { user },
-            {
-              $set: {
-                'ProtocolSetup.$[i1].AlarmStat.$[i2].alarmStat': alarmStat,
+          result = await userAlarmSetupModel
+            .findOneAndUpdate(
+              { user },
+              {
+                $set: {
+                  'ProtocolSetup.$[i1].AlarmStat.$[i2].alarmStat': alarmStat,
+                },
               },
-            },
-            {
-              arrayFilters: [{ 'i1.Protocol': Protocol }, { 'i2.name': name }],
-            }
-          );
+              {
+                arrayFilters: [
+                  { 'i1.Protocol': Protocol },
+                  { 'i2.name': name },
+                ],
+              }
+            )
+            .lean();
         } else {
-          result = await userAlarmSetupModel.updateOne(
+          result = await userAlarmSetupModel.findOneAndUpdate(
             { user, 'ProtocolSetup.Protocol': Protocol },
             { $push: { 'ProtocolSetup.$.AlarmStat': { name, alarmStat } } },
             { upsert: true }
