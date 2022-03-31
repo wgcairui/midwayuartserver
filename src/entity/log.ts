@@ -496,7 +496,7 @@ export class innerMessages {
    * 设备pid
    */
   @prop()
-  page?: number;
+  pid?: number;
 
   /**
    * 数据

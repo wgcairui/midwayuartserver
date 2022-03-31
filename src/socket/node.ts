@@ -30,6 +30,7 @@ import {
 } from '../service/logService';
 import { addTerminalMountDev } from '../service/userSevice';
 import { macOnOff_line, timeOutAlarm } from '../service/alarmService';
+import * as moment from 'moment';
 
 @WSController('/node')
 export class NodeSocket {
@@ -68,7 +69,7 @@ export class NodeSocket {
       this.ctx.join([Node.Name, Node.IP]);
       RedisService.setSocketSid(ID, Node.Name);
       console.info(
-        `new socket connect<id: ${ID},IP: ${IP},Name: ${Node.Name}>`
+        `${moment().format("YYYY-MM-DD H:m:s")} new socket connect<id: ${ID},IP: ${IP},Name: ${Node.Name}>`
       );
       // 检查节点是否在缓存中,在的话激活旧的socket,否则创建新的socket
       saveNode({ ID, IP, type: '上线', Name: Node.Name });
@@ -122,9 +123,15 @@ export class NodeSocket {
   @OnWSMessage('register')
   @WSEmit('registerSuccess')
   async register() {
-    const node = this.SocketUart.getNode(this.ctx.id);
-    const UserID = await HF.getUserId();
-    return { ...node, UserID };
+    const Name = await RedisService.getSocketSid(this.ctx.id) //this.SocketUart.getNode(this.ctx.id);
+    if (Name) {
+      console.log(`${moment().format("YYYY-MM-DD H:m:s")}: ${Name} 请求注册信息`);
+
+      const node = await getNode(Name)
+      const UserID = await HF.getUserId();
+      return { ...node, UserID };
+    }
+
   }
 
   /**
