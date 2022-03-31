@@ -745,7 +745,7 @@ export async function getUserAlarmProtocol(user: string, protocol: string) {
     const setup = data
       ?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null; */
 
-  const [{ setup }] = (await userAlarmSetupModel.aggregate([
+  const [p] = (await userAlarmSetupModel.aggregate([
     {
       $match: {
         user,
@@ -770,6 +770,8 @@ export async function getUserAlarmProtocol(user: string, protocol: string) {
       },
     },
   ])) as any;
+
+  const { setup } = p || { setup:undefined }
   return {
     Protocol: protocol,
     ShowTag: setup?.ShowTag || [],

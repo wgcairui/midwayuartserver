@@ -128,7 +128,6 @@ class App {
    * @param job
    */
   private async sms(job: Job<SmsParams>) {
-    console.log('bull sms', job.data);
     await sendSMS(job.data);
   }
 
@@ -141,7 +140,6 @@ class App {
    * @param {*} body  发送text或者html格式 // text: 'Hello world?', // plain text body
    */
   private async mail({ data }: Job<MailData>) {
-    console.log('bull mail', data);
     await sendMail(data.mail, data.title, data.subject, data.body);
   }
 
@@ -150,7 +148,6 @@ class App {
    * @param job
    */
   private async wx(job: Job<Uart.WX.wxsubscribeMessage>) {
-    console.log('bull wx', job.data);
     const el = await WxPublics.SendsubscribeMessageDevAlarm(job.data);
     await saveWxsubscribeMessage({ ...job.data, result: el });
   }
@@ -160,7 +157,6 @@ class App {
    * @param job
    */
   private async innerMessage(job: Job<Uart.logInnerMessages>) {
-    console.log('bull innerMessage', job.data);
     await saveInnerMessage(job.data);
   }
 
