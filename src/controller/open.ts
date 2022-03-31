@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Body } from '@midwayjs/decorator';
 import { getAlarmProtocol, getProtocols } from '../service/deviceService';
+import { SendValidation } from '../service/smsService';
 import { Crc16modbus } from '../util/util';
 
 @Controller('/api/open')
@@ -33,7 +34,7 @@ export class OpenControll {
    */
   @Post('/sendValidationSms')
   async sendValidationSms(@Body('tel') tel: string) {
-    return await this.Sms.SendValidation(tel);
+    return await SendValidation(tel);
   }
 
   /**

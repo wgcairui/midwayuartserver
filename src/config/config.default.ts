@@ -75,6 +75,14 @@ export const koa: IMidwayKoaConfigurationOptions = {
   keys: [],
 };
 
+export const bodyParser = {
+  enableTypes: ['json', 'form', 'text', 'xml'],
+  formLimit: '100mb',
+  jsonLimit: '1mb',
+  textLimit: '1mb',
+  xmlLimit: '1mb',
+}
+
 /**
  * socketio配置
  */

@@ -62,11 +62,11 @@ export async function parse232(
         el =>
           InstructMap.has(el.content) &&
           el.buffer.data.findIndex(el2 => el2 === 13) ===
-            el.buffer.data.length - 1
+          el.buffer.data.length - 1
       )
 
       .map(el => {
-        
+
         // 解析规则
         const instructs = InstructMap.get(el.content)!;
         // 把buffer转换为utf8字符串并掐头去尾
@@ -237,8 +237,8 @@ export async function parse485(
         // 申明结果
         const result: Uart.queryResultArgument = {
           name: el2.name,
-          value: '0',
-          parseValue: '0',
+          value: '',
+          parseValue: '',
           unit: el2.unit,
           issimulate: el2.isState,
         };
@@ -247,8 +247,9 @@ export async function parse485(
         switch (instructs.resultType) {
           // 处理
           case 'bit2':
+
             try {
-              result.value = buffer[start].toString();
+              result.value = buffer.length >= start ? buffer[start].toString() : undefined;
             } catch (error) {
               console.log({
                 error: error.message,
@@ -264,38 +265,35 @@ export async function parse485(
             break;
           // 处理ascii
           case 'utf8':
-            result.value = buffer.slice(start, end).toString();
+            result.value = buffer.length >= end ? buffer.slice(start, end).toString() : undefined;
             break;
           // 处理整形
           case 'hex':
           case 'short':
             // 如果是浮点数则转换为带一位小数点的浮点数
             try {
+              if (buffer.length < end) {
+                result.value = undefined;
+                break
+              }
               const num = ParseCoefficient(
                 el2.bl,
                 buffer.readIntBE(start, step)
               );
-              const str = num.toString();
 
-              /*  if (R.mac === '193059799391' && content === "0300830002") {
-                  console.log({ num, str, content, buffer, k: buffer.readIntBE(start, step),el2 });
-                } */
-
-              result.value = /\./.test(str) ? num.toFixed(1) : str;
+              result.value = typeof num === 'string' ? num : Number.isInteger(num) ? num.toString() : num.toFixed(1)
             } catch (error) {
               result.value = undefined;
               console.error({
-                el2,
-                msg: '解析结果长度错误',
-                instructs,
-                content,
-                bufferData,
-                buffer,
+                bufferlength: buffer.length,
                 start,
                 end,
                 step,
-                R,
-                IntructResult,
+                el2,
+                msg: '解析结果长度错误',
+                content,
+                bufferData,
+                buffer,
                 error,
               });
             }
@@ -305,10 +303,23 @@ export async function parse485(
             result.value = HexToSingle(buffer.slice(start, end)).toFixed(2);
             break;
         }
-        result.parseValue =
-          result.value && result.issimulate
-            ? await RedisService.parseUnit(result.unit!, result.value)
-            : result.value;
+
+        if (result.value) {
+          result.parseValue = result.issimulate ? await RedisService.parseUnit(result.unit!, result.value) : result.value
+        } else {
+          console.error({
+            bufferlength: buffer.length,
+            start,
+            end,
+            step,
+            el2,
+            msg: '没有解析值',
+            content,
+            buffer,
+            result
+          })
+        };
+
         return result;
       });
     })

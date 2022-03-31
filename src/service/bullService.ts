@@ -86,6 +86,7 @@ class App {
   private start() {
     // 迭代事件,创建队列
     Object.values(QUEUE_NAME).forEach(name => {
+      console.log(`创建bull队列: ${name}`);
       this.QueueMap.set(
         name,
         new Queue(name, { connection: RedisService.redisService })
@@ -98,9 +99,12 @@ class App {
 
       this.WorkMap.set(
         name,
-        new Worker(name, this.initWork, {
-          connection: RedisService.redisService,
-        })
+        new Worker(name, async (job: Job, id: string) => {
+          await this.parse[job.name](job);
+        },
+          {
+            connection: RedisService.redisService,
+          })
       );
     });
 
@@ -114,20 +118,11 @@ class App {
   }
 
   /**
-   * 初始化消费程序
-   * @param job 队列信息
-   * @param id 队列id
-   */
-  private async initWork(job: Job, id: string) {
-    console.log({ job, id });
-    this.parse[job.name](job.data);
-  }
-
-  /**
    * 短信发送
    * @param job
    */
   private async sms(job: Job<SmsParams>) {
+    console.log(`bull sms`, job.data)
     await sendSMS(job.data);
   }
 
@@ -140,6 +135,7 @@ class App {
    * @param {*} body  发送text或者html格式 // text: 'Hello world?', // plain text body
    */
   private async mail({ data }: Job<MailData>) {
+    console.log(`bull mail`, data)
     await sendMail(data.mail, data.title, data.subject, data.body);
   }
 
@@ -148,6 +144,7 @@ class App {
    * @param job
    */
   private async wx(job: Job<Uart.WX.wxsubscribeMessage>) {
+    console.log(`bull wx`, job.data)
     const el = await WxPublics.SendsubscribeMessageDevAlarm(job.data);
     await saveWxsubscribeMessage({ ...job.data, result: el });
   }
@@ -157,6 +154,7 @@ class App {
    * @param job
    */
   private async innerMessage(job: Job<Uart.logInnerMessages>) {
+    console.log(`bull innerMessage`, job.data)
     await saveInnerMessage(job.data);
   }
 

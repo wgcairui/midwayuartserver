@@ -821,7 +821,7 @@ export class RootControll {
       .flat();
     const names = rooms.filter(el => el);
 
-    const wsUsers = [...this.SocketUser.wsMap.keys()];
+    const wsUsers = [];
 
     return {
       code: 200,
@@ -842,7 +842,7 @@ export class RootControll {
 
     return {
       code: 200,
-      data: names.includes(user) || this.SocketUser.wsMap.has(user),
+      data: names.includes(user),
     };
   }
 

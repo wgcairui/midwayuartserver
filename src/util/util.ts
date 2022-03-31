@@ -162,7 +162,7 @@ export function ParseCoefficient(fun: string, val: number) {
   else {
     const [arg, ...f] = fun.replace(/(^\(|\)$)/g, '').split(',');
     const Fun = new Function(arg, `return ${f.join(',')}`);
-    return Fun(val) as number;
+    return Fun(val) as number | string;
   }
 }
 

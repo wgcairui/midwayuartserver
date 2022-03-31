@@ -1,4 +1,4 @@
-import { Controller, Inject, Post } from '@midwayjs/decorator';
+import { Body, Controller, Inject, Post } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 import { parseStringPromise } from 'xml2js';
 import { SHA1 } from 'crypto-js';
@@ -35,11 +35,16 @@ export class WxPublic {
   ctx: Context;
 
   @Post('/')
-  async wxPublic() {
+  async wxPublic(@Body() data:any) {
     const body: Uart.WX.wxValidation | Uart.WX.WxEvent =
-      await parseStringPromise(this.ctx.request.body).then(
-        el => this.parseXmlObj(el) as any
-      );
+      await parseStringPromise(this.ctx.request.body)
+        .then(this.parseXmlObj)
+        .catch(err => {
+          console.log({ err, body: this.ctx.request.body, data });
+          console.log(this.ctx);
+          
+          return {} as any
+        })
     saveWxEvent(body);
     // 微信校验接口
     if ('signature' in body) {

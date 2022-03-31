@@ -643,7 +643,8 @@ export class ApiControll {
         // 如果识别字为%i%i,则把值转换为四个字节的hex字符串,否则转换为两个字节
         if (/%i%i/.test(item.value)) {
           const b = Buffer.allocUnsafe(2);
-          b.writeIntBE(ParseCoefficient(item.bl, Number(item.val)), 0, 2);
+          const parseValue = ParseCoefficient(item.bl, Number(item.val));
+          b.writeIntBE(Number(parseValue), 0, 2);
           Query.content = item.value.replace(
             /(%i%i)/,
             b.slice(0, 2).toString('hex')
