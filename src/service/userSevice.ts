@@ -54,15 +54,15 @@ interface pesivData {
 }
 
 export const userModel = getModelForClass(Users);
-const loguserModel = getModelForClass(UserLogin);
+export const loguserModel = getModelForClass(UserLogin);
 export const userbindModel = getModelForClass(UserBindDevice);
-const useraggregModel = getModelForClass(UserAggregation);
-const userAlarmSetupModel = getModelForClass(UserAlarmSetup);
-const AlarmModel = getModelForClass(UartTerminalDataTransfinite);
-const layoutModel = getModelForClass(UserLayout);
-const wxUserModel = getModelForClass(wxUser);
-const secretModel = getModelForClass(SecretApp);
-const saltModel = getModelForClass(Salt);
+export const useraggregModel = getModelForClass(UserAggregation);
+export const userAlarmSetupModel = getModelForClass(UserAlarmSetup);
+export const AlarmModel = getModelForClass(UartTerminalDataTransfinite);
+export const layoutModel = getModelForClass(UserLayout);
+export const wxUserModel = getModelForClass(wxUser);
+export const secretModel = getModelForClass(SecretApp);
+export const saltModel = getModelForClass(Salt);
 
 /**
  * 校验用户密码

@@ -29,6 +29,11 @@ interface secretApp {
    */
   wxPublic: Uart.Secret_app;
 }
+
+/**
+ * 分隔符类型
+ */
+type regxType = Record<'start' | 'end' | 'step', number>;
 class Redis {
   /**
    * redis
@@ -54,7 +59,15 @@ class Redis {
    */
   terminalDataMap: Map<string, string>;
 
+  /**
+   * 第三方密匙句柄
+   */
   Secret: secretApp;
+
+  /**
+   * 协议分隔符缓存
+   */
+  regxMap: Map<string, regxType>;
 
   constructor() {
     this.redisService = new redis(redisOpt);
@@ -63,6 +76,7 @@ class Redis {
     this.userSetup = new Map();
     this.terminalMap = new Map();
     this.terminalDataMap = new Map();
+    this.regxMap = new Map();
     this.initSecret();
     //  this.clear()
     this.initTerminalMap();
@@ -95,6 +109,9 @@ class Redis {
       });
     });
 
+    /**
+     * 获取系统密匙
+     */
     getSecretKey('dyIot').then(key => {
       console.info(`${time()} 实例化iot`);
       const config = new Config({
@@ -136,6 +153,46 @@ class Redis {
         const off = await redis.keys("OfflineTime") */
     const all = [...nodes];
     if (all.length > 0) await redis.del(all);
+  }
+
+  /**
+   * 获取查询使用时间使用时间
+   * @param mac
+   * @param pid
+   */
+  async getQueryuseTime(mac: string, pid: number) {
+    const useTimeArray = await this.getQueryTerminaluseTime(mac, pid, 1000);
+    const len = useTimeArray.length;
+    const yxuseTimeArray =
+      len > 60 ? useTimeArray.slice(len - 60, len) : useTimeArray;
+    return Math.max(...yxuseTimeArray) || 4000;
+  }
+
+  /**
+   * 重置查询计时
+   * @param mac
+   * @param pid
+   */
+  clearQueryuseTime(mac: string, pid: number) {
+    this.clearQueryTerminaluseTime(mac, pid);
+  }
+
+  /**
+   * 获取协议分隔符对象
+   * @param regx
+   * @returns
+   */
+  getProtocolRegx(regx: string) {
+    if (!this.regxMap.has(regx)) {
+      const [s, len] = regx.split('-').map(el => parseInt(el));
+      const start = s - 1;
+      this.regxMap.set(regx, {
+        start: start,
+        end: start + len,
+        step: len,
+      });
+    }
+    return this.regxMap.get(regx);
   }
 
   /**

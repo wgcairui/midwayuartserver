@@ -37,6 +37,9 @@ export interface SmsUartAlarm {
 export async function sendSMS(params: params): Promise<SmsResult> {
   // 迭代发送的手机号码,检查号码每天的发送次数,每个号码每天限额50
   const tels = params.PhoneNumbers.toString().split(','); //.filter(el => !CacheAlarmSendNum.has(el) || CacheAlarmSendNum.get(el) as number < 51)
+  if (tels.length === 0) {
+    return;
+  }
   params.PhoneNumbers = tels.join(',');
 
   /**

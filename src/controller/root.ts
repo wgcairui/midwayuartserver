@@ -89,6 +89,7 @@ import {
   delUserTerminal,
   modifyUserInfo,
   getUserAlarm,
+  userModel,
 } from '../service/userSevice';
 import { WxPublics } from '../util/wxpublic';
 import {
@@ -127,7 +128,7 @@ export class RootControll {
   async runingState() {
     const User = {
       online: this.SocketApp.of('/web').sockets.size,
-      all: (await getUsers()).length,
+      all: await userModel.count(),
     };
     // 在线节点
     const Node = {
@@ -140,13 +141,13 @@ export class RootControll {
       online: terminals.filter(el => el.online).length,
       all: terminals.length,
     };
-    // 所以协议
-    const Protocol = (await getProtocols()).length;
     // 超时设备数量
     const TimeOutMonutDev = terminals
-      .map(el => el.mountDevs)
+      .map(el => el?.mountDevs || [])
       .flat()
       .filter(el => !el?.online).length;
+    // 所以协议
+    const Protocol = (await getProtocols()).length;
     // 系统事件总数
     const events = 0;
     // 系统性能

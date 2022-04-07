@@ -2,47 +2,6 @@ import { RedisService } from './redisService';
 import { ParseFunctionEnd, ParseCoefficient, HexToSingle } from '../util/util';
 
 /**
- * 获取查询使用时间使用时间
- * @param mac
- * @param pid
- */
-export async function getQueryuseTime(mac: string, pid: number) {
-  const useTimeArray = await RedisService.getQueryTerminaluseTime(
-    mac,
-    pid,
-    1000
-  );
-  const len = useTimeArray.length;
-  const yxuseTimeArray =
-    len > 60 ? useTimeArray.slice(len - 60, len) : useTimeArray;
-  return Math.max(...yxuseTimeArray) || 4000;
-}
-
-/**
- * 重置查询计时
- * @param mac
- * @param pid
- */
-export function clearQueryuseTime(mac: string, pid: number) {
-  RedisService.clearQueryTerminaluseTime(mac, pid);
-}
-
-/**
- *
- * @param regx
- * @returns
- */
-export function getProtocolRegx(regx: string) {
-  const [s, len] = regx.split('-').map(el => parseInt(el));
-  const start = s - 1;
-  return {
-    start: start,
-    end: start + len,
-    step: len,
-  };
-}
-
-/**
  * 处理232协议
  * @param IntructResult 设备结果集
  * @param protocol 协议
@@ -81,7 +40,7 @@ export async function parse232(
           // 如果是utf8,分隔符为' '
           .split(instructs.isSplit ? ' ' : '');
         return instructs.formResize.map(async el2 => {
-          const { start } = getProtocolRegx(el2.regx!);
+          const { start } = RedisService.getProtocolRegx(el2.regx!);
           const value = parseStr[start];
           return {
             name: el2.name,
@@ -137,10 +96,7 @@ export async function parse485(
         // 返回数据标明的长度
         const ResLength = el.buffer.data[2];
         // 最大解析数据长度是否对应返回数据长度
-        /* const { end } = this.getProtocolRegx(
-            protocolInstruct.formResize[protocolInstruct.formResize.length - 1]
-              .regx!
-          ); */
+
         /**
          * 返回数据和查询指令对比
          * pid需一致
@@ -159,32 +115,6 @@ export async function parse485(
     }
   }
 
-  /*  if (ResultFilter.length < IntructResult.length) {
-      const ok = ResultFilter.map(el => el.content);
-      const error = IntructResult.filter(el => !ok.includes(el.content)).map(el => {
-        // 返回数据的pid
-        const pid = el.buffer.data[0];
-        // 查询指令的类型
-        const FunctionCode = parseInt(el.content.slice(2, 4));
-        // 返回数据的类型
-        const ResFunctionCode = el.buffer.data[1];
-        // 返回数据标明的长度
-        const ResLength = el.buffer.data[2];
-
-        const len = el.buffer.data.length - 5
-
-        return { content: el.content, buffer: Buffer.from(el.buffer.data).toString('hex'), pid, FunctionCode, ResFunctionCode, ResLength, len }
-      })
-
-
-      console.log({
-        msg: '485校验出错',
-        R,
-
-        ok,
-        error
-      });
-    } */
   // 根据协议指令解析类型的不同,转换裁减Array<number>为Array<number>,把content换成指令名称
   const ParseInstructResultType = ResultFilter.map(async el => {
     const content = await RedisService.getContentToInstructName(el.content)!;
@@ -242,7 +172,7 @@ export async function parse485(
           issimulate: el2.isState,
         };
         // 每个数据的结果地址
-        const { start, end, step } = getProtocolRegx(el2.regx!);
+        const { start, end, step } = RedisService.getProtocolRegx(el2.regx!);
         switch (instructs.resultType) {
           // 处理
           case 'bit2':
@@ -272,8 +202,8 @@ export async function parse485(
           // 处理整形
           case 'hex':
           case 'short':
-            // 如果是浮点数则转换为带一位小数点的浮点数
-            try {
+            {
+              // 如果是浮点数则转换为带一位小数点的浮点数
               if (buffer.length < end) {
                 result.value = undefined;
                 break;
@@ -289,21 +219,8 @@ export async function parse485(
                   : Number.isInteger(num)
                   ? num.toString()
                   : num.toFixed(1);
-            } catch (error) {
-              result.value = undefined;
-              console.error({
-                bufferlength: buffer.length,
-                start,
-                end,
-                step,
-                el2,
-                msg: '解析结果长度错误',
-                content,
-                bufferData,
-                buffer,
-                error,
-              });
             }
+
             break;
           // 处理单精度浮点数
           case 'float':
@@ -315,7 +232,7 @@ export async function parse485(
           result.parseValue = result.issimulate
             ? await RedisService.parseUnit(result.unit!, result.value)
             : result.value;
-        } else {
+        } /* else {
           console.error({
             bufferlength: buffer.length,
             start,
@@ -327,7 +244,7 @@ export async function parse485(
             buffer,
             result,
           });
-        }
+        } */
 
         return result;
       });

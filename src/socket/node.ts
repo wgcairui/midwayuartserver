@@ -284,17 +284,14 @@ export class NodeSocket {
       this.SocketUser.sendRootSocketMessage(
         `部分指令超时,mac:${mac}/pid:${pid}/instruct:${instruct.join(',')}`
       );
-      /*  saveDataTransfinite({
-        mac: mac + 'h',
-        pid,
-        protocol: EX.protocol,
-        devName: EX.mountDev,
-        tag: '部分指令超时',
-        timeStamp: Date.now(),
-        msg: instruct.join(','),
-        isOk: true,
-      }); */
-      // console.log({ EX });
+      // 添加日志
+      saveTerminal({
+        NodeIP: node.IP,
+        NodeName: node.Name,
+        TerminalMac: mac,
+        type: '部分指令超时',
+        msg: `instruct:${instruct.join(',')}`,
+      });
     }
   }
 

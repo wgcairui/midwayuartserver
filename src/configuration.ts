@@ -22,12 +22,6 @@ export class AutoConfiguration {
 
   async onReady() {
     this.app.useMiddleware(require('@koa/cors')({ origin: '*' }));
-    /* this.app.useMiddleware(require('koa-body')({
-      multipart: true,
-      formidable: {
-        maxFileSize: 1024 * 1024 * 100 * 100,
-      }
-    })) */
     this.app.useFilter([errerHandle]);
   }
 }
