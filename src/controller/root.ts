@@ -126,8 +126,10 @@ export class RootControll {
    */
   @Post('/runingState')
   async runingState() {
+    const wsUser = await RedisService.getClient().keys('ws*');
     const User = {
-      online: this.SocketApp.of('/web').sockets.size,
+      wsUser,
+      online: this.SocketApp.of('/web').sockets.size + wsUser.length,
       all: await userModel.count(),
     };
     // 在线节点
@@ -1256,7 +1258,7 @@ export class RootControll {
    * 获取redis中key
    */
   @Post('/rediskeys')
-  async rediskeys(@Body() pattern: string) {
+  async rediskeys(@Body('pattern') pattern: string) {
     return {
       code: 200,
       data: await RedisService.getClient().keys(pattern),
