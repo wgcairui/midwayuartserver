@@ -564,12 +564,14 @@ export async function modifyTerminalJw(user: string, mac: string, jw: string) {
  */
 export async function addUserTerminal(user: string, mac: string) {
   // 检查mac是否已经被绑定
-  const isBind = await userbindModel.findOne({ UTs: mac });
+  //
+  const macUp = mac.toLocaleUpperCase()
+  const isBind = await userbindModel.findOne({ UTs: macUp });
   if (isBind) {
     return null;
   } else {
     return await userbindModel
-      .updateOne({ user }, { $addToSet: { UTs: mac } }, { upsert: true })
+      .updateOne({ user }, { $addToSet: { UTs: macUp } }, { upsert: true })
       .lean();
   }
 }
