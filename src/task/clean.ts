@@ -256,11 +256,11 @@ export class Clean {
     }
     //await LogDtuBusy.remove({ _id: { $in: deleteIds } })
     // 一次性处理的条目数量太多,切块后多次处理
-    const deleteChunk = chunk(deleteIds, 10000);
+    const deleteChunk = chunk(deleteIds, 1e5);
     for (const del of deleteChunk) {
       await Mode.deleteMany({ _id: { $in: del } });
     }
-    const updateChunk = chunk(allIds, 10000);
+    const updateChunk = chunk(allIds, 1e5);
     for (const update of updateChunk) {
       await Mode.updateMany({ _id: { $in: update } }, { $set: { __v: 1 } });
     }
