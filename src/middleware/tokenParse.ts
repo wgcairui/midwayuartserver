@@ -15,8 +15,14 @@ export class TokenParse implements IMiddleware<Context, NextFunction> {
         (ctx.header.token as string) || ctx.cookies.get('auth._token.local');
 
       if (token && token !== 'false') {
-        const user = await Secret_JwtVerify<Users>(token.split('%20').reverse()[0]);
-        (ctx.request.body as any).user = user;
+        const user = await Secret_JwtVerify<Users>(
+          token.split('%20').reverse()[0]
+        );
+        (ctx.request as any).user = user;
+        ctx.request.body.token = user;
+        if (!ctx.request.body?.user) {
+          ctx.request.body.user = user;
+        }
       }
       await next();
     };
