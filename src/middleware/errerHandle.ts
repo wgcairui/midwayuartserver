@@ -13,7 +13,7 @@ export class errerHandle {
       query: ctx.query,
       body: ctx.body,
       param: ctx.url,
-      ips: ctx.ips,
+      ip: ctx.ip,
       time: moment().format('YYYY-MM-DD H:m:s'),
       err: err?.message || err,
     });
