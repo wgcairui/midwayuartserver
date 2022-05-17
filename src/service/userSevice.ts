@@ -102,9 +102,9 @@ export async function syncPesivUser(user: string, pw: string) {
       status === 200 &&
       data.code === 200 &&
       data.data.u.user_pwd ===
-        SHA384(pw + data.data.u.salt)
-          .toString()
-          .toLocaleUpperCase()
+      SHA384(pw + data.data.u.salt)
+        .toString()
+        .toLocaleUpperCase()
     ) {
       const { u, devs } = data.data;
       // 创建用户信息
@@ -974,7 +974,7 @@ export async function setUserSetupProtocol(
     tels: 1,
     mails: 1,
     ProtocolSetup: 1,
-  }); //await UserAlarmSetup.findOne({ user: ctx.user }).lean<Pick<Uart.userSetup, 'user' | 'mails' | 'tels' | 'ProtocolSetup'>>()!
+  });
   // 如果没有初始配置则新建
   if (!setup) {
     setup = await initUserAlarmSetup(user);
@@ -992,48 +992,64 @@ export async function setUserSetupProtocol(
       )
       .exec();
   }
-  let result;
+  let result: any;
   switch (type) {
     case 'Threshold':
       {
         const { data }: { type: 'del' | 'add'; data: Uart.Threshold } = arg;
 
-        if (arg.type === 'del') {
+        // 如果arg是Threshold数组,直接覆盖
+        if (Array.isArray(arg)) {
           result = await userAlarmSetupModel
             .findOneAndUpdate(
               { user, 'ProtocolSetup.Protocol': Protocol },
-              { $pull: { 'ProtocolSetup.$.Threshold': { name: data.name } } }
+              {
+                $set: {
+                  'ProtocolSetup.$.Threshold': arg,
+                },
+              },
+              { upsert: true }
             )
             .lean();
         } else {
-          const has = await userAlarmSetupModel.findOne({
-            user,
-            ProtocolSetup: {
-              $elemMatch: { Protocol: Protocol, 'Threshold.name': data.name },
-            },
-          });
-          if (has) {
-            // https://www.cnblogs.com/zhongchengyi/p/12162792.html
-            result = await userAlarmSetupModel
-              .findOneAndUpdate(
-                { user },
-                { $set: { 'ProtocolSetup.$[i1].Threshold.$[i2]': data } },
-                {
-                  arrayFilters: [
-                    { 'i1.Protocol': Protocol },
-                    { 'i2.name': data.name },
-                  ],
-                }
-              )
-              .lean();
-          } else {
+          // 以下是微信小程序使用的逻辑
+          if (arg.type === 'del') {
             result = await userAlarmSetupModel
               .findOneAndUpdate(
                 { user, 'ProtocolSetup.Protocol': Protocol },
-                { $push: { 'ProtocolSetup.$.Threshold': data } },
-                { upsert: true }
+                { $pull: { 'ProtocolSetup.$.Threshold': { name: data.name } } }
               )
               .lean();
+          } else {
+            const has = await userAlarmSetupModel.findOne({
+              user,
+              ProtocolSetup: {
+                $elemMatch: { Protocol: Protocol, 'Threshold.name': data.name },
+              },
+            });
+            if (has) {
+              // https://www.cnblogs.com/zhongchengyi/p/12162792.html
+              result = await userAlarmSetupModel
+                .findOneAndUpdate(
+                  { user },
+                  { $set: { 'ProtocolSetup.$[i1].Threshold.$[i2]': data } },
+                  {
+                    arrayFilters: [
+                      { 'i1.Protocol': Protocol },
+                      { 'i2.name': data.name },
+                    ],
+                  }
+                )
+                .lean();
+            } else {
+              result = await userAlarmSetupModel
+                .findOneAndUpdate(
+                  { user, 'ProtocolSetup.Protocol': Protocol },
+                  { $push: { 'ProtocolSetup.$.Threshold': data } },
+                  { upsert: true }
+                )
+                .lean();
+            }
           }
         }
       }
@@ -1055,38 +1071,52 @@ export async function setUserSetupProtocol(
       break;
     case 'AlarmStat':
       {
-        const { name, alarmStat } = arg;
-        // 检查系统中是否含有name的配置
-        const has = await userAlarmSetupModel.findOne({
-          user,
-          ProtocolSetup: {
-            $elemMatch: { Protocol: Protocol, 'AlarmStat.name': name },
-          },
-        });
-        if (has) {
-          // https://www.cnblogs.com/zhongchengyi/p/12162792.html
+        if (Array.isArray(arg)) {
           result = await userAlarmSetupModel
             .findOneAndUpdate(
-              { user },
+              { user, 'ProtocolSetup.Protocol': Protocol },
               {
                 $set: {
-                  'ProtocolSetup.$[i1].AlarmStat.$[i2].alarmStat': alarmStat,
+                  'ProtocolSetup.$.AlarmStat': arg,
                 },
               },
-              {
-                arrayFilters: [
-                  { 'i1.Protocol': Protocol },
-                  { 'i2.name': name },
-                ],
-              }
+              { upsert: true }
             )
             .lean();
         } else {
-          result = await userAlarmSetupModel.findOneAndUpdate(
-            { user, 'ProtocolSetup.Protocol': Protocol },
-            { $push: { 'ProtocolSetup.$.AlarmStat': { name, alarmStat } } },
-            { upsert: true }
-          );
+          const { name, alarmStat } = arg;
+          // 检查系统中是否含有name的配置
+          const has = await userAlarmSetupModel.findOne({
+            user,
+            ProtocolSetup: {
+              $elemMatch: { Protocol: Protocol, 'AlarmStat.name': name },
+            },
+          });
+          if (has) {
+            // https://www.cnblogs.com/zhongchengyi/p/12162792.html
+            result = await userAlarmSetupModel
+              .findOneAndUpdate(
+                { user },
+                {
+                  $set: {
+                    'ProtocolSetup.$[i1].AlarmStat.$[i2].alarmStat': alarmStat,
+                  },
+                },
+                {
+                  arrayFilters: [
+                    { 'i1.Protocol': Protocol },
+                    { 'i2.name': name },
+                  ],
+                }
+              )
+              .lean();
+          } else {
+            result = await userAlarmSetupModel.findOneAndUpdate(
+              { user, 'ProtocolSetup.Protocol': Protocol },
+              { $push: { 'ProtocolSetup.$.AlarmStat': { name, alarmStat } } },
+              { upsert: true }
+            );
+          }
         }
       }
       break;

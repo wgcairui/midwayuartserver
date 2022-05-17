@@ -4,9 +4,7 @@ import * as moment from 'moment';
 
 @Catch()
 export class errerHandle {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async catch(err: any, ctx: Context) {
-    // ...
     console.log({
       message: '全局错误捕获',
       method: ctx.method,
@@ -16,6 +14,8 @@ export class errerHandle {
       ip: ctx.ip,
       time: moment().format('YYYY-MM-DD H:m:s'),
       err: err?.message || err,
+      code: err?.code || -1000,
+      status: err?.status || -1000
     });
 
     return {
