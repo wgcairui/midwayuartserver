@@ -79,7 +79,6 @@ export class UpdateIccid {
           // 保存数据
           await setTerminal(ter.DevMac, {
             remark: info.message,
-            name: info.code,
           });
         }
       }

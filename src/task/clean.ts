@@ -16,7 +16,7 @@ import { saveClean } from '../service/logService';
  */
 @Provide()
 export class Clean {
-  @TaskLocal('0 3 * * * ')
+  @TaskLocal('0 1 * * * ')
   async clean() {
     try {
       console.log(`${new Date().toString()} ### start clean Data.....`);
@@ -24,8 +24,8 @@ export class Clean {
       const count = {
         NumUserRequst: await this.CleanUserRequst(),
         useTime: 0,
-        NumClientresults: await this.CleanClientresults(),
         CleanClientresultsTimeOut: await this.CleanClientresultsTimeOut(),
+        NumClientresults: await this.CleanClientresults(),
         timeStamp: Date.now(),
       };
       await this.CleanDtuBusy();
@@ -120,7 +120,7 @@ export class Clean {
    * 把所有不在现有dtu列表的设备结果集删除
    */
   async CleanClientresults() {
-    console.log('清洗设备原始Result');
+    console.log('================清洗设备原始Result===================');
     console.time('CleanClientresults');
     const MapClientresults: Map<string, Map<string, string>> = new Map();
     // 文档实例
@@ -209,28 +209,59 @@ export class Clean {
   }
 
   /**
-   * 把所有2个月前的设备结果集删除
+   * 把所有1个月前的设备结果集删除
    */
   async CleanClientresultsTimeOut() {
-    console.log('把所有2个月前的设备结果集删除');
+    console.log('=============把所有1个月前的设备结果集删除=================');
     console.time('CleanClientresultsTimeOut');
-    const lastM = Date.now() - 2.592e9 * 2;
+    const lastM = Date.now() - 2.592e9 * 1;
     const ColltionMode = getModel(TerminalClientResult);
     const sMode = getModel(TerminalClientResults);
-    const len = await ColltionMode.countDocuments();
-    const docs = await ColltionMode.find(
+    
+    const colltion = ColltionMode.find(
       { timeStamp: { $lt: lastM } },
       { parentId: 1 }
-    ).lean();
+    )
+// 获取要删除的文档游标
+    const colltionCur = colltion.cursor();
+    // 获取总长度
+    const len = await ColltionMode.countDocuments();
+      // 要删除的文档长度
+    const deletedCount = await colltion.countDocuments();
+      // 保存需要删除的解析文档id
+    const parentIdSet = new Set<string>()
+    // 保存需要删除的原始解析文档id
+    const idSet = new Set<string>()
 
-    await sMode.deleteMany({
-      _id: { $in: docs.map(el => new Types.ObjectId(el.parentId)) },
-    });
-    const result = await ColltionMode.deleteMany({
-      timeStamp: { $lt: lastM },
-    });
+    /**
+     * 需要分批次取出数据删除,一次全部取出容易导致爆栈
+     */
+    for (
+      let doc = await this.next(colltionCur);
+      doc != null;
+      doc = await this.next(colltionCur)
+    ) {
+      parentIdSet.add(doc.parentId)
+      idSet.add(doc.id)
+      // 每10000条删除一次
+      if(idSet.size > 10000){
+        // 删除过期的解析文档
+        const parentIds = [...parentIdSet].map(el => new Types.ObjectId(el))
+        await sMode.deleteMany({
+          _id: { $in: parentIds },
+        });
+        parentIdSet.clear()
+        // 删除过期的原始文档
+        const ids = [...idSet].map(el => new Types.ObjectId(el))
+        await ColltionMode.deleteMany({
+          _id: { $in: ids },
+        });
+        idSet.clear()
+      }
+    }
+    
     console.timeEnd('CleanClientresultsTimeOut');
-    return result.deletedCount + '/' + len;
+    return deletedCount + '/' + len;
   }
 
   /**
@@ -249,12 +280,10 @@ export class Clean {
       const old = BusyMap.get(doc.mac);
       if (old && (doc.timeStamp === old.timeStamp || doc.stat === old.stat)) {
         deleteIds.push(old._id);
-        // await LogDtuBusy.deleteOne({ _id: old._id })
         BusyMap.set(doc.mac, doc as any);
       } else BusyMap.set(doc.mac, doc as any);
       allIds.push(doc._id);
     }
-    //await LogDtuBusy.remove({ _id: { $in: deleteIds } })
     // 一次性处理的条目数量太多,切块后多次处理
     const deleteChunk = chunk(deleteIds, 1e5);
     for (const del of deleteChunk) {
@@ -265,6 +294,5 @@ export class Clean {
       await Mode.updateMany({ _id: { $in: update } }, { $set: { __v: 1 } });
     }
     console.timeEnd('CleanDtuBusy');
-    //await LogDtuBusy.deleteMany({})
   }
 }
