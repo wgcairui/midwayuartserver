@@ -128,7 +128,6 @@ export class RootControll {
   async runingState() {
     const wsUser = await RedisService.getClient().keys('ws*');
     const User = {
-      wsUser,
       online: this.SocketApp.of('/web').sockets.size + wsUser.length,
       all: await userModel.count(),
     };
@@ -225,9 +224,9 @@ export class RootControll {
   @Post('/getTerminals')
   async getTerminals(@Body('filter') filter?: any) {
     const ts = await getTerminals(filter);
-    for (const t of ts) {
+    /* for (const t of ts) {
       (t as any).user = await getBindMacUser(t.DevMac);
-    }
+    } */
     return {
       code: 200,
       data: ts,
