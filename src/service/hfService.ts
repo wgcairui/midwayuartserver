@@ -1,6 +1,5 @@
-import { getModelForClass } from '@typegoose/typegoose';
 import axios from 'axios';
-import { SecretApp } from '../entity/user';
+import { SecretAppEntity } from '../entity';
 interface hfRequst {
   message: string;
   result: number;
@@ -87,9 +86,7 @@ class App {
    * @method 获取hf登录token
    */
   private async login() {
-    const secret = await getModelForClass(SecretApp)
-      .findOne({ type: 'hf' })
-      .lean();
+    const secret = await SecretAppEntity.findOne({ type: 'hf' }).lean();
     if (secret) {
       const url = `http://open.bridge.iotworkshop.com:8080/iotbs/api/v1/users/login?timestamp=${Date.now()}`;
       const data = await axios.post<hf_loginRequst>(url, {

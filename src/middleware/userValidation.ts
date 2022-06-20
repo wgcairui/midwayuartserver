@@ -3,6 +3,7 @@ import { Context, NextFunction } from '@midwayjs/koa';
 import { IMiddleware } from '@midwayjs/core';
 import { Secret_JwtVerify } from '../util/util';
 import { saveUserRequst } from '../service/logService';
+import { Users } from '../entity';
 
 /**
  * 判断请求是否是
@@ -17,7 +18,7 @@ export class userValidation implements IMiddleware<Context, NextFunction> {
         await next();
       } else {
         if (token && token !== 'false') {
-          const user = await Secret_JwtVerify<Uart.UserInfo>(
+          const user = await Secret_JwtVerify<Users>(
             token.split('%20').reverse()[0].trim()
           ).catch(err => {
             ctx.logger.warn(err);

@@ -47,7 +47,7 @@ class formResize {
 @modelOptions({
   options: { allowMixed: 0 },
 })
-class instruct {
+export class instruct {
   @prop()
   public name!: string; // 指令名称--GQS
 

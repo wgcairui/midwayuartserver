@@ -1,7 +1,7 @@
 import { IMiddleware } from '@midwayjs/core';
 import { Provide } from '@midwayjs/decorator';
 import { Context, NextFunction } from '@midwayjs/koa';
-import { Users } from '../entity/user';
+import { Users } from '../entity';
 import { Secret_JwtVerify } from '../util/util';
 
 /**

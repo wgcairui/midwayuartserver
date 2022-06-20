@@ -13,10 +13,10 @@ import {
   getWxUser,
   getUser,
   seach_user_keywords,
-  userModel,
 } from '../service/userSevice';
 import { WxPublics } from '../util/wxpublic';
 import { MQ } from '../service/bullService';
+import { UsersEntity } from '../entity';
 /**
  * xml2Js解析出来的数据格式
  */
@@ -109,9 +109,9 @@ export class WxPublic {
              * 当用户公众号和小程序不是同一个主体绑定时,userId会是后一个绑定主体的unionid
              * 此种情况会导致解绑的时候找不到用户
              */
-            const users = await userModel
-              .find({ wxId: body.FromUserName })
-              .lean();
+            const users = await UsersEntity.find({
+              wxId: body.FromUserName,
+            }).lean();
             // 如果有用户,解绑用户的公众号关联
             users.forEach(user => {
               modifyUserInfo(user.user, { wxId: '' });
@@ -156,15 +156,15 @@ export class WxPublic {
         case '绑定':
           {
             const data = await getWxUser(body.FromUserName);
-            const { unionid } = data
-            if(!unionid){
+            const { unionid } = data;
+            if (!unionid) {
               console.log({
-                message1:'绑定微信,unionid为空',
-                ...data
+                message1: '绑定微信,unionid为空',
+                ...data,
               });
               return this.TextMessege(
                 body,
-                `没有获取unionid,请使用同一微信使用小程序和公众号`
+                '没有获取unionid,请使用同一微信使用小程序和公众号'
               );
             }
             const u = await getUser(unionid);

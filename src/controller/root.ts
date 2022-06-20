@@ -89,7 +89,6 @@ import {
   delUserTerminal,
   modifyUserInfo,
   getUserAlarm,
-  userModel,
 } from '../service/userSevice';
 import { WxPublics } from '../util/wxpublic';
 import {
@@ -102,6 +101,7 @@ import {
 import { GetCardDetailV2 } from '../service/newDyIotService';
 import { ProvideSocketUser } from '../service/socketUserService';
 import { MQ } from '../service/bullService';
+import { ProtocolInstruct, Protocols, UsersEntity } from '../entity';
 
 @Controller('/api/root', { middleware: [root] })
 export class RootControll {
@@ -129,7 +129,7 @@ export class RootControll {
     const wsUser = await RedisService.getClient().keys('ws*');
     const User = {
       online: this.SocketApp.of('/web').sockets.size + wsUser.length,
-      all: await userModel.count(),
+      all: await UsersEntity.count(),
     };
     // 在线节点
     const Node = {
@@ -425,7 +425,7 @@ export class RootControll {
    * @param protocol
    */
   @Post('/updateProtocol')
-  async updateProtocol(@Body('protocol') protocol: Uart.protocol) {
+  async updateProtocol(@Body('protocol') protocol: Protocols) {
     const d = await updateProtocol(protocol);
     RedisService.setProtocolInstruct(protocol.Protocol);
     this.SocketUart.UpdateCacheProtocol(protocol.Protocol);
@@ -448,7 +448,7 @@ export class RootControll {
     @Body('Type') Type: number,
     @Body('ProtocolType') ProtocolType: string,
     @Body('Protocol') Protocol: string,
-    @Body('instruct') instruct: Uart.protocolInstruct[]
+    @Body('instruct') instruct: ProtocolInstruct[]
   ) {
     const d = await setProtocol(Type, ProtocolType, Protocol, instruct);
     RedisService.setProtocolInstruct(Protocol);
@@ -510,7 +510,7 @@ export class RootControll {
   async addDevType(
     @Body('Type') Type: string,
     @Body('DevModel') DevModel: string,
-    @Body('Protocols') Protocols: Pick<Uart.protocol, 'Type' | 'Protocol'>[]
+    @Body('Protocols') Protocols: Pick<Protocols, 'Type' | 'Protocol'>[]
   ) {
     return {
       code: 200,

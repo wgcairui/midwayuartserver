@@ -29,6 +29,7 @@ import { getUser } from '../service/userSevice';
 import { terminalDataParse } from '../service/parseService';
 import { terminalDataCheck } from '../service/checkService';
 import { argumentAlarm, argumentAlarmReload } from '../service/alarmService';
+import { NodeRunInfo, Terminal } from '../entity';
 
 @Controller('/api/node', { middleware: [nodeHttp] })
 export class NodeControll {
@@ -42,7 +43,7 @@ export class NodeControll {
    * @param info
    */
   @Post('/dtuInfo')
-  async dtuInfo(@Body('info') info: Uart.Terminal) {
+  async dtuInfo(@Body('info') info: Terminal) {
     // 获取terminal信息
     const terminal = await getTerminal(info.DevMac);
     if (terminal) {
@@ -105,7 +106,7 @@ export class NodeControll {
   @Post('/nodeInfo')
   async nodeInfo(
     @Body('name') name: string,
-    @Body('node') node: Uart.nodeInfo,
+    @Body('node') node: NodeRunInfo,
     @Body('tcp') tcp: number
   ) {
     return {

@@ -76,6 +76,7 @@ import {
   setUserSetupProtocol,
 } from '../service/userSevice';
 import { TencetMapGeocoder } from '../service/tencetMapService';
+import { Users } from '../entity';
 
 @Controller('/api', { middleware: [userValidation] })
 export class ApiControll {
@@ -84,21 +85,13 @@ export class ApiControll {
 
   /**
    * 添加用户
-   * @param name
    * @param user
-   * @param passwd
-   * @param tel x
-   * @param mail
-   * @param company
    * @returns
    */
   @Post('/guest/addUser')
   async addUser(
     @Body()
-    user: Pick<
-      Uart.UserInfo,
-      'user' | 'name' | 'passwd' | 'tel' | 'mail' | 'company'
-    >
+    user: Pick<Users, 'user' | 'name' | 'passwd' | 'tel' | 'mail' | 'company'>
   ) {
     MQ.addJob('inner_Message', {
       timeStamp: Date.now(),
@@ -111,7 +104,7 @@ export class ApiControll {
       user.name,
       user.user,
       user.passwd,
-      user.tel as any,
+      user.tel,
       user.mail,
       user.company
     );
@@ -119,7 +112,6 @@ export class ApiControll {
 
   /**
    * 获取用户绑定设备
-   * @param token
    * @returns
    */
   @Post('/BindDev')
@@ -132,9 +124,7 @@ export class ApiControll {
   }
 
   /**
-   * 获取用户告警信息
-   * @param token
-   */
+   * 获取用户告警信息 */
   @Validate()
   @Post('/loguartterminaldatatransfinites')
   async loguartterminaldatatransfinites(@Body() data: date) {
@@ -173,8 +163,6 @@ export class ApiControll {
 
   /**
    * 确认用户告警信息
-   * @param user
-   * @param id
    * @returns
    */
   @Post('/confrimAlarm')
@@ -188,7 +176,6 @@ export class ApiControll {
 
   /**
    * 获取指定且在线的终端
-   * @param mac
    * @returns
    */
   @Post('/getTerminalOnline')
@@ -216,10 +203,7 @@ export class ApiControll {
   }
 
   /**
-   * 添加绑定设备
-   * @param user
-   * @param mac
-   */
+   * 添加绑定设备 */
   @Post('/addUserTerminal')
   @Validate()
   async addUserTerminal(@Body() data: mac) {
@@ -239,8 +223,6 @@ export class ApiControll {
 
   /**
    * 删除绑定设备
-   * @param user
-   * @param mac
    * @returns
    */
   @Post('/delUserTerminal')
@@ -267,10 +249,7 @@ export class ApiControll {
   }
 
   /**
-   * 删除终端挂载设备
-   * @param mac
-   * @param pid
-   */
+   * 删除终端挂载设备 */
   @Post('/delTerminalMountDev')
   @Sms()
   @Validate()
@@ -286,8 +265,6 @@ export class ApiControll {
 
   /**
    * 添加用户终端挂载设备
-   * @param mac
-   * @param param2
    * @returns
    */
   @Post('/addTerminalMountDev')
@@ -373,9 +350,6 @@ export class ApiControll {
 
   /**
    * 修改用户告警配置联系方式
-   * @param user
-   * @param tels 联系电话
-   * @param mails 联系邮箱
    * @returns
    */
   @Post('/modifyUserAlarmSetupTel')
@@ -394,7 +368,6 @@ export class ApiControll {
 
   /**
    * 修改用户信息
-   * @param user
    * @param data
    * @returns
    */
@@ -402,7 +375,7 @@ export class ApiControll {
   @Sms()
   async modifyUserInfo(
     @Body('token') token: { user: string },
-    @Body('data') data: Partial<Uart.UserInfo>
+    @Body('data') data: Partial<Users>
   ) {
     if (data.tel && RegexTel(data.tel)) {
       const u = await getUser(data.tel as any);
@@ -421,7 +394,6 @@ export class ApiControll {
 
   /**
    * 获取公众号二维码
-   * @param user
    * @returns
    */
   @Post('/mpTicket')
@@ -436,7 +408,6 @@ export class ApiControll {
 
   /**
    * 获取小程序二维码
-   * @param user
    * @returns
    */
   @Post('/wpTicket')
@@ -450,10 +421,7 @@ export class ApiControll {
   }
 
   /**
-   * 获取用户单个协议告警配置
-   * @param user
-   * @param protocol
-   */
+   * 获取用户单个协议告警配置 */
   @Post('/getUserAlarmProtocol')
   @Validate()
   async getUserAlarmProtocol(@Body() data: protocol) {
@@ -464,9 +432,7 @@ export class ApiControll {
   }
 
   /**
-   * 获取单个协议告警配置
-   * @param protocol
-   */
+   * 获取单个协议告警配置 */
   @Post('/getAlarmProtocol')
   @Validate()
   async getAlarmProtocol(@Body() data: protocol) {
@@ -477,11 +443,7 @@ export class ApiControll {
   }
 
   /**
-   * 获取用户设备运行数据
-   * @param user
-   * @param mac
-   * @param pid
-   */
+   * 获取用户设备运行数据 */
   @Post('/getTerminalData')
   @Validate()
   async getTerminalData(@Body() data: macPid) {
@@ -495,10 +457,7 @@ export class ApiControll {
 
   /**
    * 获取用户设备运行数据
-   * @param user
-   * @param mac
-   * @param pid
-   * @deprecated 下一版本删除,请使用getTerminalDatasV2
+   *
    */
   @Post('/getTerminalDatas')
   @Validate()
@@ -557,11 +516,7 @@ export class ApiControll {
   }
 
   /**
-   * 获取用户设备运行数据
-   * @param user
-   * @param mac
-   * @param pid
-   */
+   * 获取用户设备运行数据 */
   @Post('/getTerminalDatasV2')
   @Validate()
   async getTerminalDatasV2(@Body() data: terminalResultsV2) {
@@ -594,10 +549,7 @@ export class ApiControll {
   }
 
   /**
-   * 重置设备超时状态
-   * @param mac
-   * @param pid
-   */
+   * 重置设备超时状态 */
   @Post('/refreshDevTimeOut')
   @Validate()
   async refreshDevTimeOut(@Body() data: macPid) {
@@ -613,8 +565,6 @@ export class ApiControll {
 
   /**
    * 固定发送设备操作指令
-   * @param query
-   * @param item
    * @returns
    */
   @Post('/SendProcotolInstructSet')
@@ -681,7 +631,6 @@ export class ApiControll {
 
   /**
    * 获取指定协议
-   * @param protocol
    * @returns
    */
   @Post('/getProtocol')
@@ -695,10 +644,6 @@ export class ApiControll {
 
   /**
    * 设置用户自定义设置(协议配置)
-   * @param user
-   * @param Protocol 协议
-   * @param type 操作类型
-   * @param arg 参数
    * @returns
    */
   @Post('/setUserSetupProtocol')
@@ -720,10 +665,6 @@ export class ApiControll {
   /**
    * 设备设备别名
    * @param mac
-   * @param pid
-   * @param protocol
-   * @param name
-   * @param alias
    * @returns
    */
   @Post('/setAlias')
@@ -737,8 +678,6 @@ export class ApiControll {
 
   /**
    * 获取终端信息
-   * @param user
-   * @param mac
    * @returns
    */
   @Post('/getTerminal')
@@ -765,10 +704,7 @@ export class ApiControll {
   }
 
   /**
-   *  获取用户布局配置
-   * @param user
-   * @param id
-   */
+   * 获取用户布局配置 */
   @Post('/getUserLayout')
   @Validate()
   async getUserLayout(@Body() data: id) {
@@ -788,10 +724,7 @@ export class ApiControll {
   }
 
   /**
-   *  获取用户聚合设备
-   * @param user
-   * @param id
-   */
+   * 获取用户聚合设备 */
   @Post('/getAggregation')
   @Validate()
   async getAggregation(@Body() data: id) {
@@ -802,12 +735,7 @@ export class ApiControll {
   }
 
   /**
-   * 设置用户布局配置
-   * @param id
-   * @param type
-   * @param bg
-   * @param Layout
-   */
+   * 设置用户布局配置 */
   @Post('/setUserLayout')
   @Validate()
   async setUserLayout(@Body() data: setAggs) {
@@ -825,8 +753,6 @@ export class ApiControll {
 
   /**
    * 添加聚合设备
-   * @param name
-   * @param aggs
    * @returns
    */
   @Post('/addAggregation')
@@ -837,8 +763,6 @@ export class ApiControll {
 
   /**
    * 删除聚合设备
-   * @param user
-   * @param id
    * @returns
    */
   @Post('/deleteAggregation')
@@ -916,10 +840,7 @@ export class ApiControll {
   }
 
   /**
-   * 更新用户头像和昵称
-   * @param nickName 昵称
-   * @param avanter 头像链接
-   */
+   * 更新用户头像和昵称 */
   @Validate()
   @Post('/updateAvanter')
   async updateAvanter(@Body() data: updateAvanter) {

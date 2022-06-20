@@ -1,23 +1,6 @@
-import {
-  Users,
-  UserBindDevice,
-  UserAggregation,
-  SecretApp,
-  UserAlarmSetup,
-  UserLayout,
-  wxUser,
-  Salt,
-} from '../entity/user';
-import { UartTerminalDataTransfinite, UserLogin } from '../entity/log';
-import {
-  Terminal,
-  TerminalClientResult,
-  TerminalClientResultSingle,
-} from '../entity/node';
 import * as lodash from 'lodash';
 import axios from 'axios';
 import { SHA384 } from 'crypto-js';
-import { getModelForClass } from '@typegoose/typegoose';
 import {
   BcryptCompare,
   RegexTel,
@@ -30,6 +13,24 @@ import { FindFilter, MongoTypesId, ObjectId } from '../interface';
 import { WeaApps } from '../util/weapp';
 import { WxPublics } from '../util/wxpublic';
 import { SendValidation } from './smsService';
+import {
+  DevConstant,
+  SaltEntity,
+  SecretAppEntity,
+  TerminalEntity,
+  TerminalParseDataEntity,
+  TerminalParseDataSingleEntity,
+  UartTerminalDataTransfiniteEntityLogEntity,
+  UserAggregationEntity,
+  UserAlarmSetup,
+  UserAlarmSetupEntity,
+  UserBindDeviceEntity,
+  UserLayoutEntity,
+  UserLoginLogEntity,
+  Users,
+  UsersEntity,
+  WxUserEntity,
+} from '../entity';
 
 interface pesiv_userInfo {
   user_name: string;
@@ -53,7 +54,7 @@ interface pesivData {
   };
 }
 
-export const userModel = getModelForClass(Users);
+/* export const userModel = getModelForClass(Users);
 export const loguserModel = getModelForClass(UserLogin);
 export const userbindModel = getModelForClass(UserBindDevice);
 export const useraggregModel = getModelForClass(UserAggregation);
@@ -62,7 +63,7 @@ export const AlarmModel = getModelForClass(UartTerminalDataTransfinite);
 export const layoutModel = getModelForClass(UserLayout);
 export const wxUserModel = getModelForClass(wxUser);
 export const secretModel = getModelForClass(SecretApp);
-export const saltModel = getModelForClass(Salt);
+export const saltModel = getModelForClass(Salt); */
 
 /**
  * 校验用户密码
@@ -73,7 +74,7 @@ export async function BcryptComparePasswd(user: string, decryptPasswd: string) {
   const { passwd, rgtype } = await getUser(user);
   if (rgtype === 'pesiv') {
     try {
-      const { salt } = await saltModel.findOne({ user });
+      const { salt } = await SaltEntity.findOne({ user });
       const p = SHA384(decryptPasswd + salt)
         .toString()
         .toLocaleUpperCase();
@@ -102,9 +103,9 @@ export async function syncPesivUser(user: string, pw: string) {
       status === 200 &&
       data.code === 200 &&
       data.data.u.user_pwd ===
-      SHA384(pw + data.data.u.salt)
-        .toString()
-        .toLocaleUpperCase()
+        SHA384(pw + data.data.u.salt)
+          .toString()
+          .toLocaleUpperCase()
     ) {
       const { u, devs } = data.data;
       // 创建用户信息
@@ -116,7 +117,7 @@ export async function syncPesivUser(user: string, pw: string) {
         userGroup: 'user',
         status: true,
         creatTime: new Date(),
-      } as Partial<Uart.UserInfo>;
+      } as Partial<Users>;
 
       // 判断用户电话
       if ((u.telephone && RegexTel(u.telephone)) || RegexTel(u.real_name)) {
@@ -137,17 +138,17 @@ export async function syncPesivUser(user: string, pw: string) {
         salt: u.salt,
       };
       // 保存盐值
-      await saltModel.updateOne(
+      await SaltEntity.updateOne(
         { user: saltinfo.user },
         { $set: { salt: saltinfo.salt } },
         { upsert: true }
       );
       // 保存用户
-      const ru = await userModel.create(userinfo as any);
+      const ru = await UsersEntity.create(userinfo as any);
       // 初始化用户配置
       await initUserAlarmSetup(ru.user);
       // 写入日志
-      await loguserModel.create({
+      await UserLoginLogEntity.create({
         user: ru.user,
         type: 'pesiv迁移',
         address: '',
@@ -203,7 +204,7 @@ export async function syncPesivUser(user: string, pw: string) {
 export async function isBindMac(user: string, mac: string) {
   const u = await getUser(user);
   if (u && ['root', 'admin'].includes(u.userGroup)) return true;
-  const r = await userbindModel.findOne(
+  const r = await UserBindDeviceEntity.findOne(
     { user, $or: [{ UTs: mac }] },
     { _id: 1 }
   );
@@ -241,17 +242,15 @@ export async function sendValidation(user: string) {
 export async function resetUserPasswd(user: string, passwd: string) {
   const users = await getUser(user);
   const isPesiv = users.userGroup === 'user' && users.rgtype === 'pesiv';
-  return await userModel
-    .updateOne(
-      { user },
-      {
-        $set: {
-          passwd: await BcryptDo(passwd),
-          rgtype: isPesiv ? 'web' : users.rgtype,
-        },
-      }
-    )
-    .lean();
+  return await UsersEntity.updateOne(
+    { user },
+    {
+      $set: {
+        passwd: await BcryptDo(passwd),
+        rgtype: isPesiv ? 'web' : users.rgtype,
+      },
+    }
+  ).lean();
 }
 
 /**
@@ -259,7 +258,7 @@ export async function resetUserPasswd(user: string, passwd: string) {
  * @returns
  */
 export async function getWxUsers() {
-  return wxUserModel.find().lean();
+  return WxUserEntity.find().lean();
 }
 
 /**
@@ -268,16 +267,14 @@ export async function getWxUsers() {
  * @returns
  */
 export async function updateWxUser(users: Uart.WX.userInfoPublic) {
-  await wxUserModel
-    .updateOne(
-      { openid: users.openid },
-      { $set: { ...users } },
-      { upsert: true }
-    )
-    .lean();
+  await WxUserEntity.updateOne(
+    { openid: users.openid },
+    { $set: { ...users } },
+    { upsert: true }
+  ).lean();
   const u = await getUser(users.unionid);
   if (u) {
-    await userModel.updateOne(
+    await UsersEntity.updateOne(
       { user: u.user },
       { $set: { wxId: users.openid } }
     );
@@ -290,7 +287,9 @@ export async function updateWxUser(users: Uart.WX.userInfoPublic) {
  * @returns
  */
 export async function getWxUser(id: string) {
-  return wxUserModel.findOne({ $or: [{ openid: id }, { unionid: id }] }).lean();
+  return WxUserEntity.findOne({
+    $or: [{ openid: id }, { unionid: id }],
+  }).lean();
 }
 
 /**
@@ -298,9 +297,9 @@ export async function getWxUser(id: string) {
  * @returns
  */
 export async function delWxUser(id: string) {
-  return wxUserModel
-    .deleteOne({ $or: [{ openid: id }, { unionid: id }] })
-    .lean();
+  return WxUserEntity.deleteOne({
+    $or: [{ openid: id }, { unionid: id }],
+  }).lean();
 }
 
 /**
@@ -308,7 +307,7 @@ export async function delWxUser(id: string) {
  * @returns
  */
 export async function getUsers() {
-  return userModel.find().lean();
+  return UsersEntity.find().lean();
 }
 
 /**
@@ -319,11 +318,12 @@ export async function getUsers() {
  */
 export async function getUser(
   user: string,
-  filter: FindFilter<Uart.UserInfo> = { _id: 0 }
-): Promise<Uart.UserInfo> {
-  return userModel
-    .findOne({ $or: [{ user }, { userId: user }, { tel: user }] }, filter)
-    .lean() as any;
+  filter: FindFilter<Users> = { _id: 0 }
+) {
+  return UsersEntity.findOne(
+    { $or: [{ user }, { userId: user }, { tel: user }] },
+    filter
+  ).lean();
 }
 
 /**
@@ -334,9 +334,9 @@ export async function getUser(
  */
 export async function getIdUser(
   id: string,
-  filter: FindFilter<Uart.UserInfo> = { _id: 0 }
+  filter: FindFilter<Users> = { _id: 0 }
 ) {
-  return userModel.findOne({ _id: new ObjectId(id) }, filter).lean();
+  return UsersEntity.findOne({ _id: new ObjectId(id) }, filter).lean();
 }
 
 /**
@@ -346,7 +346,7 @@ export async function getIdUser(
  */
 export async function getToken(user: string) {
   const users = await getUser(user);
-  const data: Partial<Uart.UserInfo> = {
+  const data: Partial<Users> = {
     user: users.user,
     name: users.name,
     userGroup: users.userGroup,
@@ -362,7 +362,7 @@ export async function getToken(user: string) {
 export async function initUserAlarmSetup(user: string) {
   const u = await getUser(user);
   if (u) {
-    return await userAlarmSetupModel.create({
+    return await UserAlarmSetupEntity.create({
       user: u.user,
       tels: u?.tel && RegexTel(u.tel) ? [u.tel] : [],
       mails: u?.mail && RegexMail(u.mail) ? [u.mail] : [],
@@ -379,11 +379,11 @@ export async function initUserAlarmSetup(user: string) {
  * @param user
  * @returns
  */
-export async function createUser(user: Partial<Uart.UserInfo>) {
+export async function createUser(user: Partial<Users>) {
   user.passwd = await BcryptDo(user.passwd || user.user);
-  const u = (await userModel.create(user as any)) as any as Uart.UserInfo;
+  const u = await UsersEntity.create(user);
   await initUserAlarmSetup(u.user);
-  await loguserModel.create({
+  await UserLoginLogEntity.create({
     user: u.user,
     type: '用户注册',
     address: user.address,
@@ -403,10 +403,11 @@ export async function updateUserLoginlog(
   msg = ''
 ) {
   return {
-    user: await userModel
-      .updateOne({ user }, { $set: { modifyTime: new Date(), address } })
-      .lean(),
-    log: await loguserModel.create({
+    user: await UsersEntity.updateOne(
+      { user },
+      { $set: { modifyTime: new Date(), address } }
+    ).lean(),
+    log: await UserLoginLogEntity.create({
       user,
       type: '用户登录',
       address,
@@ -421,9 +422,10 @@ export async function updateUserLoginlog(
  * @returns
  */
 export async function getUserBind(user: string) {
-  const bind = await userbindModel
-    .findOne({ user }, { UTs: 1, UTsShare: 1 })
-    .lean();
+  const bind = await UserBindDeviceEntity.findOne(
+    { user },
+    { UTs: 1, UTsShare: 1 }
+  ).lean();
   return {
     UTs: [bind?.UTs || [], bind?.UTsShare || []].flat(),
   };
@@ -439,7 +441,7 @@ export async function getUserBindDevices(user: string) {
     bind,
     UTs: await getTerminal(bind.UTs),
     ECs: [],
-    AGG: await useraggregModel.find({ user }).lean(),
+    AGG: await UserAggregationEntity.find({ user }).lean(),
   };
 }
 
@@ -460,7 +462,7 @@ export async function getUserBindDevices(user: string) {
 export async function getUserSecret(
   type: 'aliSms' | 'mail' | 'hf' | 'wxopen' | 'wxmp' | 'wxmpValidaton' | 'wxwp'
 ) {
-  return await secretModel.findOne({ type }).lean();
+  return await SecretAppEntity.findOne({ type }).lean();
 }
 
 /**
@@ -480,9 +482,11 @@ export async function setUserSecret(
   appid: string,
   secret: string
 ) {
-  return await secretModel
-    .updateOne({ type }, { $set: { appid, secret } }, { upsert: true })
-    .lean();
+  return await SecretAppEntity.updateOne(
+    { type },
+    { $set: { appid, secret } },
+    { upsert: true }
+  ).lean();
 }
 
 /**
@@ -499,7 +503,7 @@ export async function getUserAlarm(
   filter: FindFilter<Uart.uartAlarmObject> = { _id: 0 }
 ) {
   const bind = await getUserBind(user);
-  return AlarmModel.find(
+  return UartTerminalDataTransfiniteEntityLogEntity.find(
     { mac: { $in: bind.UTs }, timeStamp: { $gte: start, $lte: end } },
     filter
   ).lean();
@@ -514,12 +518,12 @@ export async function getUserAlarm(
 export async function confrimAlarm(user: string, id?: MongoTypesId) {
   const bind = await getUserBind(user);
   if (id) {
-    return await AlarmModel.updateOne(
+    return await UartTerminalDataTransfiniteEntityLogEntity.updateOne(
       { _id: id, mac: { $in: bind.UTs } },
       { $set: { isOk: true } }
     ).lean();
   } else {
-    return await AlarmModel.updateMany(
+    return await UartTerminalDataTransfiniteEntityLogEntity.updateMany(
       { mac: { $in: bind.UTs } },
       { $set: { isOk: true } }
     ).lean();
@@ -535,8 +539,10 @@ export async function confrimAlarm(user: string, id?: MongoTypesId) {
  */
 export async function modifyTerminal(user: string, mac: string, name: string) {
   if (isBindMac(user, mac)) {
-    const model = getModelForClass(Terminal);
-    return await model.updateOne({ DevMac: mac }, { $set: { name } }).lean();
+    return await TerminalEntity.updateOne(
+      { DevMac: mac },
+      { $set: { name } }
+    ).lean();
   } else {
     throw new Error('mac Error');
   }
@@ -552,8 +558,10 @@ export async function modifyTerminal(user: string, mac: string, name: string) {
 export async function modifyTerminalJw(user: string, mac: string, jw: string) {
   const bind = await getUserBind(user);
   if (bind.UTs.includes(mac)) {
-    const model = getModelForClass(Terminal);
-    return await model.updateOne({ DevMac: mac }, { $set: { jw } }).lean();
+    return await TerminalEntity.updateOne(
+      { DevMac: mac },
+      { $set: { jw } }
+    ).lean();
   } else throw new Error('mac Error');
 }
 
@@ -565,14 +573,16 @@ export async function modifyTerminalJw(user: string, mac: string, jw: string) {
 export async function addUserTerminal(user: string, mac: string) {
   // 检查mac是否已经被绑定
   //
-  const macUp = mac.toLocaleUpperCase()
-  const isBind = await userbindModel.findOne({ UTs: macUp });
+  const macUp = mac.toLocaleUpperCase();
+  const isBind = await UserBindDeviceEntity.findOne({ UTs: macUp });
   if (isBind) {
     return null;
   } else {
-    return await userbindModel
-      .updateOne({ user }, { $addToSet: { UTs: macUp } }, { upsert: true })
-      .lean();
+    return await UserBindDeviceEntity.updateOne(
+      { user },
+      { $addToSet: { UTs: macUp } },
+      { upsert: true }
+    ).lean();
   }
 }
 
@@ -583,9 +593,10 @@ export async function addUserTerminal(user: string, mac: string) {
  * @returns
  */
 export async function delUserTerminal(user: string, mac: string) {
-  return await userbindModel
-    .updateOne({ user }, { $pull: { UTs: mac } })
-    .lean();
+  return await UserBindDeviceEntity.updateOne(
+    { user },
+    { $pull: { UTs: mac } }
+  ).lean();
 }
 
 /**
@@ -602,10 +613,10 @@ export async function delTerminalMountDev(
   if (!isBind) {
     return null;
   } else {
-    const model = getModelForClass(Terminal);
-    return await model
-      .updateOne({ DevMac: mac }, { $pull: { mountDevs: { pid } } })
-      .lean();
+    return await TerminalEntity.updateOne(
+      { DevMac: mac },
+      { $pull: { mountDevs: { pid } } }
+    ).lean();
   }
 }
 
@@ -622,27 +633,24 @@ export async function addTerminalMountDev(
   mountDevs: Uart.TerminalMountDevs
 ) {
   const isBind = await isBindMac(user, mac);
-  const model = getModelForClass(Terminal);
   if (
     !isBind ||
     (mountDevs.bindDev &&
-      (await model.findOne(
+      (await TerminalEntity.findOne(
         { 'mountDevs.bindDev': mountDevs.bindDev.toLocaleUpperCase() },
         { _id: 1 }
       )))
   ) {
     return null;
   } else {
-    return await model
-      .updateOne(
-        { DevMac: mac },
-        {
-          $addToSet: {
-            mountDevs,
-          },
-        }
-      )
-      .lean();
+    return await TerminalEntity.updateOne(
+      { DevMac: mac },
+      {
+        $addToSet: {
+          mountDevs,
+        },
+      }
+    ).lean();
   }
 }
 
@@ -653,9 +661,9 @@ export async function addTerminalMountDev(
  * @returns
  */
 export async function getUserAlarmSetups(
-  filter: FindFilter<Uart.userSetup> = { _id: 0 }
+  filter: FindFilter<UserAlarmSetup> = { _id: 0 }
 ) {
-  return await userAlarmSetupModel.find({}, filter).lean();
+  return await UserAlarmSetupEntity.find({}, filter).lean();
 }
 
 /**
@@ -666,9 +674,9 @@ export async function getUserAlarmSetups(
  */
 export async function getUserAlarmSetup(
   user: string,
-  filter: FindFilter<Uart.userSetup> = { _id: 0 }
+  filter: FindFilter<UserAlarmSetup> = { _id: 0 }
 ) {
-  return await userAlarmSetupModel.findOne({ user }, filter).lean();
+  return await UserAlarmSetupEntity.findOne({ user }, filter).lean();
 }
 
 /**
@@ -677,7 +685,7 @@ export async function getUserAlarmSetup(
  * @returns
  */
 export async function deleteUsersetup(user: string) {
-  return userAlarmSetupModel.deleteOne({ user }).lean();
+  return UserAlarmSetupEntity.deleteOne({ user }).lean();
 }
 
 /**
@@ -692,9 +700,10 @@ export async function modifyUserAlarmSetupTel(
   tels: string[],
   mails: string[]
 ) {
-  return await userAlarmSetupModel
-    .updateOne({ user }, { $set: { tels, mails } })
-    .lean();
+  return await UserAlarmSetupEntity.updateOne(
+    { user },
+    { $set: { tels, mails } }
+  ).lean();
 }
 
 /**
@@ -703,13 +712,11 @@ export async function modifyUserAlarmSetupTel(
  * @param data
  * @returns
  */
-export async function modifyUserInfo(
-  user: string,
-  data: Partial<Uart.UserInfo>
-) {
-  return await userModel
-    .updateOne({ user }, { $set: { ...(data as any) } })
-    .lean();
+export async function modifyUserInfo(user: string, data: Partial<Users>) {
+  return await UsersEntity.updateOne(
+    { user },
+    { $set: { ...(data as any) } }
+  ).lean();
 }
 
 /**
@@ -738,16 +745,7 @@ export async function wpTicket(user: string) {
  * @param protocol
  */
 export async function getUserAlarmProtocol(user: string, protocol: string) {
-  /* const data = await userAlarmSetupModel
-      .findOne(
-        { user, 'ProtocolSetup.Protocol': protocol },
-        { 'ProtocolSetup.$': 1 }
-      )
-      .lean();
-    const setup = data
-      ?.ProtocolSetup[0] as any as Uart.ProtocolConstantThreshold | null; */
-
-  const [p] = (await userAlarmSetupModel.aggregate([
+  const [p] = (await UserAlarmSetupEntity.aggregate([
     {
       $match: {
         user,
@@ -779,10 +777,7 @@ export async function getUserAlarmProtocol(user: string, protocol: string) {
     ShowTag: setup?.ShowTag || [],
     Threshold: setup?.Threshold || [],
     AlarmStat: setup?.AlarmStat || [],
-  } as Pick<
-    Uart.ProtocolConstantThreshold,
-    'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'
-  >;
+  } as Pick<DevConstant, 'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'>;
   //return obj;
 }
 
@@ -808,8 +803,10 @@ export async function getTerminalData(
   if (!isBind) {
     return null;
   } else {
-    const model = getModelForClass(TerminalClientResultSingle);
-    return await model.findOne({ mac, pid }, filter).lean();
+    return await TerminalParseDataSingleEntity.findOne(
+      { mac, pid },
+      filter
+    ).lean();
   }
 }
 
@@ -829,10 +826,10 @@ export async function getTerminalDataName(
   if (!isBind) {
     return null;
   } else {
-    const model = getModelForClass(TerminalClientResultSingle);
-    const r = await model
-      .findOne({ mac, pid, 'result.name': name }, { 'result.$': 1, _id: 0 })
-      .lean();
+    const r = await TerminalParseDataSingleEntity.findOne(
+      { mac, pid, 'result.name': name },
+      { 'result.$': 1, _id: 0 }
+    ).lean();
     return r && r.result.length > 0 ? r.result[0] : null;
   }
 }
@@ -856,30 +853,25 @@ export async function getTerminalDatas(
   if (!isBind) {
     return null;
   } else {
-    const model = getModelForClass(TerminalClientResult);
     if (typeof name === 'string') {
-      return await model
-        .find(
-          {
-            mac,
-            pid,
-            'result.name': name,
-            timeStamp: { $gte: start, $lte: end },
-          },
-          { 'result.$': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
-        )
-        .lean();
+      return await TerminalParseDataEntity.find(
+        {
+          mac,
+          pid,
+          'result.name': name,
+          timeStamp: { $gte: start, $lte: end },
+        },
+        { 'result.$': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+      ).lean();
     } else {
-      return await model
-        .find(
-          {
-            mac,
-            pid,
-            timeStamp: { $gte: start, $lte: end },
-          },
-          { result: 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
-        )
-        .lean();
+      return await TerminalParseDataEntity.find(
+        {
+          mac,
+          pid,
+          timeStamp: { $gte: start, $lte: end },
+        },
+        { result: 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
+      ).lean();
     }
   }
 }
@@ -902,8 +894,7 @@ export async function getTerminalDatasV2(
   if (!isBind) {
     return null;
   } else {
-    const model = getModelForClass(TerminalClientResult);
-    return (await model.aggregate([
+    return (await TerminalParseDataEntity.aggregate([
       {
         $match: {
           mac,
@@ -927,30 +918,6 @@ export async function getTerminalDatasV2(
         },
       },
     ])) as any as { name: string; value: string; time: number }[];
-    /* if (typeof name === 'string') {
-        return await model
-          .find(
-            {
-              mac,
-              pid,
-              'result.name': name,
-              timeStamp: { $gte: start, $lte: end },
-            },
-            { 'result.$': 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
-          )
-          .lean();
-      } else {
-        return await model
-          .find(
-            {
-              mac,
-              pid,
-              timeStamp: { $gte: start, $lte: end },
-            },
-            { result: 1, timeStamp: 1, _id: 0, hasAlarm: 1 }
-          )
-          .lean();
-      } */
   }
 }
 
@@ -984,13 +951,11 @@ export async function setUserSetupProtocol(
     !setup?.ProtocolSetup ||
     setup.ProtocolSetup.findIndex(el => el.Protocol === Protocol) === -1
   ) {
-    await userAlarmSetupModel
-      .updateOne(
-        { user },
-        { $push: { ProtocolSetup: { Protocol } as any } },
-        { upsert: true }
-      )
-      .exec();
+    await UserAlarmSetupEntity.updateOne(
+      { user },
+      { $push: { ProtocolSetup: { Protocol } as any } },
+      { upsert: true }
+    ).exec();
   }
   let result: any;
   switch (type) {
@@ -1000,28 +965,24 @@ export async function setUserSetupProtocol(
 
         // 如果arg是Threshold数组,直接覆盖
         if (Array.isArray(arg)) {
-          result = await userAlarmSetupModel
-            .findOneAndUpdate(
-              { user, 'ProtocolSetup.Protocol': Protocol },
-              {
-                $set: {
-                  'ProtocolSetup.$.Threshold': arg,
-                },
+          result = await UserAlarmSetupEntity.findOneAndUpdate(
+            { user, 'ProtocolSetup.Protocol': Protocol },
+            {
+              $set: {
+                'ProtocolSetup.$.Threshold': arg,
               },
-              { upsert: true }
-            )
-            .lean();
+            },
+            { upsert: true }
+          ).lean();
         } else {
           // 以下是微信小程序使用的逻辑
           if (arg.type === 'del') {
-            result = await userAlarmSetupModel
-              .findOneAndUpdate(
-                { user, 'ProtocolSetup.Protocol': Protocol },
-                { $pull: { 'ProtocolSetup.$.Threshold': { name: data.name } } }
-              )
-              .lean();
+            result = await UserAlarmSetupEntity.findOneAndUpdate(
+              { user, 'ProtocolSetup.Protocol': Protocol },
+              { $pull: { 'ProtocolSetup.$.Threshold': { name: data.name } } }
+            ).lean();
           } else {
-            const has = await userAlarmSetupModel.findOne({
+            const has = await UserAlarmSetupEntity.findOne({
               user,
               ProtocolSetup: {
                 $elemMatch: { Protocol: Protocol, 'Threshold.name': data.name },
@@ -1029,26 +990,22 @@ export async function setUserSetupProtocol(
             });
             if (has) {
               // https://www.cnblogs.com/zhongchengyi/p/12162792.html
-              result = await userAlarmSetupModel
-                .findOneAndUpdate(
-                  { user },
-                  { $set: { 'ProtocolSetup.$[i1].Threshold.$[i2]': data } },
-                  {
-                    arrayFilters: [
-                      { 'i1.Protocol': Protocol },
-                      { 'i2.name': data.name },
-                    ],
-                  }
-                )
-                .lean();
+              result = await UserAlarmSetupEntity.findOneAndUpdate(
+                { user },
+                { $set: { 'ProtocolSetup.$[i1].Threshold.$[i2]': data } },
+                {
+                  arrayFilters: [
+                    { 'i1.Protocol': Protocol },
+                    { 'i2.name': data.name },
+                  ],
+                }
+              ).lean();
             } else {
-              result = await userAlarmSetupModel
-                .findOneAndUpdate(
-                  { user, 'ProtocolSetup.Protocol': Protocol },
-                  { $push: { 'ProtocolSetup.$.Threshold': data } },
-                  { upsert: true }
-                )
-                .lean();
+              result = await UserAlarmSetupEntity.findOneAndUpdate(
+                { user, 'ProtocolSetup.Protocol': Protocol },
+                { $push: { 'ProtocolSetup.$.Threshold': data } },
+                { upsert: true }
+              ).lean();
             }
           }
         }
@@ -1056,37 +1013,33 @@ export async function setUserSetupProtocol(
       break;
     case 'ShowTag':
       {
-        result = await userAlarmSetupModel
-          .findOneAndUpdate(
-            { user, 'ProtocolSetup.Protocol': Protocol },
-            {
-              $set: {
-                'ProtocolSetup.$.ShowTag': lodash.compact(arg as string[]),
-              },
+        result = await UserAlarmSetupEntity.findOneAndUpdate(
+          { user, 'ProtocolSetup.Protocol': Protocol },
+          {
+            $set: {
+              'ProtocolSetup.$.ShowTag': lodash.compact(arg as string[]),
             },
-            { upsert: true }
-          )
-          .lean();
+          },
+          { upsert: true }
+        ).lean();
       }
       break;
     case 'AlarmStat':
       {
         if (Array.isArray(arg)) {
-          result = await userAlarmSetupModel
-            .findOneAndUpdate(
-              { user, 'ProtocolSetup.Protocol': Protocol },
-              {
-                $set: {
-                  'ProtocolSetup.$.AlarmStat': arg,
-                },
+          result = await UserAlarmSetupEntity.findOneAndUpdate(
+            { user, 'ProtocolSetup.Protocol': Protocol },
+            {
+              $set: {
+                'ProtocolSetup.$.AlarmStat': arg,
               },
-              { upsert: true }
-            )
-            .lean();
+            },
+            { upsert: true }
+          ).lean();
         } else {
           const { name, alarmStat } = arg;
           // 检查系统中是否含有name的配置
-          const has = await userAlarmSetupModel.findOne({
+          const has = await UserAlarmSetupEntity.findOne({
             user,
             ProtocolSetup: {
               $elemMatch: { Protocol: Protocol, 'AlarmStat.name': name },
@@ -1094,24 +1047,22 @@ export async function setUserSetupProtocol(
           });
           if (has) {
             // https://www.cnblogs.com/zhongchengyi/p/12162792.html
-            result = await userAlarmSetupModel
-              .findOneAndUpdate(
-                { user },
-                {
-                  $set: {
-                    'ProtocolSetup.$[i1].AlarmStat.$[i2].alarmStat': alarmStat,
-                  },
+            result = await UserAlarmSetupEntity.findOneAndUpdate(
+              { user },
+              {
+                $set: {
+                  'ProtocolSetup.$[i1].AlarmStat.$[i2].alarmStat': alarmStat,
                 },
-                {
-                  arrayFilters: [
-                    { 'i1.Protocol': Protocol },
-                    { 'i2.name': name },
-                  ],
-                }
-              )
-              .lean();
+              },
+              {
+                arrayFilters: [
+                  { 'i1.Protocol': Protocol },
+                  { 'i2.name': name },
+                ],
+              }
+            ).lean();
           } else {
-            result = await userAlarmSetupModel.findOneAndUpdate(
+            result = await UserAlarmSetupEntity.findOneAndUpdate(
               { user, 'ProtocolSetup.Protocol': Protocol },
               { $push: { 'ProtocolSetup.$.AlarmStat': { name, alarmStat } } },
               { upsert: true }
@@ -1149,7 +1100,7 @@ export async function getUserTerminal(user: string, mac: string) {
  * @param id
  */
 export async function getUserLayout(user: string, id: string) {
-  return await layoutModel.findOne({ user, id }).lean();
+  return await UserLayoutEntity.findOne({ user, id }).lean();
 }
 
 /**
@@ -1158,7 +1109,7 @@ export async function getUserLayout(user: string, id: string) {
  * @param id
  */
 export async function getAggregation(user: string, id: string) {
-  return await useraggregModel.findOne({ user, id }).lean();
+  return await UserAggregationEntity.findOne({ user, id }).lean();
 }
 
 /**
@@ -1175,9 +1126,11 @@ export async function setUserLayout(
   bg: string,
   Layout: Uart.AggregationLayoutNode[]
 ) {
-  return await layoutModel
-    .updateOne({ id, user }, { $set: { type, bg, Layout } }, { upsert: true })
-    .lean();
+  return await UserLayoutEntity.updateOne(
+    { id, user },
+    { $set: { type, bg, Layout } },
+    { upsert: true }
+  ).lean();
 }
 
 /**
@@ -1186,11 +1139,11 @@ export async function setUserLayout(
  * @returns
  */
 export async function deleteUser(user: string) {
-  await layoutModel.deleteOne({ user });
-  await useraggregModel.deleteOne({ user });
-  await userbindModel.deleteOne({ user });
+  await UserLayoutEntity.deleteOne({ user });
+  await UserAggregationEntity.deleteOne({ user });
+  await UserBindDeviceEntity.deleteOne({ user });
   await deleteUsersetup(user);
-  return await userModel.deleteOne({ user });
+  return await UsersEntity.deleteOne({ user });
 }
 
 /**
@@ -1211,7 +1164,7 @@ export async function addAggregation(
     aggregations: aggs,
     devs: [],
   };
-  const { _id } = await useraggregModel.create(aggObj);
+  const { _id } = await UserAggregationEntity.create(aggObj);
   const layout = {
     user,
     id: _id,
@@ -1219,10 +1172,11 @@ export async function addAggregation(
     type: 'agg',
     Layout: [],
   };
-  await layoutModel.create(layout);
-  return await useraggregModel
-    .updateOne({ _id: new ObjectId(_id) }, { $set: { id: _id } })
-    .lean();
+  await UserLayoutEntity.create(layout);
+  return await UserAggregationEntity.updateOne(
+    { _id: new ObjectId(_id) },
+    { $set: { id: _id } }
+  ).lean();
 }
 
 /**
@@ -1232,8 +1186,8 @@ export async function addAggregation(
  * @returns
  */
 export async function deleteAggregation(user: string, id: string) {
-  await layoutModel.deleteOne({ user, id }).lean();
-  return await useraggregModel.deleteOne({ user, id }).lean();
+  await UserLayoutEntity.deleteOne({ user, id }).lean();
+  return await UserAggregationEntity.deleteOne({ user, id }).lean();
 }
 
 /**
@@ -1272,7 +1226,7 @@ export async function addUser(
       msg: '邮箱格式不正确',
     };
   }
-  const u = await userModel.findOne({
+  const u = await UsersEntity.findOne({
     $or: [{ user }, { mail }, { tel }],
   });
   if (u) {
@@ -1338,7 +1292,7 @@ export async function seach_user_keywords(key: string) {
  */
 export async function getAlarmunconfirmed(user: string) {
   const macs = await getUserBind(user);
-  return await AlarmModel.countDocuments({
+  return await UserAlarmSetupEntity.countDocuments({
     mac: { $in: macs?.UTs || [] },
     isOk: false,
   });
@@ -1351,6 +1305,6 @@ export async function getAlarmunconfirmed(user: string) {
 export async function toggleUserGroup(user: string) {
   const u = await getUser(user);
   const userGroup = u.userGroup === 'admin' ? 'user' : 'admin';
-  await userModel.updateOne({ user }, { $set: { userGroup } });
+  await UsersEntity.updateOne({ user }, { $set: { userGroup } });
   return userGroup;
 }

@@ -1,22 +1,22 @@
 import { Provide, TaskLocal } from '@midwayjs/decorator';
-import {
-  DtuBusy,
-  UartTerminalDataTransfinite,
-  UserRequst,
-} from '../entity/log';
-import { TerminalClientResults, TerminalClientResult } from '../entity/node';
 import { Types } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { chunk } from 'lodash';
-import { getModel } from '../util/base';
 import { saveClean } from '../service/logService';
+import {
+  DtuBusyLogEntity,
+  TerminalParseDataEntity,
+  TerminalPrimavelDataEntity,
+  UartTerminalDataTransfiniteEntityLogEntity,
+  UserRequstLogEntity,
+} from '../entity';
 
 /**
  * 每天清理历史记录中重复的数据
  */
 @Provide()
 export class Clean {
-  @TaskLocal('0 1 * * * ')
+  @TaskLocal('0 22 * * * ')
   async clean() {
     try {
       console.log(`${new Date().toString()} ### start clean Data.....`);
@@ -46,8 +46,7 @@ export class Clean {
     console.time('Uartterminaldatatransfinites');
     const MapUartterminaldatatransfinites: Map<string, Uart.uartAlarmObject> =
       new Map();
-    const Mode = getModel(UartTerminalDataTransfinite);
-    const Query = Mode.find({ __v: 0 });
+    const Query = UartTerminalDataTransfiniteEntityLogEntity.find({ __v: 0 });
     const cur = Query.cursor();
     const len = await Query.countDocuments();
     const deleteids: Types.ObjectId[] = [];
@@ -66,9 +65,11 @@ export class Clean {
     }
 
     // 批量删除告警日志
-    await Mode.deleteMany({ _id: { $in: deleteids } }).exec();
+    await UartTerminalDataTransfiniteEntityLogEntity.deleteMany({
+      _id: { $in: deleteids },
+    }).exec();
     // 更新标签
-    await Mode.updateMany(
+    await UartTerminalDataTransfiniteEntityLogEntity.updateMany(
       { _id: { $in: allids } },
       { $inc: { __v: 1 as any } }
     ).exec();
@@ -83,8 +84,7 @@ export class Clean {
     console.log('清洗请求数据');
     console.time('CleanUserRequst');
     const MapUserRequst: Map<string, Uart.logUserRequst> = new Map();
-    const Mode = getModel(UserRequst);
-    const Query = Mode.find({ __v: 0 });
+    const Query = UserRequstLogEntity.find({ __v: 0 });
     const cur = Query.cursor();
     const len = await Query.countDocuments();
     const deleteids: Types.ObjectId[] = [];
@@ -104,9 +104,9 @@ export class Clean {
       } else MapUserRequst.set(tag, doc);
     }
     // 批量删除告警日志
-    await Mode.deleteMany({ _id: { $in: deleteids } }).exec();
+    await UserRequstLogEntity.deleteMany({ _id: { $in: deleteids } }).exec();
     // 更新标签
-    await Mode.updateMany(
+    await UserRequstLogEntity.updateMany(
       { _id: { $in: allids } },
       { $inc: { __v: 1 as any } }
     ).exec();
@@ -124,10 +124,8 @@ export class Clean {
     console.time('CleanClientresults');
     const MapClientresults: Map<string, Map<string, string>> = new Map();
     // 文档实例
-    const ColltionMode = getModel(TerminalClientResult);
-    const sMode = getModel(TerminalClientResults);
 
-    const ColltionQuery = ColltionMode.find({ __v: 0 });
+    const ColltionQuery = TerminalParseDataEntity.find({ __v: 0 });
     const Colltioncur = ColltionQuery.cursor();
 
     const len = await ColltionQuery.countDocuments();
@@ -175,22 +173,22 @@ export class Clean {
     MapClientresults.clear();
 
     for (const del of chunk(deleteids, 1e5)) {
-      const statData = await ColltionMode.find(
+      const statData = await TerminalParseDataEntity.find(
         { parentId: { $in: del }, hasAlarm: 0 },
         { parentId: 1 }
       ).lean();
       const statIds = statData.map(el => el.parentId);
 
-      await sMode.deleteMany({
+      await TerminalPrimavelDataEntity.deleteMany({
         _id: { $in: statIds.map(el => new Types.ObjectId(el)) },
       });
-      await ColltionMode.deleteMany({ parentId: { $in: statIds } });
+      await TerminalParseDataEntity.deleteMany({ parentId: { $in: statIds } });
     }
     // 更新标签
     console.log(`cleanData allids length:${allids.length}`);
 
     for (const all of chunk(allids, 1e5)) {
-      await ColltionMode.updateMany(
+      await TerminalParseDataEntity.updateMany(
         { parentId: { $in: all } },
         { $inc: { __v: 1 } }
       );
@@ -215,23 +213,21 @@ export class Clean {
     console.log('=============把所有1个月前的设备结果集删除=================');
     console.time('CleanClientresultsTimeOut');
     const lastM = Date.now() - 2.592e9 * 1;
-    const ColltionMode = getModel(TerminalClientResult);
-    const sMode = getModel(TerminalClientResults);
-    
-    const colltion = ColltionMode.find(
+
+    const colltion = TerminalParseDataEntity.find(
       { timeStamp: { $lt: lastM } },
       { parentId: 1 }
-    )
-// 获取要删除的文档游标
+    );
+    // 获取要删除的文档游标
     const colltionCur = colltion.cursor();
     // 获取总长度
-    const len = await ColltionMode.countDocuments();
-      // 要删除的文档长度
+    const len = await TerminalParseDataEntity.countDocuments();
+    // 要删除的文档长度
     const deletedCount = await colltion.countDocuments();
-      // 保存需要删除的解析文档id
-    const parentIdSet = new Set<string>()
+    // 保存需要删除的解析文档id
+    const parentIdSet = new Set<string>();
     // 保存需要删除的原始解析文档id
-    const idSet = new Set<string>()
+    const idSet = new Set<string>();
 
     /**
      * 需要分批次取出数据删除,一次全部取出容易导致爆栈
@@ -241,25 +237,25 @@ export class Clean {
       doc != null;
       doc = await this.next(colltionCur)
     ) {
-      parentIdSet.add(doc.parentId)
-      idSet.add(doc.id)
+      parentIdSet.add(doc.parentId);
+      idSet.add(doc.id);
       // 每10000条删除一次
-      if(idSet.size > 10000){
+      if (idSet.size > 10000) {
         // 删除过期的解析文档
-        const parentIds = [...parentIdSet].map(el => new Types.ObjectId(el))
-        await sMode.deleteMany({
+        const parentIds = [...parentIdSet].map(el => new Types.ObjectId(el));
+        await TerminalPrimavelDataEntity.deleteMany({
           _id: { $in: parentIds },
         });
-        parentIdSet.clear()
+        parentIdSet.clear();
         // 删除过期的原始文档
-        const ids = [...idSet].map(el => new Types.ObjectId(el))
-        await ColltionMode.deleteMany({
+        const ids = [...idSet].map(el => new Types.ObjectId(el));
+        await TerminalParseDataEntity.deleteMany({
           _id: { $in: ids },
         });
-        idSet.clear()
+        idSet.clear();
       }
     }
-    
+
     console.timeEnd('CleanClientresultsTimeOut');
     return deletedCount + '/' + len;
   }
@@ -272,8 +268,7 @@ export class Clean {
     console.time('CleanDtuBusy');
     const BusyMap: Map<string, { _id: Types.ObjectId } & Uart.logDtuBusy> =
       new Map();
-    const Mode = getModel(DtuBusy);
-    const cur = Mode.find({ __v: 0 }).cursor();
+    const cur = DtuBusyLogEntity.find({ __v: 0 }).cursor();
     const deleteIds: Types.ObjectId[] = [];
     const allIds: Types.ObjectId[] = [];
     for (let doc = await cur.next(); doc != null; doc = await cur.next()) {
@@ -287,11 +282,14 @@ export class Clean {
     // 一次性处理的条目数量太多,切块后多次处理
     const deleteChunk = chunk(deleteIds, 1e5);
     for (const del of deleteChunk) {
-      await Mode.deleteMany({ _id: { $in: del } });
+      await DtuBusyLogEntity.deleteMany({ _id: { $in: del } });
     }
     const updateChunk = chunk(allIds, 1e5);
     for (const update of updateChunk) {
-      await Mode.updateMany({ _id: { $in: update } }, { $set: { __v: 1 } });
+      await DtuBusyLogEntity.updateMany(
+        { _id: { $in: update } },
+        { $set: { __v: 1 } }
+      );
     }
     console.timeEnd('CleanDtuBusy');
   }

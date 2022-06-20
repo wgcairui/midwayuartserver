@@ -1,26 +1,37 @@
 import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
+import * as _ from 'lodash';
+import { getModelForClass } from '@typegoose/typegoose';
 import {
+  innerMessages,
+  logbull,
+  logDevUseTime,
   Nodes,
   Terminals,
   UartTerminalDataTransfinite,
   DtuBusy,
   MailSend,
-  UseBytes,
-  WXEvent,
-  InstructQuery,
   SmsSend,
-  UserLogin,
   UserRequst,
   DataClean,
+  WXEvent,
   wxsubscribeMessage,
-  innerMessages,
-  logbull,
-  logDevUseTime,
-} from '../entity/log';
-import * as _ from 'lodash';
-import { getModelForClass } from '@typegoose/typegoose';
-import { getModel } from '../util/base';
-
+  UseBytesLogEntity,
+  WXEventLogEntity,
+  DtuBusyLogEntity,
+  InstructQueryLogEntity,
+  NodesLogEntity,
+  TerminalsLogEntity,
+  SmsSendLogEntity,
+  MailSendLogEntity,
+  UartTerminalDataTransfiniteEntityLogEntity,
+  UserLoginLogEntity,
+  UserRequstLogEntity,
+  DataCleanLogEntity,
+  wxsubscribeMessageLogEntity,
+  innerMessagesLogEntity,
+  logbullLogEntity,
+  logDevUseTimeLogEntity,
+} from '../entity';
 /**
  * 创建插入文档
  * @param cl
@@ -174,9 +185,11 @@ export async function saveWxsubscribeMessage(
  * @returns
  */
 export async function incUseBytes(mac: string, date: string, useBytes: number) {
-  return await getModel(UseBytes)
-    .updateOne({ mac, date }, { $inc: { useBytes } }, { upsert: true })
-    .lean();
+  return await UseBytesLogEntity.updateOne(
+    { mac, date },
+    { $inc: { useBytes } },
+    { upsert: true }
+  ).lean();
 }
 
 /**
@@ -184,16 +197,17 @@ export async function incUseBytes(mac: string, date: string, useBytes: number) {
  * @returns
  */
 export async function getWxEvent() {
-  return getModel(WXEvent).find().lean();
+  return WXEventLogEntity.find().lean();
 }
 
 /**
  * 获取设备使用流量
  */
 export async function getUseBtyes(mac: string) {
-  return getModel(UseBytes)
-    .find({ mac }, { date: 1, useBytes: 1, _id: 0 })
-    .lean();
+  return UseBytesLogEntity.find(
+    { mac },
+    { date: 1, useBytes: 1, _id: 0 }
+  ).lean();
 }
 
 /**
@@ -203,12 +217,10 @@ export async function getUseBtyes(mac: string) {
  * @param end
  */
 export async function getDtuBusy(mac: string, start: number, end: number) {
-  return getModel(DtuBusy)
-    .find(
-      { mac, timeStamp: { $lte: end, $gte: start } },
-      { stat: 1, timeStamp: 1, _id: 0 }
-    )
-    .lean();
+  return DtuBusyLogEntity.find(
+    { mac, timeStamp: { $lte: end, $gte: start } },
+    { stat: 1, timeStamp: 1, _id: 0 }
+  ).lean();
 }
 
 /**
@@ -217,7 +229,7 @@ export async function getDtuBusy(mac: string, start: number, end: number) {
  * @returns
  */
 export async function logInstructQuery(mac: string) {
-  return getModel(InstructQuery).find({ mac }).lean();
+  return InstructQueryLogEntity.find({ mac }).lean();
 }
 
 /**
@@ -227,9 +239,7 @@ export async function logInstructQuery(mac: string) {
  * @returns
  */
 export async function lognodes(start: number, end: number) {
-  return getModel(Nodes)
-    .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean();
+  return NodesLogEntity.find({ timeStamp: { $lte: end, $gte: start } }).lean();
 }
 
 /**
@@ -239,16 +249,16 @@ export async function lognodes(start: number, end: number) {
  * @returns
  */
 export async function logterminals(start: number, end: number) {
-  return getModel(Terminals)
-    .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean();
+  return TerminalsLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+  }).lean();
 }
 
 /**
  * 获取短信日志
  */
 export async function logsmssends(start: number, end: number) {
-  return getModel(SmsSend).aggregate([
+  return SmsSendLogEntity.aggregate([
     {
       $match: {
         timeStamp: { $lte: end, $gte: start },
@@ -265,8 +275,6 @@ export async function logsmssends(start: number, end: number) {
     },
     { $unwind: '$tels' },
   ]);
-  /* .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean(); */
 }
 
 /**
@@ -274,7 +282,7 @@ export async function logsmssends(start: number, end: number) {
  * @returns
  */
 export async function logsmssendsCountInfo() {
-  return getModel(SmsSend).aggregate<{ _id: string; sum: number }>([
+  return SmsSendLogEntity.aggregate<{ _id: string; sum: number }>([
     { $project: { tels: 1, Success: 1 } },
     { $unwind: '$tels' },
     { $match: { 'Success.Code': 'OK' } },
@@ -287,7 +295,7 @@ export async function logsmssendsCountInfo() {
  * 获取邮件日志
  */
 export async function logmailsends(start: number, end: number) {
-  return getModel(MailSend).aggregate([
+  return MailSendLogEntity.aggregate([
     {
       $match: {
         timeStamp: { $lte: end, $gte: start },
@@ -304,8 +312,6 @@ export async function logmailsends(start: number, end: number) {
     },
     { $unwind: '$mails' },
   ]);
-  /* .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean(); */
 }
 
 /**
@@ -318,9 +324,9 @@ export async function loguartterminaldatatransfinites(
   start: number,
   end: number
 ) {
-  return getModel(UartTerminalDataTransfinite)
-    .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean();
+  return UartTerminalDataTransfiniteEntityLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+  }).lean();
 }
 
 /**
@@ -330,12 +336,14 @@ export async function loguartterminaldatatransfinites(
  * @returns
  */
 export async function logterminalAggs(mac: string, start: number, end: number) {
-  const trans = await getModel(UartTerminalDataTransfinite)
-    .find({ timeStamp: { $lte: end, $gte: start }, mac })
-    .lean();
-  const ter = await getModel(Terminals)
-    .find({ timeStamp: { $lte: end, $gte: start }, TerminalMac: mac })
-    .lean();
+  const trans = await UartTerminalDataTransfiniteEntityLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+    mac,
+  }).lean();
+  const ter = await TerminalsLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+    TerminalMac: mac,
+  }).lean();
   return [...trans, ...ter].map(el => _.pick(el, ['type', 'msg', 'timeStamp']));
 }
 
@@ -346,12 +354,14 @@ export async function logterminalAggs(mac: string, start: number, end: number) {
  * @returns
  */
 export async function logUserAggs(user: string, start: number, end: number) {
-  const login = await getModel(UserLogin)
-    .find({ timeStamp: { $lte: end, $gte: start }, user })
-    .lean();
-  const request = await getModel(UserRequst)
-    .find({ timeStamp: { $lte: end, $gte: start }, user })
-    .lean();
+  const login = await UserLoginLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+    user,
+  }).lean();
+  const request = await UserRequstLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+    user,
+  }).lean();
   return [
     ...login.map(el => ({
       type: el.type,
@@ -373,9 +383,9 @@ export async function logUserAggs(user: string, start: number, end: number) {
  * @returns
  */
 export async function loguserlogins(start: number, end: number) {
-  return getModel(UserLogin)
-    .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean();
+  return UserLoginLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+  }).lean();
 }
 
 /**
@@ -385,9 +395,9 @@ export async function loguserlogins(start: number, end: number) {
  * @returns
  */
 export async function loguserrequsts(start: number, end: number) {
-  return getModel(UserRequst)
-    .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean();
+  return UserRequstLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+  }).lean();
 }
 
 /**
@@ -397,9 +407,9 @@ export async function loguserrequsts(start: number, end: number) {
  * @returns
  */
 export async function logdataclean(start: number, end: number) {
-  return getModel(DataClean)
-    .find({ timeStamp: { $lte: end, $gte: start } })
-    .lean();
+  return DataCleanLogEntity.find({
+    timeStamp: { $lte: end, $gte: start },
+  }).lean();
 }
 
 /**
@@ -409,7 +419,7 @@ export async function logdataclean(start: number, end: number) {
  * @returns
  */
 export async function logwxsubscribes(start: number, end: number) {
-  return getModel(wxsubscribeMessage)
+  return wxsubscribeMessageLogEntity
     .find({ timeStamp: { $lte: end, $gte: start } })
     .lean();
 }
@@ -421,7 +431,7 @@ export async function logwxsubscribes(start: number, end: number) {
  * @returns
  */
 export async function getloginnerMessage(start: number, end: number) {
-  return getModel(innerMessages)
+  return innerMessagesLogEntity
     .find({ timeStamp: { $lte: end, $gte: start } })
     .lean();
 }
@@ -433,7 +443,7 @@ export async function getloginnerMessage(start: number, end: number) {
  * @returns
  */
 export async function getlogBull(start: number, end: number) {
-  return getModel(logbull)
+  return logbullLogEntity
     .find({ timeStamp: { $lte: end, $gte: start } })
     .lean();
 }
@@ -450,7 +460,7 @@ export async function getlogDevUseTime(
   start: number,
   end: number
 ) {
-  return getModel(logDevUseTime)
+  return logDevUseTimeLogEntity
     .find({ mac, timeStamp: { $lte: end, $gte: start } })
     .lean();
 }

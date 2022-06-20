@@ -3,6 +3,7 @@ import { Context, NextFunction } from '@midwayjs/koa';
 import { IMiddleware } from '@midwayjs/core';
 import { Secret_JwtVerify } from '../util/util';
 import { saveUserRequst } from '../service/logService';
+import { Users } from '../entity';
 
 /**
  * 校验用户组是否正确
@@ -16,7 +17,7 @@ export class root implements IMiddleware<Context, NextFunction> {
 
       if (!token || token === 'false') throw new Error('token null');
 
-      const user = await Secret_JwtVerify<Uart.UserInfo>(
+      const user = await Secret_JwtVerify<Users>(
         token.split('%20').reverse()[0].trim()
       ).catch(() => {
         ctx.logger.warn('token error');

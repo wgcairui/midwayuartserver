@@ -139,22 +139,6 @@ class content {
  */
 @modelOptions({ schemaOptions: { collection: 'client.results' } })
 export class TerminalClientResults {
-  /* @prop({ min: 0, max: 255, default: 0 })
-    public pid: number
-
-    @prop()
-    public mac: string
-
-    @prop()
-    public protocol: string
-
-    @prop()
-    public useTime: number
-
-    @prop({ index: true })
-    public timeStamp: number
-    */
-
   @prop({ type: () => content, _id: false })
   public contents: content[];
 }

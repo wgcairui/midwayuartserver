@@ -1,12 +1,6 @@
-import { getModelForClass } from '@typegoose/typegoose';
-import { AnyParamConstructor } from '@typegoose/typegoose/lib/types';
 import * as moment from 'moment';
-import { SecretApp, UserBindDevice } from '../entity/user';
-import {
-  getUser,
-  getUserAlarmSetup,
-  userbindModel,
-} from '../service/userSevice';
+import { SecretAppEntity, UserBindDeviceEntity } from '../entity';
+import { getUser, getUserAlarmSetup } from '../service/userSevice';
 
 /**
  * 获取格式化时间
@@ -18,20 +12,11 @@ export function time(time: Date | number | string = new Date()) {
 }
 
 /**
- * 获取数据库实体
- * @param cl
- * @returns
- */
-export const getModel = <T>(cl: AnyParamConstructor<T>) => {
-  return getModelForClass(cl);
-};
-
-/**
  * 获取绑定设备所属用户
  * @param mac
  */
 export const getBindMacUser = async (mac: string) => {
-  const t = await getModel(UserBindDevice).findOne({ UTs: mac }).lean();
+  const t = await UserBindDeviceEntity.findOne({ UTs: mac }).lean();
   return t ? t.user : null;
 };
 
@@ -41,8 +26,9 @@ export const getBindMacUser = async (mac: string) => {
  * @returns
  */
 export const getSecretKey = async (type: Uart.secretType) => {
-  const model = getModelForClass(SecretApp);
-  return (await model.findOne({ type }).lean()) as any as Uart.Secret_app;
+  return (await SecretAppEntity.findOne({
+    type,
+  }).lean()) as any as Uart.Secret_app;
 };
 
 /**
@@ -51,7 +37,10 @@ export const getSecretKey = async (type: Uart.secretType) => {
  * @returns
  */
 export async function getMactoUser(mac: string) {
-  const bind = await userbindModel.findOne({ UTs: mac }, { user: 1 }).lean();
+  const bind = await UserBindDeviceEntity.findOne(
+    { UTs: mac },
+    { user: 1 }
+  ).lean();
   if (bind) {
     const user = await getUser(bind.user, {
       tel: 1,

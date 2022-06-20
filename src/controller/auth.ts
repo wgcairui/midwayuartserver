@@ -26,6 +26,7 @@ import {
 } from '../service/userSevice';
 import { WeaApps } from '../util/weapp';
 import { wxWebUserInfo } from '../util/open_web';
+import { Users } from '../entity';
 
 /**
  * 登录相关控制器
@@ -42,7 +43,7 @@ export class AuthController {
    * @returns
    */
   @Get('/user', { middleware: [TokenParse] })
-  async user(@Body('user') user: Uart.UserInfo) {
+  async user(@Body('user') user: Users) {
     return {
       code: user ? 200 : 0,
       user: user ? user.user : 'guest',
@@ -56,7 +57,7 @@ export class AuthController {
    * @returns
    */
   @Get('/userGroup', { middleware: [TokenParse] })
-  async userGroup(@Body('user') user: Uart.UserInfo) {
+  async userGroup(@Body('user') user: Users) {
     return { code: user ? 200 : 0, userGroup: user?.userGroup };
   }
 
@@ -142,7 +143,7 @@ export class AuthController {
     let user = await getUser(info.unionid);
     // 如果没有用户则新建
     if (!user) {
-      const users: Uart.UserInfo = {
+      const users: Partial<Users> = {
         userId: info.unionid,
         user: info.unionid,
         name: info.nickname,
@@ -294,7 +295,7 @@ export class AuthController {
           wpId: data.openid,
           avanter: data.avanter,
           name: data.getName(),
-          tel: Number(data.tel),
+          tel: data.tel,
           rgtype: 'wx',
         }),
       };
