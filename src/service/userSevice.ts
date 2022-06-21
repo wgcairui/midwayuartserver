@@ -14,7 +14,6 @@ import { WeaApps } from '../util/weapp';
 import { WxPublics } from '../util/wxpublic';
 import { SendValidation } from './smsService';
 import {
-  DevConstant,
   SaltEntity,
   SecretAppEntity,
   TerminalEntity,
@@ -777,7 +776,7 @@ export async function getUserAlarmProtocol(user: string, protocol: string) {
     ShowTag: setup?.ShowTag || [],
     Threshold: setup?.Threshold || [],
     AlarmStat: setup?.AlarmStat || [],
-  } as Pick<DevConstant, 'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'>;
+  } as Pick<Uart.ProtocolConstantThreshold, 'Protocol' | 'AlarmStat' | 'ShowTag' | 'Threshold'>;
   //return obj;
 }
 

@@ -7,6 +7,7 @@ import {
   DevTypeEntity,
   DtuBusyLogEntity,
   NodeClientEntity,
+  NodeRunInfoEntity,
   ProtocolInstruct,
   Protocols,
   ProtocolsEntity,
@@ -73,7 +74,7 @@ export async function setTerminal(mac: string, doc: Partial<Terminal>) {
  * @returns 获取所以节点运行状态
  */
 export async function getNodeRuns() {
-  return TerminalEntity.find().lean();
+  return NodeRunInfoEntity.find().lean();
 }
 
 /**
@@ -82,7 +83,7 @@ export async function getNodeRuns() {
  * @returns
  */
 export async function setNodeRun(NodeName: string, doc: any) {
-  return await TerminalEntity.updateOne(
+  return await NodeRunInfoEntity.updateOne(
     { NodeName },
     { $set: { ...doc } },
     { upsert: true }
@@ -257,7 +258,7 @@ export async function setStatTerminal(mac: string | string[], stat = true) {
  * @param mac
  */
 export async function getStatTerminalDevs(mac: string, pid: number) {
-  const t = TerminalEntity.findOne(
+  const t = await TerminalEntity.findOne(
     { DevMac: mac, 'mountDevs.pid': pid },
     { 'mountDevs.$': 1 }
   ).lean();
