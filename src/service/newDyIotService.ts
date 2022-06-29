@@ -71,3 +71,10 @@ export function SwitchSimV2(
 export function GetCardDetailV2(Iccid: string) {
   return request<SimInfo>('GetCardDetail', { Iccid });
 }
+
+/**
+ * 自动续费开关
+ */
+export function UpdateAutoRechargeSwitch(Iccid: string, Open:boolean){
+  return request<Boolean>('UpdateAutoRechargeSwitch',{Iccid, Open})
+}

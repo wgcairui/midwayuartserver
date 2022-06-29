@@ -285,8 +285,8 @@ class iccidInfo {
   /**
    * 语音套餐总量，以分钟为单位
    */
-  @prop()
-  public voiceTotal: number;
+  // @prop()
+  // public voiceTotal: number;
   /**
    * 	资源失效日期
    */
@@ -300,8 +300,8 @@ class iccidInfo {
   /**
    * 资源类型编码。6700001代表流量
    */
-  @prop()
-  public resourceType: string;
+  // @prop()
+  // public resourceType: string;
   /**
    * 资源使用量，流量单位为KB
    */
@@ -315,18 +315,18 @@ class iccidInfo {
   /**
    * 短信使用量。以条为单位
    */
-  @prop()
-  public smsUsed: number;
+  // @prop()
+  // public smsUsed: number;
   /**
    * 资源生效日期
    */
-  @prop()
-  public validDate: string;
+  // @prop()
+  // public validDate: string;
   /**
    * 语音使用量，以分钟为单位
    */
-  @prop()
-  public voiceUsed: number;
+  // @prop()
+  // public voiceUsed: number;
   /**
    * 资源总量 ，流量单位为KB
    */
@@ -338,6 +338,9 @@ class iccidInfo {
    */
   @prop()
   public version: string;
+
+  @prop({default: false})
+  public IsAutoRecharge: boolean;
 }
 
 /**

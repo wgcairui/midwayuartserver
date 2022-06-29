@@ -98,7 +98,7 @@ import {
   QueryCardInfo,
   QueryIotCardOfferDtl,
 } from '../service/dyiotService';
-import { GetCardDetailV2 } from '../service/newDyIotService';
+import { GetCardDetailV2, UpdateAutoRechargeSwitch } from '../service/newDyIotService';
 import { ProvideSocketUser } from '../service/socketUserService';
 import { MQ } from '../service/bullService';
 import { ProtocolInstruct, Protocols, UsersEntity } from '../entity';
@@ -1333,6 +1333,21 @@ export class RootControll {
     return {
       code: res.code === 'OK' ? 200 : 0,
       data: res.data,
+    };
+  }
+
+  /**
+   * 自动续订套餐
+   * @param iccid 
+   * @param open 
+   * @returns 
+   */
+  @Post('/IotUpdateAutoRechargeSwitch')
+  async IotUpdateAutoRechargeSwitch(@Body('iccid') iccid: string, @Body('open') open:boolean){
+    const res = await UpdateAutoRechargeSwitch(iccid, open)
+    return {
+      code: res.Success ? 200 : 0,
+      data: res.Data,
     };
   }
 
