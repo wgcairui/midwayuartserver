@@ -25,6 +25,7 @@ import {
   UserAlarmSetupEntity,
   UserBindDeviceEntity,
 } from '../entity';
+import { GetCardDetailV2 } from './newDyIotService';
 
 /**
  * 获取all终端
@@ -72,53 +73,45 @@ export async function setTerminal(mac: string, doc: Partial<Terminal>) {
 /**
  * 更新iccid信息
  */
-export async function updateIccidInfo(iccid: string) {
+export async function updateIccidInfo(mac: string) {
+  const {ICCID} = await getTerminal(mac)
   const Info = { statu: false, version: 'ali_2' } as Uart.iccidInfo;
+  const result = await GetCardDetailV2(ICCID);
+  const { Success, Data, Message } = result
 
-  try {
-    const { Success, Data } = await GetCardDetailV2(Iccid);
+  if (Success) {
+    const CardInfo = Data.VsimCardInfo;
+    // 已使用流量
+    const flowUsed = CardInfo.PeriodAddFlow.includes('KB')
+      ? Number(CardInfo.PeriodAddFlow.split('KB')[0])
+      : Number(CardInfo.PeriodAddFlow.split('MB')[0]) * 1024;
+    // 未使用流量
+    const restOfFlow =
+      Number(CardInfo.PeriodRestFlow.split('MB')[0]) * 1024;
 
-    if (Success) {
-      const CardInfo = Data.VsimCardInfo;
-      // 已使用流量
-      const flowUsed = CardInfo.PeriodAddFlow.includes('KB')
-        ? Number(CardInfo.PeriodAddFlow.split('KB')[0])
-        : Number(CardInfo.PeriodAddFlow.split('MB')[0]) * 1024;
-      // 未使用流量
-      const restOfFlow =
-        Number(CardInfo.PeriodRestFlow.split('MB')[0]) * 1024;
-
-      const iccidInfo: Uart.iccidInfo = {
-        statu: true,
-        expireDate: CardInfo.ExpireTime,
-        resName: CardInfo.CredentialNo,
-        IsAutoRecharge: CardInfo.IsAutoRecharge,
-        flowResource: restOfFlow + flowUsed,
-        restOfFlow,
-        flowUsed,
-        version: CardInfo.AliFee,
-        uptime: Date.now()
-      };
-      Object.assign(Info, iccidInfo);
-    }
-    // 如果是老版本物联卡接口会报错
-  } catch (error) {
-    // const info = await QueryCardFlowInfo(Iccid);
-    // if (info.code === 'OK' && !isEmpty(info.cardFlowInfos?.cardFlowInfo)) {
-    //   const data = info.cardFlowInfos
-    //     .cardFlowInfo[0] as any as Uart.iccidInfo;
-    //   Object.assign(Info, data, { statu: true });
-    // } else {
-    // 保存数据
-    setTerminal(ter.DevMac, {
-      remark: error?.message,
+    const iccidInfo: Uart.iccidInfo = {
+      statu: true,
+      expireDate: CardInfo.ExpireTime,
+      resName: CardInfo.CredentialNo,
+      IsAutoRecharge: CardInfo.IsAutoRecharge,
+      flowResource: restOfFlow + flowUsed,
+      restOfFlow,
+      flowUsed,
+      version: CardInfo.AliFee,
+      uptime: Date.now()
+    };
+    Object.assign(Info, iccidInfo);
+  } else {
+    setTerminal(mac, {
+      remark: Message,
     });
-    // }
   }
-  // 保存数据
-  await setTerminal(ter.DevMac, {
+
+  await setTerminal(mac, {
     iccidInfo: Info,
   });
+
+  return result
 }
 
 /**

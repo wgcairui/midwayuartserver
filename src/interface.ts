@@ -69,6 +69,7 @@ export interface SimResope<T = boolean> {
    * 调用失败时，返回的错误信息
    */
   ErrorMessage: string;
+  Message: string;
   /**
    * 调用失败时，返回的错误码。更多信息，请参见错误码
    * @see https://help.aliyun.com/document_detail/375339.htm?spm=a2c4g.11186623.0.0.7aeb65a8hJcamn

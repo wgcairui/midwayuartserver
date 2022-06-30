@@ -49,6 +49,7 @@ import {
   modifyProtocol,
   DevType,
   RegisterTerminal,
+  updateIccidInfo,
 } from '../service/deviceService';
 import { NodeInfo, ParseFunction, parseTime } from '../util/util';
 import {
@@ -1345,6 +1346,18 @@ export class RootControll {
   @Post('/IotUpdateAutoRechargeSwitch')
   async IotUpdateAutoRechargeSwitch(@Body('iccid') iccid: string, @Body('open') open:boolean){
     const res = await UpdateAutoRechargeSwitch(iccid, open)
+    return {
+      code: res.Success ? 200 : 0,
+      data: res.Data,
+    };
+  }
+
+  /**
+   * 更新iccid信息
+   */
+  @Post('/IotUpdateIccidInfo')
+  async IotUpdateIccidInfo(@Body('mac') mac: string ){
+    const res = await updateIccidInfo(mac)
     return {
       code: res.Success ? 200 : 0,
       data: res.Data,
