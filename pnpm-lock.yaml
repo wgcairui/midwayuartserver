@@ -57,7 +57,7 @@ specifiers:
   qrcode: ^1.5.0
   swagger-ui-dist: ^4.1.2
   ts-jest: ^26.2.0
-  types-uart: 2.0.8
+  types-uart: 2.0.9
   typescript: ^4.5.4
   xml2js: ^0.4.23
 
@@ -121,7 +121,7 @@ devDependencies:
   mwts: 1.3.0_typescript@4.6.2
   swagger-ui-dist: 4.6.2
   ts-jest: 26.5.6_ytm3lbpudd4ld7mukzpicpc6l4
-  types-uart: 2.0.8
+  types-uart: 2.0.9
   typescript: 4.6.2
 
 packages:
@@ -7734,8 +7734,8 @@ packages:
       is-typedarray: 1.0.0
     dev: true
 
-  /types-uart/2.0.8:
-    resolution: {integrity: sha512-8cnmQZLNA54JSF9lBWiOhnn4dD8TE5wb+tuy7ns4uVI8hlVHCW9sYzj3HTUtdFdLHBhPyCgicprtc5eJ5a/nuA==}
+  /types-uart/2.0.9:
+    resolution: {integrity: sha512-cJ9OitmoYUKoyTpOhVSZvk7JS/4bLlLW5CKOcAoKHXgPUQp9TrPdXlcRuRortutkygyzj168CcShQA2dsbLo0w==}
     dev: true
 
   /typescript/4.2.4:

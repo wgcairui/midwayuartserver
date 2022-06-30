@@ -15,7 +15,7 @@ export class UpdateIccid {
    * 每小时更新一次
    * @returns
    */
-  @TaskLocal('0 * * * * ')
+  @TaskLocal('0 30 * * * * ')
   async up() {
     const now = Date.now();
     const terminals = await getTerminals();
@@ -52,7 +52,8 @@ export class UpdateIccid {
             flowResource: restOfFlow + flowUsed,
             restOfFlow,
             flowUsed,
-            version: CardInfo.AliFee
+            version: CardInfo.AliFee,
+            uptime: Date.now()
           };
           Object.assign(Info, iccidInfo);
         }

@@ -341,6 +341,9 @@ class iccidInfo {
 
   @prop({default: false})
   public IsAutoRecharge: boolean;
+
+  @prop()
+  public uptime: number
 }
 
 /**

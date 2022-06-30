@@ -70,6 +70,58 @@ export async function setTerminal(mac: string, doc: Partial<Terminal>) {
 }
 
 /**
+ * 更新iccid信息
+ */
+export async function updateIccidInfo(iccid: string) {
+  const Info = { statu: false, version: 'ali_2' } as Uart.iccidInfo;
+
+  try {
+    const { Success, Data } = await GetCardDetailV2(Iccid);
+
+    if (Success) {
+      const CardInfo = Data.VsimCardInfo;
+      // 已使用流量
+      const flowUsed = CardInfo.PeriodAddFlow.includes('KB')
+        ? Number(CardInfo.PeriodAddFlow.split('KB')[0])
+        : Number(CardInfo.PeriodAddFlow.split('MB')[0]) * 1024;
+      // 未使用流量
+      const restOfFlow =
+        Number(CardInfo.PeriodRestFlow.split('MB')[0]) * 1024;
+
+      const iccidInfo: Uart.iccidInfo = {
+        statu: true,
+        expireDate: CardInfo.ExpireTime,
+        resName: CardInfo.CredentialNo,
+        IsAutoRecharge: CardInfo.IsAutoRecharge,
+        flowResource: restOfFlow + flowUsed,
+        restOfFlow,
+        flowUsed,
+        version: CardInfo.AliFee,
+        uptime: Date.now()
+      };
+      Object.assign(Info, iccidInfo);
+    }
+    // 如果是老版本物联卡接口会报错
+  } catch (error) {
+    // const info = await QueryCardFlowInfo(Iccid);
+    // if (info.code === 'OK' && !isEmpty(info.cardFlowInfos?.cardFlowInfo)) {
+    //   const data = info.cardFlowInfos
+    //     .cardFlowInfo[0] as any as Uart.iccidInfo;
+    //   Object.assign(Info, data, { statu: true });
+    // } else {
+    // 保存数据
+    setTerminal(ter.DevMac, {
+      remark: error?.message,
+    });
+    // }
+  }
+  // 保存数据
+  await setTerminal(ter.DevMac, {
+    iccidInfo: Info,
+  });
+}
+
+/**
  *
  * @returns 获取所以节点运行状态
  */
