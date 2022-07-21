@@ -178,12 +178,13 @@ export async function parse485(
           case 'bit2':
             try {
               result.value =
-                buffer.length >= start ? buffer[start].toString() : undefined;
+                (buffer.length > start) ? buffer[start].toString() : undefined;
             } catch (error) {
               console.log({
                 error: error.message,
                 buffer,
-                instructs,
+                //instructs,
+                bufLen: buffer.length,
                 start,
                 end,
                 step,

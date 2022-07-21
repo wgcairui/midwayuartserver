@@ -10,6 +10,8 @@ import {
   UartTerminalDataTransfiniteEntityLogEntity,
   UserRequstLogEntity,
 } from '../entity';
+import moment = require('moment');
+import { getTerminals, updateIccidInfo } from '../service/deviceService';
 
 /**
  * 每天清理历史记录中重复的数据
@@ -36,6 +38,35 @@ export class Clean {
     } catch (error) {
       console.error('Data Clean Error', error?.message);
     }
+  }
+
+  @TaskLocal('1 * * * * ') // 每隔1分钟执行一次：0 /1 * * *
+  async ups() {
+    console.log(moment().format('YYYY-MM-DD H:M:s'),
+    '::开始更新ICCID')
+    const now = Date.now();
+    const terminals = await getTerminals();
+    // 刷选出有效的物联卡
+    const terminalsFilter = terminals.filter(
+      el =>
+        el.ICCID &&
+        el.ICCID.length === 20
+    );
+
+    for (const ter of terminalsFilter) {
+      // console.log(moment().format('YYYY-MM-DD H:M:s'),'更新iccid:'+ter.DevMac+"/"+ter.ICCID);
+      await updateIccidInfo(ter.DevMac)
+    }
+    console.log(
+      moment().format('YYYY-MM-DD H:M:s'),
+      '::更新ICCIDs success,更新数量:',
+      terminalsFilter.length
+    );
+
+    return {
+      time: Date.now() - now,
+      length: terminalsFilter.length,
+    };
   }
 
   /**

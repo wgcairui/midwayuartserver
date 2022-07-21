@@ -74,33 +74,50 @@ export async function setTerminal(mac: string, doc: Partial<Terminal>) {
  * 更新iccid信息
  */
 export async function updateIccidInfo(mac: string) {
-  const {ICCID} = await getTerminal(mac)
+  const { ICCID, iccidInfo } = await getTerminal(mac)
   const Info = { statu: false, version: 'ali_2' } as Uart.iccidInfo;
-  const result = await GetCardDetailV2(ICCID);
-  const { Success, Data, Message } = result
+  const result = await GetCardDetailV2(ICCID)
+    .catch(err => {
+      console.log({
+        msg: '更新iccid error',
+        mac,
+        err,
+      });
+
+    })
+  const { Success = false, Data = {}, Message = 'error' } = result || {}
 
   if (Success) {
-    const CardInfo = Data.VsimCardInfo;
-    // 已使用流量
-    const flowUsed = CardInfo.PeriodAddFlow.includes('KB')
-      ? Number(CardInfo.PeriodAddFlow.split('KB')[0])
-      : Number(CardInfo.PeriodAddFlow.split('MB')[0]) * 1024;
-    // 未使用流量
-    const restOfFlow =
-      Number(CardInfo.PeriodRestFlow.split('MB')[0]) * 1024;
+    const CardInfo = (Data as any).VsimCardInfo;
+    try {
 
-    const iccidInfo: Uart.iccidInfo = {
-      statu: true,
-      expireDate: CardInfo.ExpireTime,
-      resName: CardInfo.CredentialNo,
-      IsAutoRecharge: CardInfo.IsAutoRecharge,
-      flowResource: restOfFlow + flowUsed,
-      restOfFlow,
-      flowUsed,
-      version: CardInfo.AliFee,
-      uptime: Date.now()
-    };
-    Object.assign(Info, iccidInfo);
+      // 已使用流量
+      const flowUsed = CardInfo.PeriodAddFlow.includes('KB')
+        ? Number(CardInfo.PeriodAddFlow.split('KB')[0])
+        : (CardInfo.PeriodAddFlow.includes('MB') ? Number(CardInfo.PeriodAddFlow.split('MB')[0]) * 1024 : Number(CardInfo.PeriodAddFlow.split('GB')[0]) * 1024 * 1024);
+      // 未使用流量
+      const restOfFlow =
+      CardInfo.PeriodRestFlow.includes('KB')
+        ? Number(CardInfo.PeriodRestFlow.split('KB')[0])
+        : (CardInfo.PeriodRestFlow.includes('MB') ? Number(CardInfo.PeriodRestFlow.split('MB')[0]) * 1024 : Number(CardInfo.PeriodRestFlow.split('GB')[0]) * 1024 * 1024);
+        //Number(CardInfo.PeriodRestFlow.split('MB')[0]) * 1024;
+
+      const iccidInfo: Uart.iccidInfo = {
+        statu: true,
+        expireDate: CardInfo.ExpireTime,
+        resName: CardInfo.CredentialNo,
+        IsAutoRecharge: CardInfo.IsAutoRecharge,
+        flowResource: restOfFlow + flowUsed,
+        restOfFlow,
+        flowUsed,
+        version: CardInfo.AliFee,
+        uptime: Date.now()
+      };
+      Object.assign(Info, iccidInfo);
+    } catch (error) {
+      console.log('iccid error:', CardInfo, error);
+
+    }
   } else {
     setTerminal(mac, {
       remark: Message,
@@ -108,10 +125,10 @@ export async function updateIccidInfo(mac: string) {
   }
 
   await setTerminal(mac, {
-    iccidInfo: Info,
+    iccidInfo: {...iccidInfo,...Info},
   });
 
-  return result
+  return { Success, Data, Message }
 }
 
 /**
@@ -373,7 +390,7 @@ export async function getMountDevInterval(mac: string) {
     // 新的基数= 基数 * (512e3 / 流量总量 )
     // 例如月流量是30Mb=32e3,512e3/32e3 ~ 17,基数系数变更为17,则单条指令查询事件为17秒
     baseNum =
-      baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource));
+      baseNum * parseInt(String(512000 / terminal.iccidInfo.flowResource)) * 2;
   }
 
   // 指令合计数量
